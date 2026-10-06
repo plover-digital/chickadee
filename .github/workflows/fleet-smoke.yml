@@ -10,6 +10,14 @@ on:
         options:
           - chickadee-fleet-smoke
           - chickadee
+      hold_seconds:
+        description: Hold the guest for broker restart acceptance
+        required: true
+        default: '0'
+        type: choice
+        options:
+          - '0'
+          - '90'
 permissions:
   contents: read
 jobs:
@@ -41,3 +49,8 @@ jobs:
           printf 'int main(void) { return 0; }\n' > /tmp/chickadee-smoke.c
           cc -Wall -Werror /tmp/chickadee-smoke.c -o /tmp/chickadee-smoke
           /tmp/chickadee-smoke
+      - name: Hold guest for broker restart acceptance
+        env:
+          HOLD_SECONDS: ${{ inputs.hold_seconds }}
+        run: |
+          case "$HOLD_SECONDS" in 0|90) sleep "$HOLD_SECONDS" ;; *) exit 1 ;; esac
