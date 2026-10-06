@@ -6,12 +6,13 @@
   "scale_set": "chickadee",
   "runner_group_id": 1,
   "warm_pool": 1,
-  "max_vms": 2,
-  "cpus": 2,
-  "memory_mib": 2048,
-  "disk_gib": 16,
+  "max_vms": 1,
+  "cpus": 4,
+  "memory_mib": 8192,
+  "disk_gib": 48,
   "boot_timeout_seconds": 120,
   "job_timeout_seconds": 3600,
   "state_dir": "/var/lib/chickadee",
-  "image_dir": "/var/lib/chickadee-image"
+  "image_dir": "/var/lib/chickadee-image",
+  "machine": "q35"
 }

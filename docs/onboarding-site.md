@@ -110,7 +110,7 @@ and binary for rollback. Never send SIGUSR1 to an older controller.
 
 ## Customer dashboard
 
-New activation requests include only `chickadee` by default: medium, Rocky 10.2.
+New activation requests include only `chickadee` by default: medium, Ubuntu 26.04.
 The optional size/OS queues are opt-in requests and are not usable until the
 operator reports them enabled. The dashboard distinguishes requested queues,
 enabled queues, applied state, and a pending pause/resume/disconnect request.
@@ -165,3 +165,17 @@ not added together; the newest authorized snapshot is used. Personal-account
 repositories retain separate services and queue editors. The beta dashboard
 still requires the activation-request creator and current repository-admin
 access; an organization row does not grant organization-owner privileges.
+
+Organization activation forms require the exact main-branch workflow file path,
+for example `.github/workflows/build.yml`. The site rejects URLs, traversal,
+nested workflow directories, and alternate ref suffixes. It builds the displayed
+allowlist reference from the GitHub-verified repository and `refs/heads/main`.
+The App does not request repository Contents access, so operators must verify
+that the file exists before approving it. Requests store `workflow_path`; the
+private status relay reports `enabled_workflow_path` after applying access.
+Existing records with no path remain readable for legacy operator handling.
+
+Pending requests say **awaiting approval**, not processing. The private operator
+may report `approved` only after review; that state describes activation being
+processed. `active` remains the applied state. Requested workflow changes do
+not replace the previously applied workflow access until approved and reported.

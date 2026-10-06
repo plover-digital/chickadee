@@ -12,8 +12,8 @@ jobs:
       matrix:
         include:
           - label: chickadee
-            os: rocky
-            version: '10.2'
+            os: ubuntu
+            version: '26.04'
             cpus: 4
             memory_mib: 8192
           - label: chickadee-small-rocky-102
@@ -34,6 +34,16 @@ jobs:
           - label: chickadee-medium-ubuntu-2404
             os: ubuntu
             version: '24.04'
+            cpus: 4
+            memory_mib: 8192
+          - label: chickadee-small-ubuntu-2604
+            os: ubuntu
+            version: '26.04'
+            cpus: 2
+            memory_mib: 4096
+          - label: chickadee-medium-ubuntu-2604
+            os: ubuntu
+            version: '26.04'
             cpus: 4
             memory_mib: 8192
     runs-on: ${{ matrix.label }}

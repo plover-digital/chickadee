@@ -5,9 +5,10 @@ on:
       os:
         description: Versioned OS image
         type: choice
-        default: ubuntu-2404
+        default: ubuntu-2604
         options:
           - ubuntu-2404
+          - ubuntu-2604
           - rocky-102
 permissions:
   contents: read
@@ -43,7 +44,8 @@ jobs:
           IMAGE_OS: ${{ inputs.os }}
         run: |
           case "$IMAGE_OS" in
-            ubuntu-2404) make image ;;
+            ubuntu-2404) make image-minimal-ubuntu-2404 ;;
+            ubuntu-2604) make image-ubuntu-2604 ;;
             rocky-102) scripts/build-rocky-image.sh ;;
             *) exit 1 ;;
           esac
@@ -68,6 +70,7 @@ jobs:
           c = json.load(open('examples/config.json'))
           c['image_dir'] = os.path.abspath('images')
           c['machine'] = json.load(open('images/manifest.json'))['machine']
+          c['disk_gib'] = json.load(open('images/manifest.json'))['disk_gib']
           c['state_dir'] = '/tmp/ck-bootcheck'
           json.dump(c, open('build/bootcheck.json', 'w'))
           PY

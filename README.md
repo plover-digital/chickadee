@@ -69,11 +69,11 @@ documents our pilot without including credentials or private host details.
 
 [Runner profiles](docs/profiles.md) select immutable OS images and CPU/RAM
 classes. The example default `runs-on: chickadee` uses medium (4 vCPU / 8 GiB)
-and Rocky 10.2; explicit labels such as `chickadee-small-ubuntu-2404` select
-other approved combinations. Ubuntu 24.04 uses microvm; Rocky 10.2 uses q35
-with its stock kernel and enforcing SELinux. New image support requires actual
-boot/job validation; see the validation log. Rocky 9.8 and Ubuntu 26.04 builders
-remain tracked work. The [provider comparison](docs/runner-platform-research.md)
+and Ubuntu 26.04; explicit labels such as `chickadee-small-ubuntu-2404` select
+other approved combinations. Ubuntu 24.04 uses microvm; Ubuntu 26.04 and Rocky 10.2 use q35
+with stock kernels. Rocky retains enforcing SELinux. New image support requires actual
+boot/job validation; see the validation log. The [Ubuntu 26.04 builder](docs/ubuntu-2604.md) provides the developer default;
+Rocky 9.8 remains tracked work. The [provider comparison](docs/runner-platform-research.md)
 and [design rationale](docs/selection-design.md) explain the model.
 
 An optional [GitHub App onboarding site](docs/onboarding-site.md) provides

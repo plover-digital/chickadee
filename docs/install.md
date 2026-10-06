@@ -5,6 +5,9 @@ local storage, systemd, and outbound internet access. The reference installer
 supports Ubuntu 24.04 amd64 only. Other Linux distributions need reviewed package,
 firewall, service, and image-build adaptations. Nothing requires repartitioning:
 an existing local SSD/NVMe filesystem can hold `/var/lib/chickadee`.
+The default profile uses 4 vCPU and 8 GiB of guest RAM, plus controller/emulator
+allowances and at least 1 GiB reserved for the host. A 16 GiB host fits this
+single-runner example. Use the profile catalog for explicit shared budgets.
 
 ## Build
 
@@ -57,19 +60,27 @@ network tools are removed or modified. This is separate from job VM TAP/NAT.
 The image build takes time and substantial temporary disk space. It uses
 libguestfs with KVM where available and a software-emulation fallback for
 **offline image editing**, without
-mounting the image on the host. Job VMs always require KVM. Inputs are Ubuntu's
-signed dated rootfs release `20260926`, Ubuntu's authenticated archive snapshot
-`20260926T180000Z`, and GitHub runner `2.337.0` with a fixed SHA-256. The installed
+mounting the image on the host. Job VMs always require KVM. The default build is
+Ubuntu 26.04 with its stock generic kernel on q35, developer tools, and guest-local
+Docker. Inputs are Ubuntu's signed dated rootfs release `20260927`, authenticated
+archive snapshot `20260930T000000Z`, and GitHub runner `2.337.0` with a fixed SHA-256.
+SDK and toolcache archives have individually verified hashes; see
+[Ubuntu 26.04 inputs](ubuntu-2604.md). The installed
 kernel version, package list, initrd, manifest and image checksums are retained.
 These are repeatable input versions, not a claim of bit-for-bit filesystem
 reproducibility: filesystem UUIDs, package timestamps and initrd metadata vary.
 Ubuntu snapshot retention is finite; archive the verified inputs for long-term
 rebuilds. Check [Ubuntu snapshot documentation](https://snapshot.ubuntu.com/).
 
-The base filesystem is 16 GiB. Keep `disk_gib` at 16 with this build. To change
+The default developer filesystem is 48 GiB. Keep `disk_gib` at 48 with this build. To change
 it, update the image script and manifest, then rebuild the complete profile.
 Never replace a backing image while overlays or guests exist. Build a clean
 image set, stop the controller, reconcile state, and replace the whole set.
+
+The older minimal Ubuntu 24.04 microvm recipe remains available as
+`make image-minimal-ubuntu-2404`. It produces a 16 GiB image; set `machine` to
+`microvm` and `disk_gib` to 16 when selecting it. It provides fewer tools than
+the developer preset. Use a clean output directory for either build.
 
 ## GitHub App
 

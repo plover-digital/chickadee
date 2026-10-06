@@ -1,16 +1,18 @@
 # Runner profiles on one host
 
 The controller accepts the original flat config or a profile catalog. See
-[examples/profiles.json](../examples/profiles.json) for a secret-free five-queue
-configuration with Ubuntu 24.04 and Rocky 10.2 images.
+[examples/profiles.json](../examples/profiles.json) for a secret-free seven-queue
+configuration with Ubuntu 24.04/26.04 and Rocky 10.2 images.
 
 | Label | vCPU | RAM | OS |
 | --- | --- | --- | --- |
-| `chickadee` | 4 | 8 GiB | Rocky 10.2 |
+| `chickadee` | 4 | 8 GiB | Ubuntu 26.04 |
 | `chickadee-small-rocky-102` | 2 | 4 GiB | Rocky 10.2 |
 | `chickadee-medium-rocky-102` | 4 | 8 GiB | Rocky 10.2 |
 | `chickadee-small-ubuntu-2404` | 2 | 4 GiB | Ubuntu 24.04 |
 | `chickadee-medium-ubuntu-2404` | 4 | 8 GiB | Ubuntu 24.04 |
+| `chickadee-small-ubuntu-2604` | 2 | 4 GiB | Ubuntu 26.04 |
+| `chickadee-medium-ubuntu-2604` | 4 | 8 GiB | Ubuntu 26.04 |
 
 Use `runs-on: chickadee` for the default. The default is an explicit catalog
 entry: operators can change its image/resource references on a controlled
@@ -53,8 +55,8 @@ sudo scripts/install-image.sh IMAGE_DIR /var/lib/chickadee-images/OS-VERSION/REV
 
 Set each image's `path`, `os`, `version`, `machine` and `disk_gib` in the catalog. Preflight
 checks root ownership, checksums, boot artifacts, OS/version/architecture,
-filesystem size and required CPU features. Rocky uses QEMU q35 and its stock
-kernel; Ubuntu 24.04 retains QEMU microvm. Both boot directly with a versioned
+filesystem size and required CPU features. Rocky and Ubuntu 26.04 use QEMU q35 with stock
+kernels; Ubuntu 24.04 retains QEMU microvm. All boot directly with a versioned
 kernel/initrd and use private serial control, KVM, fresh qcow2 overlays and
 one-job cleanup. A comparative microvm investigation is deferred. Image revision paths are immutable;
 never replace a base with overlays still in existence. There are no workflow

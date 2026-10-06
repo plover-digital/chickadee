@@ -57,5 +57,5 @@ release support requires real boot/job validation. See [profiles](profiles.md).
 
 Next image/profile targets: Ubuntu 24.04/26.04 and Rocky Linux 9.8/10.2, with labels
 `chickadee-{size}-{os}-{version}` (for example,
-`chickadee-small-ubuntu-2404`). Ubuntu 26.04 and Rocky 9.8 image builders remain unimplemented;
-Rocky 10.2 uses stock-kernel q35 while Ubuntu 24.04 retains microvm; see [selection design](selection-design.md).
+`chickadee-small-ubuntu-2404`). Ubuntu 26.04 and Rocky 10.2 builders use stock-kernel q35;
+Rocky 9.8 remains unimplemented, while Ubuntu 24.04 retains microvm; see [selection design](selection-design.md).

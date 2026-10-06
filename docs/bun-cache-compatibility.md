@@ -18,7 +18,7 @@ caches. Bun itself can be installed with the version requested by the workflow.
 
 The public [Bun compatibility workflow](../.github/workflows/bun-compatibility.yml)
 first installs Bun 1.3.14 on a hosted Ubuntu runner, then restores its cache on
-both Chickadee Ubuntu and Rocky. Each job uses a fresh disposable guest.
+Chickadee Ubuntu 24.04, Rocky 10.2 and the default Ubuntu 26.04 queue. Each job uses a fresh disposable guest.
 
 The initial reproduction is retained at
 [Actions run 37516442214](https://github.com/plover-digital/chickadee/actions/runs/37516442214).

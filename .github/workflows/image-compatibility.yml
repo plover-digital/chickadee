@@ -64,7 +64,7 @@ jobs:
           docker run --rm hello-world
   rocky:
     if: github.repository == 'plover-digital/chickadee' && github.ref == 'refs/heads/main'
-    runs-on: chickadee
+    runs-on: chickadee-medium-rocky-102
     timeout-minutes: 20
     steps:
       - name: Verify native developer tools and enforcing SELinux

@@ -18,6 +18,13 @@
       "version": "10.2",
       "disk_gib": 48,
       "machine": "q35"
+    },
+    "ubuntu-2604": {
+      "path": "/var/lib/chickadee-images/ubuntu-2604/v1",
+      "os": "ubuntu",
+      "version": "26.04",
+      "disk_gib": 48,
+      "machine": "q35"
     }
   },
   "resource_classes": {
@@ -42,7 +49,7 @@
       "runner_group_id": 1,
       "profiles": {
         "chickadee": {
-          "image": "rocky-102",
+          "image": "ubuntu-2604",
           "resources": "medium",
           "warm_pool": 1,
           "max_vms": 1
@@ -70,6 +77,18 @@
           "resources": "medium",
           "warm_pool": 0,
           "max_vms": 1
+        },
+        "chickadee-small-ubuntu-2604": {
+          "image": "ubuntu-2604",
+          "resources": "small",
+          "warm_pool": 0,
+          "max_vms": 2
+        },
+        "chickadee-medium-ubuntu-2604": {
+          "image": "ubuntu-2604",
+          "resources": "medium",
+          "warm_pool": 0,
+          "max_vms": 1
         }
       }
     },
@@ -79,7 +98,7 @@
       "runner_group_id": 1,
       "profiles": {
         "chickadee": {
-          "image": "rocky-102",
+          "image": "ubuntu-2604",
           "resources": "medium",
           "warm_pool": 0,
           "max_vms": 1
