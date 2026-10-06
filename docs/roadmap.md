@@ -7,6 +7,14 @@ self-host deployment must remain independent of a vendor API, account, database
 or control plane. Keep implementation and design discussion public, while keeping
 secrets, customer information and coordinated security reports private.
 
+## Work tracking
+
+Track public implementation, bugs, designs and release acceptance in
+[GitHub Issues](https://github.com/plover-digital/chickadee/issues). Each issue
+should state the expected behavior and acceptance evidence. Keep deployment
+inventories, customer details and commercial planning in internal tracking;
+never place credentials in either tracker.
+
 ## First deployable release
 
 - [x] Go pool controller, direct QEMU management and bounded serial bootstrap.
