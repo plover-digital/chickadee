@@ -81,9 +81,9 @@ func startHost(ctx context.Context, conf hostconfig.Config, slot int, id string)
 	return vm, err
 }
 func OpenEngine(c Config) (*Engine, error) {
-	return openEngine(c, startHost, host.ReapOwned, verifyImages)
+	return openEngine(c, startHost, host.ReapOwned, verifyImages, checkDiskSpace)
 }
-func openEngine(c Config, start startMachine, reap func(string) error, check func(Config) error) (*Engine, error) {
+func openEngine(c Config, start startMachine, reap func(string) error, check func(Config) error, spaceCheck func(Config, int64) error) (*Engine, error) {
 	c.Profiles = append([]Profile(nil), c.Profiles...)
 	if err := c.Validate(); err != nil {
 		return nil, err
@@ -138,10 +138,10 @@ func openEngine(c Config, start startMachine, reap func(string) error, check fun
 			}
 		}
 	}
-	if err = checkDiskSpace(c, 0); err != nil {
+	if err = spaceCheck(c, 0); err != nil {
 		return fail(err)
 	}
-	e := &Engine{config: c, journal: j, start: start, spaceCheck: checkDiskSpace, profiles: map[string]Profile{}, entries: map[string]*instance{}, changed: make(chan struct{}), nextBoot: map[string]time.Time{}}
+	e := &Engine{config: c, journal: j, start: start, spaceCheck: spaceCheck, profiles: map[string]Profile{}, entries: map[string]*instance{}, changed: make(chan struct{}), nextBoot: map[string]time.Time{}}
 	for _, profile := range c.Profiles {
 		e.profiles[profile.ID] = profile
 	}

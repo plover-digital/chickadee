@@ -210,14 +210,18 @@ func checkDiskSpace(c Config, allocated int64) error {
 	if err := syscall.Statfs(path, &stat); err != nil {
 		return fmt.Errorf("disk capacity unavailable")
 	}
-	required := diskReservation(c) - allocated
-	if required < 2<<30 {
-		required = 2 << 30
-	}
 	if stat.Bsize <= 0 || stat.Bavail > uint64(^uint64(0)>>1)/uint64(stat.Bsize) {
 		return fmt.Errorf("invalid disk capacity")
 	}
 	available := int64(stat.Bavail) * stat.Bsize
+	return checkDiskCapacity(c, allocated, available)
+}
+
+func checkDiskCapacity(c Config, allocated, available int64) error {
+	required := diskReservation(c) - allocated
+	if required < 2<<30 {
+		required = 2 << 30
+	}
 	if available < required {
 		return fmt.Errorf("insufficient disk space for reserved VM capacity and diagnostics")
 	}

@@ -77,7 +77,7 @@ func engineConfig(t *testing.T) Config {
 func testEngine(t *testing.T, c Config) (*Engine, *fakeFactory) {
 	t.Helper()
 	f := &fakeFactory{vms: map[string]*fakeMachine{}}
-	e, err := openEngine(c, f.start, func(string) error { return nil }, func(Config) error { return nil })
+	e, err := openEngine(c, f.start, func(string) error { return nil }, func(Config) error { return nil }, unlimitedTestSpace)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -298,7 +298,7 @@ func TestEngineRestartReapsBeforeDeletingAndFencesOldGeneration(t *testing.T) {
 		}
 		reaped = true
 		return nil
-	}, func(Config) error { return nil })
+	}, func(Config) error { return nil }, unlimitedTestSpace)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -328,7 +328,7 @@ func TestEngineRecoveryFailureNeverDeletesDiskOrReleasesIntent(t *testing.T) {
 	disk := filepath.Join(c.StateDir, "vms", r.VMID, "disk")
 	os.MkdirAll(filepath.Dir(disk), 0700)
 	os.WriteFile(disk, []byte("retained"), 0600)
-	if e, err := openEngine(c, nil, func(string) error { return errors.New("exit unconfirmed") }, func(Config) error { return nil }); err == nil {
+	if e, err := openEngine(c, nil, func(string) error { return errors.New("exit unconfirmed") }, func(Config) error { return nil }, unlimitedTestSpace); err == nil {
 		e.journal.Close()
 		t.Fatal("unsafe recovery accepted")
 	}
@@ -390,14 +390,11 @@ func TestStartupDiskReservationFailsBeforeAnyBoot(t *testing.T) {
 	c := engineConfig(t)
 	c.Profiles[0].DiskGiB = 1024
 	c.Profiles[0].Warm = 0
-	if checkDiskSpace(c, 0) == nil {
-		t.Skip("filesystem exceeds fixture disk reservation")
-	}
 	starts := 0
 	e, err := openEngine(c, func(context.Context, hostconfig.Config, int, string) (machine, error) {
 		starts++
 		return nil, errors.New("unexpected")
-	}, func(string) error { return nil }, func(Config) error { return nil })
+	}, func(string) error { return nil }, func(Config) error { return nil }, func(c Config, allocated int64) error { return checkDiskCapacity(c, allocated, 14<<30) })
 	if err == nil {
 		e.journal.Close()
 		t.Fatal("worker started with unavailable reserved capacity")
@@ -405,4 +402,8 @@ func TestStartupDiskReservationFailsBeforeAnyBoot(t *testing.T) {
 	if starts != 0 {
 		t.Fatal("boot before startup disk reservation")
 	}
+}
+
+func unlimitedTestSpace(c Config, allocated int64) error {
+	return checkDiskCapacity(c, allocated, 1<<50)
 }

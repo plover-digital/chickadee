@@ -82,10 +82,23 @@ func TestDiskReservationIncludesAllSlotsAndHeadroom(t *testing.T) {
 	if got := diskReservation(c); got != 100<<30 {
 		t.Fatalf("disk reservation %d want100GiB", got)
 	}
-	// An impossible trusted capacity config must fail preflight against real free space.
+	// An impossible trusted capacity config must fail preflight against a bounded capacity fixture.
 	c.Budget.MaxVMs = 2
 	c.Profiles[0].DiskGiB = 1 << 30
-	if err := checkDiskSpace(c, 0); err == nil {
+	if err := checkDiskCapacity(c, 0, 14<<30); err == nil {
 		t.Fatal("unavailable disk growth was not reserved")
+	}
+}
+
+func TestAllocatedOverlayBlocksReduceReservationButRetainHeadroom(t *testing.T) {
+	c := engineConfig(t)
+	if err := checkDiskCapacity(c, 10<<30, 90<<30); err != nil {
+		t.Fatal(err)
+	}
+	if err := checkDiskCapacity(c, 10<<30, 89<<30); err == nil {
+		t.Fatal("future disk growth underreserved")
+	}
+	if err := checkDiskCapacity(c, 1<<50, 1<<30); err == nil {
+		t.Fatal("diagnostic headroom omitted")
 	}
 }

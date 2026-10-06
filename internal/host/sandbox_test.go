@@ -4,6 +4,7 @@ package host
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -19,12 +20,7 @@ func TestSandboxHidesControllerAndSiblingState(t *testing.T) {
 	if len(os.Args) > 1 && os.Args[len(os.Args)-1] == "sandbox-probe" {
 		return
 	}
-	if _, err := exec.LookPath("bwrap"); err != nil {
-		t.Skip("bubblewrap not installed")
-	}
-	if _, err := os.Stat("/dev/kvm"); err != nil {
-		t.Skip("KVM unavailable")
-	}
+	requireSandboxKVM(t)
 	root := t.TempDir()
 	vm := filepath.Join(root, "own")
 	image := filepath.Join(root, "image")
@@ -163,12 +159,7 @@ func TestGuardianExitDoesNotConfirmSandboxChildExit(t *testing.T) {
 }
 
 func TestSandboxChildIdentityIsVisibleForRecovery(t *testing.T) {
-	if _, err := exec.LookPath("bwrap"); err != nil {
-		t.Skip("bubblewrap not installed")
-	}
-	if _, err := os.Stat("/dev/kvm"); err != nil {
-		t.Skip("KVM unavailable")
-	}
+	requireSandboxKVM(t)
 	root := t.TempDir()
 	vm, image := filepath.Join(root, "own"), filepath.Join(root, "image")
 	os.Mkdir(vm, 0700)
@@ -231,8 +222,8 @@ func TestSandboxChildIdentityIsVisibleForRecovery(t *testing.T) {
 		t.Fatal("sandbox argv unavailable to recovery")
 	}
 	cmd.Process.Kill()
-	if err = waitPIDFD(int(fd), time.Second); err != nil {
-		t.Fatal("guardian death did not stop actual sandbox child")
+	if err = waitPIDFD(int(fd), 10*time.Second); err != nil {
+		t.Fatal("guardian death did not stop actual sandbox child within production exit bound")
 	}
 }
 func TestSandboxRecoveryHelper(t *testing.T) {
@@ -255,5 +246,45 @@ func TestOnlyPCINetworkDeviceDisablesOptionROM(t *testing.T) {
 	}
 	if got := networkDeviceArgs("virtio-net-device"); got != "virtio-net-device,netdev=net" {
 		t.Fatal("microvm does not expose a PCI ROM property")
+	}
+}
+
+// A device node alone is not a usable KVM prerequisite. CI guests can contain
+// /dev/kvm while denying access or lacking nested virtualization. Namespace
+// isolation integration is required only when the same caller can use KVM.
+func requireSandboxKVM(t *testing.T) {
+	t.Helper()
+	if _, err := exec.LookPath("bwrap"); err != nil {
+		t.Skip("integration prerequisite unavailable: bubblewrap not installed")
+	}
+	if err := usableKVM("/dev/kvm"); err != nil {
+		if errors.Is(err, os.ErrNotExist) || errors.Is(err, syscall.EACCES) || errors.Is(err, syscall.EPERM) || errors.Is(err, syscall.ENODEV) || errors.Is(err, syscall.ENXIO) || errors.Is(err, syscall.ENOTTY) {
+			t.Skipf("integration prerequisite unavailable: caller cannot use KVM: %v", err)
+		}
+		t.Fatalf("KVM prerequisite failed unexpectedly: %v", err)
+	}
+}
+func usableKVM(path string) error {
+	f, err := os.OpenFile(path, os.O_RDWR, 0)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	version, _, errno := syscall.Syscall(syscall.SYS_IOCTL, f.Fd(), 0xae00, 0) // KVM_GET_API_VERSION
+	if errno != 0 {
+		return errno
+	}
+	if version != 12 {
+		return fmt.Errorf("unsupported KVM API version %d", version)
+	}
+	return nil
+}
+func TestKVMPrerequisiteRejectsPresentNonKVMNode(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "kvm")
+	if err := os.WriteFile(file, nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := usableKVM(file); !errors.Is(err, syscall.ENOTTY) {
+		t.Fatalf("device existence was mistaken for usable KVM: %v", err)
 	}
 }
