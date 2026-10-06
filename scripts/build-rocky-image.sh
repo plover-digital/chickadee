@@ -88,6 +88,10 @@ rm -f /etc/resolv.conf
 printf 'nameserver 1.1.1.1\n' > /etc/resolv.conf
 printf 'chickadee\n' > /etc/hostname
 rpm -qa | sort > /image-packages.txt
+# Relabel with the guest's native policy/tooling. An older builder appliance's
+# setfiles can miss contexts in Rocky 10's policy and leave new files unlabeled.
+setfiles -F -e /dev -e /proc -e /sys -e /run /etc/selinux/targeted/contexts/files/file_contexts /
+rm -f /.autorelabel
 PROVISION
 virt-customize --no-network --memsize 2048 -a build/rocky-base.qcow2 \
  --upload build/rocky-downloads/rpms.tar:/tmp/rpms.tar \
@@ -98,10 +102,10 @@ virt-customize --no-network --memsize 2048 -a build/rocky-base.qcow2 \
  --upload guest/chickadee-bootstrap.service:/etc/systemd/system/chickadee-bootstrap.service \
  --upload build/rocky-provision.sh:/tmp/chickadee-provision.sh \
  --run-command 'bash /tmp/chickadee-provision.sh' \
- --delete /tmp/chickadee-provision.sh --selinux-relabel
+ --delete /tmp/chickadee-provision.sh --no-selinux-relabel
 # /boot is still a separate filesystem in the source GPT layout; inspect mounts
 # it for extraction even though guests only need the root partition at runtime.
-kernel=$(guestfish --ro -a build/rocky-base.qcow2 -m /dev/sda4 -m /dev/sda3:/boot glob-expand '/boot/vmlinuz-*')
+kernel=$(guestfish --ro -a build/rocky-base.qcow2 -m /dev/sda4 -m /dev/sda3:/boot glob-expand '/boot/vmlinuz-*' | grep -v '/boot/vmlinuz-0-rescue-')
 [[ $kernel != *$'\n'* && $kernel == /boot/vmlinuz-* ]]
 version=${kernel#/boot/vmlinuz-}
 guestfish --ro -a build/rocky-base.qcow2 -m /dev/sda4 -m /dev/sda3:/boot download "$kernel" "$out/vmlinuz-$version"
