@@ -55,7 +55,8 @@ A build-local PATH shim disables libguestfs's automatic passt preference; no hos
 network tools are removed or modified. This is separate from job VM TAP/NAT.
 
 The image build takes time and substantial temporary disk space. It uses
-libguestfs with software emulation for **offline image editing**, without
+libguestfs with KVM where available and a software-emulation fallback for
+**offline image editing**, without
 mounting the image on the host. Job VMs always require KVM. Inputs are Ubuntu's
 signed dated rootfs release `20260926`, Ubuntu's authenticated archive snapshot
 `20260926T180000Z`, and GitHub runner `2.337.0` with a fixed SHA-256. The installed

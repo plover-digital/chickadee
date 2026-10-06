@@ -31,8 +31,13 @@ printf '%s  %s\n' "$runner_sha" build/downloads/runner.tar.gz | sha256sum --chec
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o build/chickadee-guest ./cmd/chickadee-guest
 xz --decompress --stdout "build/downloads/$root_tar" > build/root.tar
 export LIBGUESTFS_BACKEND=direct
-# Software emulation is sufficient for offline image editing, never for job VMs.
-export LIBGUESTFS_BACKEND_SETTINGS=force_tcg
+# Use KVM for trusted image editing where available; software emulation is a
+# slower builder fallback. Job VMs always require KVM.
+if [[ -r /dev/kvm && -w /dev/kvm ]]; then
+  export LIBGUESTFS_BACKEND_SETTINGS=force_kvm
+else
+  export LIBGUESTFS_BACKEND_SETTINGS=force_tcg
+fi
 # libguestfs prefers passt whenever it is runnable. Keep the trusted builder on
 # QEMU's outbound SLIRP fallback without changing installed host network tools.
 mkdir -p build/appliance-bin
