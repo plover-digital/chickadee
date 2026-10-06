@@ -157,3 +157,11 @@ access. If that access cannot be verified, the site retains the user's request
 metadata and explains the permission problem, while hiding usage, enabled
 workflow examples, and management controls. This does not mutate deployed
 operator state; the private reconciler handles actual access removal.
+
+Organization runner queues and usage appear once per GitHub installation,
+with currently authorized repositories listed in a collapsed access section.
+Repeated per-repository copies of the same organization usage snapshot are
+not added together; the newest authorized snapshot is used. Personal-account
+repositories retain separate services and queue editors. The beta dashboard
+still requires the activation-request creator and current repository-admin
+access; an organization row does not grant organization-owner privileges.
