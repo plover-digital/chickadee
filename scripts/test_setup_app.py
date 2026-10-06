@@ -42,6 +42,7 @@ class SetupSecurityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             p = Path(root) / 'credentials'
             p.mkdir(mode=0o755)
+            os.chmod(p, 0o755)  # Test actual unsafe permissions regardless of caller umask.
             with self.assertRaises(ValueError):
                 setup.private_directory(p)
             os.chmod(p, 0o700)
