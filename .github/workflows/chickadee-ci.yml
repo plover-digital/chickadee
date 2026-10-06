@@ -1,0 +1,21 @@
+# Copy to .github/workflows/chickadee-ci.yml AFTER installing the host controller.
+# Keep this workflow limited to trusted commits. Public fork PRs use hosted CI.
+name: plover-digital main-branch build and test
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-test:
+    if: github.repository == 'plover-digital/chickadee' && github.ref == 'refs/heads/main'
+    runs-on: chickadee
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.26.3'
+          cache: false
+      - run: make build test
