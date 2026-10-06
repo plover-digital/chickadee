@@ -25,7 +25,7 @@ func TestKeylessConfigRejectsManagementFieldsAndOvercommit(t *testing.T) {
 	if _, err := LoadConfig(file); err == nil {
 		t.Fatal("GitHub management credential field accepted")
 	}
-	for _, change := range []func(*Config){func(c *Config) { c.Budget.MaxVMs = 3 }, func(c *Config) { c.Profiles[0].CPUs = 5 }, func(c *Config) { c.Profiles[0].Warm = 2; c.Budget.MaxVMs = 1 }, func(c *Config) { c.ReservationTimeoutSeconds = 181 }, func(c *Config) { c.Profiles[0].ImageDir = c.StateDir + "/images" }} {
+	for _, change := range []func(*Config){func(c *Config) { c.Budget.MaxVMs = 33 }, func(c *Config) { c.Profiles[0].CPUs = 5 }, func(c *Config) { c.Profiles[0].Warm = 2; c.Budget.MaxVMs = 1 }, func(c *Config) { c.ReservationTimeoutSeconds = 181 }, func(c *Config) { c.Profiles[0].ImageDir = c.StateDir + "/images" }} {
 		bad := engineConfig(t)
 		change(&bad)
 		if err := bad.Validate(); err == nil {
@@ -100,5 +100,27 @@ func TestAllocatedOverlayBlocksReduceReservationButRetainHeadroom(t *testing.T) 
 	}
 	if err := checkDiskCapacity(c, 1<<50, 1<<30); err == nil {
 		t.Fatal("diagnostic headroom omitted")
+	}
+}
+
+func TestThreeSmallWorkerBudgetAndTapSlotLimit(t *testing.T) {
+	c := engineConfig(t)
+	c.Budget = Budget{MaxVMs: 3, MaxCPUs: 6, MaxMemoryMiB: 12288}
+	c.Profiles[0].Warm = 3
+	if err := c.Validate(); err != nil {
+		t.Fatalf("three small guests rejected: %v", err)
+	}
+	c.Profiles[0].Warm = 4
+	if err := c.Validate(); err == nil {
+		t.Fatal("warm resource overcommit accepted")
+	}
+	c.Profiles[0].Warm = 0
+	c.Budget.MaxVMs = 32
+	if err := c.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	c.Budget.MaxVMs = 33
+	if err := c.Validate(); err == nil {
+		t.Fatal("more TAP slots than available accepted")
 	}
 }

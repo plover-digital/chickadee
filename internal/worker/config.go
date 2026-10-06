@@ -64,7 +64,7 @@ func (c Config) Validate() error {
 	if !filepath.IsAbs(c.StateDir) || filepath.Clean(c.StateDir) != c.StateDir || c.StateDir == "/" {
 		return fmt.Errorf("private absolute worker state directory required")
 	}
-	if c.Budget.MaxVMs < 1 || c.Budget.MaxVMs > 2 || c.Budget.MaxCPUs < 1 || c.Budget.MaxCPUs > 256 || c.Budget.MaxMemoryMiB < 1 || c.Budget.MaxMemoryMiB > 1<<20 {
+	if c.Budget.MaxVMs < 1 || c.Budget.MaxVMs > 32 || c.Budget.MaxCPUs < 1 || c.Budget.MaxCPUs > 256 || c.Budget.MaxMemoryMiB < 1 || c.Budget.MaxMemoryMiB > 1<<20 {
 		return fmt.Errorf("invalid worker budget")
 	}
 	if c.BootTimeoutSeconds < 1 || c.BootTimeoutSeconds > 300 || c.JobTimeoutSeconds < 1 || c.JobTimeoutSeconds > 14400 || c.ReservationTimeoutSeconds < 1 || c.ReservationTimeoutSeconds > 180 {

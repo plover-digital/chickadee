@@ -54,9 +54,10 @@ type fakeFactory struct {
 	mu      sync.Mutex
 	vms     map[string]*fakeMachine
 	configs []hostconfig.Config
+	slots   map[string]int
 }
 
-func (f *fakeFactory) start(_ context.Context, c hostconfig.Config, _ int, id string) (machine, error) {
+func (f *fakeFactory) start(_ context.Context, c hostconfig.Config, slot int, id string) (machine, error) {
 	dir := filepath.Join(c.StateDir, "vms", id)
 	if err := os.Mkdir(dir, 0700); err != nil {
 		return nil, err
@@ -66,6 +67,10 @@ func (f *fakeFactory) start(_ context.Context, c hostconfig.Config, _ int, id st
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.vms[id] = vm
+	if f.slots == nil {
+		f.slots = map[string]int{}
+	}
+	f.slots[id] = slot
 	f.configs = append(f.configs, c)
 	return vm, nil
 }
@@ -406,4 +411,95 @@ func TestStartupDiskReservationFailsBeforeAnyBoot(t *testing.T) {
 
 func unlimitedTestSpace(c Config, allocated int64) error {
 	return checkDiskCapacity(c, allocated, 1<<50)
+}
+
+func TestEngineThreeSmallBudgetFourthDeniedAndCleanedSlotReused(t *testing.T) {
+	c := engineConfig(t)
+	c.Budget = Budget{MaxVMs: 3, MaxCPUs: 6, MaxMemoryMiB: 12288}
+	c.Profiles[0].ID = "small"
+	c.Profiles[0].Warm = 0
+	e, f := testEngine(t, c)
+	records := make([]Record, 3)
+	for i, name := range []string{"one", "two", "three"} {
+		records[i] = reserveEngine(t, e, c.Identity, name, "small")
+		if _, err := e.Seal(c.Identity, name); err != nil {
+			t.Fatal(err)
+		}
+		if err := e.Deliver(c.Identity, name, "e30="); err != nil {
+			t.Fatal(err)
+		}
+	}
+	inventory, err := e.Inventory()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inventory.Used.VMs != 3 || inventory.Used.CPUs != 6 || inventory.Used.MemoryMiB != 12288 {
+		t.Fatalf("incorrect allocated budget: %+v", inventory.Used)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Millisecond)
+	defer cancel()
+	if _, err := e.Reserve(ctx, c.Identity, "four", "small"); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("fourth small guest admitted: %v", err)
+	}
+	f.mu.Lock()
+	first := f.vms[records[0].Request.VMID]
+	oldSlot := f.slots[records[0].Request.VMID]
+	f.mu.Unlock()
+	first.complete()
+	eventually(t, func() bool { record, err := e.Status(c.Identity, "one"); return err == nil && record.State == Terminal })
+	next := reserveEngine(t, e, c.Identity, "four", "small")
+	if next.Request.VMID == records[0].Request.VMID {
+		t.Fatal("spent VM reused")
+	}
+	f.mu.Lock()
+	newSlot := f.slots[next.Request.VMID]
+	f.mu.Unlock()
+	if newSlot != oldSlot {
+		t.Fatalf("cleaned TAP slot not reused: got%d want%d", newSlot, oldSlot)
+	}
+	if _, err := e.Seal(c.Identity, "four"); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.Deliver(c.Identity, "four", "e30="); err != nil {
+		t.Fatal(err)
+	}
+}
+func TestEngineTwoMediumDeniedButMediumPlusSmallAllowed(t *testing.T) {
+	c := engineConfig(t)
+	c.Budget = Budget{MaxVMs: 3, MaxCPUs: 6, MaxMemoryMiB: 12288}
+	c.Profiles[0].CPUs = 4
+	c.Profiles[0].MemoryMiB = 8192
+	c.Profiles[0].Warm = 0
+	small := c.Profiles[0]
+	small.ID = "small"
+	small.CPUs = 2
+	small.MemoryMiB = 4096
+	c.Profiles = append(c.Profiles, small)
+	e, _ := testEngine(t, c)
+	reserveEngine(t, e, c.Identity, "medium-one", "medium")
+	if _, err := e.Seal(c.Identity, "medium-one"); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.Deliver(c.Identity, "medium-one", "e30="); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Millisecond)
+	defer cancel()
+	if _, err := e.Reserve(ctx, c.Identity, "medium-two", "medium"); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("two medium guests admitted: %v", err)
+	}
+	reserveEngine(t, e, c.Identity, "small-one", "small")
+	if _, err := e.Seal(c.Identity, "small-one"); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.Deliver(c.Identity, "small-one", "e30="); err != nil {
+		t.Fatal(err)
+	}
+	inventory, err := e.Inventory()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inventory.Used.VMs != 2 || inventory.Used.CPUs != 6 || inventory.Used.MemoryMiB != 12288 {
+		t.Fatalf("mixed budget wrong: %+v", inventory.Used)
+	}
 }
