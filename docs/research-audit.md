@@ -116,3 +116,10 @@ passed locally, and the real controller boot-check reached READY twice with two
 independently booted KVM microvms, confirming QEMU exit and overlay deletion after
 each. See [validation](validation.md) for the exact scope and remaining real-job
 and production-network acceptance. This is not a completed GitHub job test.
+
+Follow-up acceptance verified the installed organization App and dedicated
+main-ref workflow restrictions, plus actual scale-set creation/lookup through
+the pinned client. Two further KVM boots under the installed unprivileged systemd
+sandbox passed after correcting preserved image-directory permissions. The
+non-mutating network plan also passed kernel validation. Real JIT/job execution
+and packet-level network isolation remain pending; see [validation](validation.md).

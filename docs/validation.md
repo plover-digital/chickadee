@@ -21,8 +21,27 @@ service starting; writing a regular resolver after libguestfs customization fixe
 that failure. Native lifecycle tests pass after the launcher change. No host
 TAP/firewall/NAT changes or installation were made during this acceptance.
 
-GitHub App installation, live scale-set/JIT behavior, real jobs, production
-network isolation, and deployment/restart acceptance remain unfinished.
+An organization App installation was then verified through its own JWT and
+installation token. A dedicated group was created and verified to allow only
+this repository's manual smoke workflow at the reviewed main ref. The actual
+pinned Go client successfully authenticated and created/looked up the org scale
+set without Kubernetes; no broader personal-token scopes were requested.
+
+A pilot installation under a dedicated unprivileged systemd account passed two
+more credential-free KVM boot/exit/deletion checks with the supplied sandbox and
+configured CPU/memory/task limits. This exposed and fixed an installer defect:
+`cp -a` could preserve a private image-directory mode, preventing the service
+account from reading the backing image. Installed directories now use 0755 and
+immutable image files retain 0444. This pilot used a separately reviewed local
+adaptation; it is not a clean Ubuntu installer/reboot acceptance result.
+
+The network `plan` command passed the kernel's nftables validation, and unchanged
+firewall, interface, and forwarding state was confirmed. That check establishes
+rule syntax, not packet isolation or existing-firewall compatibility. The pilot
+service remains stopped pending explicit approval for host networking.
+
+Fresh JIT delivery, real jobs, production network isolation, and full
+installation/restart/reboot acceptance remain unfinished.
 
 ## Checks available without deployment
 
