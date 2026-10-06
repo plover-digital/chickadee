@@ -1,0 +1,43 @@
+name: Fleet worker smoke
+on:
+  workflow_dispatch:
+    inputs:
+      runner_label:
+        description: Operator test queue
+        required: true
+        default: chickadee-fleet-smoke
+        type: choice
+        options:
+          - chickadee-fleet-smoke
+          - chickadee
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ${{ inputs.runner_label }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Verify guest tools and public egress
+        run: |
+          set -euo pipefail
+          test -d /home/runner/work
+          git --version
+          curl --fail --silent --show-error https://api.github.com/zen
+          docker version
+          docker run --rm hello-world
+      - name: Verify host and private network traffic is dropped
+        run: |
+          set -euo pipefail
+          gateway=$(ip -4 route show default | awk '{print $3; exit}')
+          test -n "$gateway"
+          for address in "$gateway" 10.0.0.1 192.168.0.1; do
+            result=0
+            curl --noproxy '*' --silent --output /dev/null --connect-timeout 2 --max-time 3 "http://$address:18443" || result=$?
+            test "$result" = 28
+          done
+      - name: Short build
+        run: |
+          printf 'int main(void) { return 0; }\n' > /tmp/chickadee-smoke.c
+          cc -Wall -Werror /tmp/chickadee-smoke.c -o /tmp/chickadee-smoke
+          /tmp/chickadee-smoke
