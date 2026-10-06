@@ -84,6 +84,7 @@ The private request uses GitHub numeric IDs, for example:
 {
   "installation_id": 123456,
   "user": {"id": 111},
+  "queues": ["chickadee", "chickadee-medium-ubuntu-2404"],
   "account": {"id": 111, "type": "User"},
   "repository": {"id": 222, "full_name": "EXAMPLE-USER/EXAMPLE-REPO"}
 }
@@ -93,8 +94,11 @@ Keep request metadata private. `scripts/admit-installation.py --config CONFIG
 --request REQUEST --output CANDIDATE --trusted-workflows` rechecks the GitHub
 installation, repository identity, permissions and selected-repository access.
 For personal repositories the request user must own the account. Organization
-groups restrict selected repositories and main-branch workflows. New scopes
-start with no warm guests and share the existing host limits. Review the beta
+groups restrict selected repositories and main-branch workflows. New scopes enable only `chickadee` by default. Pass repeated `--queue LABEL`
+options or request metadata `queues` for explicit additional queues. Existing
+queue grants are preserved by this admission helper; the managed reconciler
+applies the operator's exact approved list. New scopes start with no warm guests
+and one concurrent VM, sharing the existing host limits. Review the beta
 trust model before admitting workflows; the website cannot grant admission.
 
 Validate with `chickadee -config CANDIDATE -check`. On a controller with drain
@@ -103,3 +107,32 @@ assignments, retires credential-free guests and lets active jobs finish. Wait
 until the service exits successfully, install the reviewed configuration, then
 start it. SIGTERM remains an immediate shutdown. Back up the previous config
 and binary for rollback. Never send SIGUSR1 to an older controller.
+
+## Customer dashboard
+
+New activation requests include only `chickadee` by default: medium, Rocky 10.2.
+The optional size/OS queues are opt-in requests and are not usable until the
+operator reports them enabled. The dashboard distinguishes requested queues,
+enabled queues, applied state, and a pending pause/resume/disconnect request.
+Only active, enabled queues appear in its copyable first-job workflow selector.
+
+Customers can review job execution in their repository's GitHub Actions page.
+An active queue means GitHub can assign matching jobs; it is not a claim that
+an idle VM is available. This prototype does not expose live queue depth,
+running-job counts, billing, or an availability SLA. Profile CPU/RAM shown in
+the selector describe the configured resource classes, not current host usage.
+
+See [authentication.md](authentication.md) for the GitHub sign-in model and
+permission checks. Personal installations require their owner; managing an
+organization repository requires GitHub repository administration permission.
+
+The small dashboard usage graph shows up to seven UTC days of **completed,
+credentialed VM lifetime**, supplied by the operator's private status relay.
+Values include VM startup and cleanup and exclude currently running VMs and
+credential-free warm-pool VMs. They describe compute usage, not GitHub job
+execution time or billable minutes. Exact daily values are available below
+the graph in an accessible table; no history produces an empty-state message.
+Usage is visible only alongside that signed-in user's activation requests.
+
+See [managed beta](managed-beta.md) for the optional approval/status bridge,
+pause/disconnect behavior and usage measurement limits.

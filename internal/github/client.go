@@ -17,6 +17,11 @@ type Client struct {
 	SetID int
 }
 
+// Actions cache archives paths relative to GITHUB_WORKSPACE. Match the hosted
+// Linux workspace layout so caches outside the checkout (for example Bun in
+// HOME) restore to the same location after switching between runner providers.
+const runnerWorkFolder = "/home/runner/work"
+
 func New(ctx context.Context, c config.Config) (*Client, error) { return newClient(ctx, c, true) }
 
 // Existing never recreates a removed scale set during journal recovery.
@@ -65,7 +70,7 @@ func newClient(ctx context.Context, c config.Config, create bool) (*Client, erro
 	return &Client{API: api, SetID: set.ID}, nil
 }
 func (c *Client) JIT(ctx context.Context, name string) (string, error) {
-	j, e := c.API.GenerateJitRunnerConfig(ctx, &scaleset.RunnerScaleSetJitRunnerSetting{Name: name, WorkFolder: "_work"}, c.SetID)
+	j, e := c.API.GenerateJitRunnerConfig(ctx, &scaleset.RunnerScaleSetJitRunnerSetting{Name: name, WorkFolder: runnerWorkFolder}, c.SetID)
 	if e != nil || j == nil || j.EncodedJITConfig == "" {
 		return "", fmt.Errorf("JIT generation failed")
 	}

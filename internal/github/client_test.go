@@ -2,12 +2,28 @@ package github
 
 import (
 	"context"
+	"path/filepath"
 	"reflect"
 	"testing"
 	"time"
 
 	"github.com/actions/scaleset"
 )
+
+func TestHostedHomeCacheRestoresToRunnerHome(t *testing.T) {
+	// @actions/cache resolvePaths computes this relative archive member on a
+	// hosted runner, then tar extracts it relative to our GITHUB_WORKSPACE.
+	hostedWorkspace := "/home/runner/work/project/project"
+	bun := "/home/runner/.bun/bin/bun"
+	member, err := filepath.Rel(hostedWorkspace, bun)
+	if err != nil {
+		t.Fatal(err)
+	}
+	guestWorkspace := filepath.Join(runnerWorkFolder, "project", "project")
+	if got := filepath.Clean(filepath.Join(guestWorkspace, member)); got != bun {
+		t.Fatalf("hosted HOME cache restores to %q instead of %q", got, bun)
+	}
+}
 
 type delayedSession struct {
 	message   *scaleset.RunnerScaleSetMessage

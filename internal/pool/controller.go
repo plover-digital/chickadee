@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/plover-digital/chickadee/internal/config"
 	"github.com/plover-digital/chickadee/internal/host"
+	"github.com/plover-digital/chickadee/internal/usage"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -26,11 +27,12 @@ type Event struct {
 	Err  error
 }
 type entry struct {
-	profile string
-	state   VM
-	slot    int
-	assign  chan string
-	retire  chan struct{}
+	profile    string
+	reservedAt time.Time
+	state      VM
+	slot       int
+	assign     chan string
+	retire     chan struct{}
 }
 
 type machine interface {
@@ -253,6 +255,12 @@ func runProfilesWithDrain(ctx context.Context, c config.Config, backends map[str
 					slog.Info("VM ready", "vm", ev.ID, "profile", v.profile)
 				}
 			case "done":
+				if !v.reservedAt.IsZero() {
+					p := configs[v.profile]
+					if err := usage.Append(c.StateDir, usage.Record{ID: v.state.ID, Scope: p.GitHubURL, Label: p.ScaleSet, Reserved: v.reservedAt, Completed: time.Now().UTC()}); err != nil {
+						slog.Warn("usage recording failed")
+					}
+				}
 				v.state.Destroy()
 				delete(entries, ev.ID)
 				// Registration removal is retried by the bounded periodic reconciliation.
@@ -299,6 +307,9 @@ func runProfilesWithDrain(ctx context.Context, c config.Config, backends map[str
 					close(v.retire)
 				}
 			}
+			if e := writeStatus(c, configs, names, entries, requested, true); e != nil {
+				return e
+			}
 			if len(entries) == 0 {
 				return nil
 			}
@@ -339,15 +350,28 @@ func runProfilesWithDrain(ctx context.Context, c config.Config, backends map[str
 				if e := host.Save(c.StateDir, host.Record{ID: v.state.ID, Name: runnerName, GitHubURL: p.GitHubURL, RunnerGroupID: p.RunnerGroupID, InstallationID: p.InstallationID, NotBefore: time.Now().Add(10 * time.Minute)}); e != nil {
 					return e
 				}
+				v.reservedAt = time.Now().UTC()
 				v.assign <- runnerName
 				active++
 				slog.Info("VM reserved for one job", "vm", v.state.ID, "profile", p.ScaleSet)
 			}
 		}
+		scopeCounts := func(p config.Config) (total, spent int) {
+			for _, v := range entries {
+				if config.ScopeKey(configs[v.profile].GitHubURL, "") == config.ScopeKey(p.GitHubURL, "") {
+					total++
+					if v.state.State == Spent {
+						spent++
+					}
+				}
+			}
+			return
+		}
 		// Keep waiting order stable across new messages and tick events.
 		needs := func(name string) bool {
 			total, active, idle := counts(name)
-			return total < configs[name].Max && active+idle < requested[name]
+			_, scopeSpent := scopeCounts(configs[name])
+			return scopeSpent < configs[name].ScopeLimit() && total < configs[name].Max && active+idle < requested[name]
 		}
 		kept := waiting[:0]
 		queued := map[string]bool{}
@@ -364,6 +388,10 @@ func runProfilesWithDrain(ctx context.Context, c config.Config, backends map[str
 			}
 		}
 		fits := func(p config.Config) bool {
+			scopeTotal, _ := scopeCounts(p)
+			if scopeTotal >= p.ScopeLimit() {
+				return false
+			}
 			cpu, ram := p.CPUs, p.MemoryMiB
 			for _, v := range entries {
 				r := configs[v.profile]
@@ -454,6 +482,9 @@ func runProfilesWithDrain(ctx context.Context, c config.Config, backends map[str
 				}
 			}
 		}
+		if e := writeStatus(c, configs, names, entries, requested, false); e != nil {
+			return e
+		}
 	}
 }
 func worker(ctx context.Context, c config.Config, b Backend, v *entry, events chan<- Event, start starter) {
@@ -528,6 +559,18 @@ func RecoveryConfig(c config.Config, r host.Record) (config.Config, error) {
 			copy := p
 			match = &copy
 			break
+		}
+	}
+	if match == nil {
+		for _, scope := range c.Scopes {
+			if config.ScopeKey(scope.GitHubURL, "") == config.ScopeKey(r.GitHubURL, "") {
+				copy := c.ProfileConfigs()[0]
+				copy.GitHubURL = scope.GitHubURL
+				copy.InstallationID = scope.InstallationID
+				copy.RunnerGroupID = scope.RunnerGroupID
+				match = &copy
+				break
+			}
 		}
 	}
 	if match != nil {

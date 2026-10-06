@@ -35,6 +35,8 @@ type Limits struct {
 	MemoryMiB int `json:"max_memory_mib"`
 }
 type Scope struct {
+	Disabled       bool               `json:"disabled,omitempty"`
+	Max            int                `json:"max_vms,omitempty"`
 	GitHubURL      string             `json:"github_url"`
 	InstallationID int64              `json:"app_installation_id"`
 	RunnerGroupID  int                `json:"runner_group_id"`
@@ -43,6 +45,7 @@ type Scope struct {
 type Config struct {
 	Scopes    map[string]Scope `json:"scopes,omitempty"`
 	scopePool bool
+	scopeMax  int
 
 	Machine         string               `json:"machine,omitempty"`
 	Images          map[string]Image     `json:"images,omitempty"`
@@ -94,6 +97,14 @@ func (c Config) Key() string {
 	}
 	return c.ScaleSet
 }
+
+// ScopeLimit bounds combined VM allocations across a scope's queues.
+func (c Config) ScopeLimit() int {
+	if c.scopeMax > 0 {
+		return c.scopeMax
+	}
+	return 32
+}
 func ScopeKey(scope, label string) string {
 	return strings.ToLower(strings.TrimRight(scope, "/")) + "|" + label
 }
@@ -107,6 +118,9 @@ func (c Config) ProfileConfigs() []Config {
 		var out []Config
 		for _, name := range names {
 			scope := c.Scopes[name]
+			if scope.Disabled {
+				continue
+			}
 			bound := c
 			bound.Scopes = nil
 			bound.GitHubURL = scope.GitHubURL
@@ -114,6 +128,7 @@ func (c Config) ProfileConfigs() []Config {
 			bound.RunnerGroupID = scope.RunnerGroupID
 			bound.Profiles = scope.Profiles
 			bound.scopePool = true
+			bound.scopeMax = scope.Max
 			out = append(out, bound.ProfileConfigs()...)
 		}
 		return out
@@ -290,6 +305,9 @@ func (c Config) validateScopes() error {
 	count, cpu, ram := 0, 0, 0
 	queues := 0
 	for name, scope := range c.Scopes {
+		if scope.Max < 0 || scope.Max > c.Limits.Max {
+			return fmt.Errorf("scope concurrency exceeds host limit")
+		}
 		if !Name.MatchString(name) || len(scope.Profiles) == 0 {
 			return fmt.Errorf("scope needs a valid name and profiles")
 		}
@@ -307,12 +325,22 @@ func (c Config) validateScopes() error {
 		if e := bound.Validate(); e != nil {
 			return fmt.Errorf("scope %s: %w", name, e)
 		}
+		scopeWarm := 0
 		for _, p := range bound.ProfileConfigs() {
-			count += p.Warm
-			cpu += p.Warm * p.CPUs
-			ram += p.Warm * p.MemoryMiB
+			scopeWarm += p.Warm
+			if !scope.Disabled {
+				count += p.Warm
+				cpu += p.Warm * p.CPUs
+				ram += p.Warm * p.MemoryMiB
+			}
 			queues++
 		}
+		if scope.Max > 0 && scopeWarm > scope.Max {
+			return fmt.Errorf("scope warm pool exceeds its concurrency limit")
+		}
+	}
+	if len(c.ProfileConfigs()) == 0 {
+		return fmt.Errorf("at least one operator scope must remain enabled")
 	}
 	if queues > 64 || count > c.Limits.Max || cpu > c.Limits.CPUs || ram > c.Limits.MemoryMiB {
 		return fmt.Errorf("combined scope queue/warm budgets exceeded")

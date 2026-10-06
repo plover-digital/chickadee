@@ -9,24 +9,35 @@ import argparse, copy, importlib.util, json, os, pathlib, re, urllib.request
 spec=importlib.util.spec_from_file_location('setup_app',pathlib.Path(__file__).with_name('setup-app.py'))
 setup=importlib.util.module_from_spec(spec);spec.loader.exec_module(setup)
 
+def requested_profiles(c, request):
+    template=c.get('profiles') or c['scopes']['primary']['profiles']
+    queues=request.get('queues',['chickadee'])
+    if not isinstance(queues,list) or len(queues)>len(template) or any(not isinstance(q,str) or q not in template for q in queues):
+        raise ValueError('requested queue is not in the host profile catalog')
+    selected=['chickadee']+list(dict.fromkeys(q for q in queues if q!='chickadee'))
+    profiles={q:copy.deepcopy(template[q]) for q in selected}
+    for profile in profiles.values():profile['warm_pool']=0
+    return profiles
+
 def proposed(c, request, installation, repo, group_id):
+    profiles=requested_profiles(c,request)
+    maximum=request.get('max_vms',1)
+    if type(maximum)!=int or maximum<1 or maximum>c['limits']['max_vms']:raise ValueError('invalid scope concurrency limit')
     if installation['account']['id']!=request['account']['id'] or installation['account']['type']!=request['account']['type']:
         raise ValueError('installation account mismatch')
     if repo['id']!=request['repository']['id'] or repo['full_name']!=request['repository']['full_name']:
         raise ValueError('repository identity mismatch')
     result=copy.deepcopy(c)
     if not result.get('scopes'):
-        profiles=result.pop('profiles')
-        result['scopes']={'primary':{'github_url':result.pop('github_url'),'app_installation_id':result.pop('app_installation_id'),'runner_group_id':result.pop('runner_group_id'),'profiles':profiles}}
+        primary_profiles=result.pop('profiles')
+        result['scopes']={'primary':{'github_url':result.pop('github_url'),'app_installation_id':result.pop('app_installation_id'),'runner_group_id':result.pop('runner_group_id'),'profiles':primary_profiles}}
     url='https://github.com/'+(installation['account']['login'] if installation['account']['type']=='Organization' else repo['full_name'])
     for scope in result['scopes'].values():
         if scope['github_url'].lower().rstrip('/')==url.lower():
             if scope['app_installation_id']!=installation['id'] or scope['runner_group_id']!=group_id:raise ValueError('existing scope identity changed')
+            for label,profile in profiles.items():scope['profiles'].setdefault(label,profile)
             return result
-    template=result['scopes']['primary']['profiles']
-    profiles=copy.deepcopy(template)
-    for p in profiles.values():p['warm_pool']=0
-    result['scopes'][('org-' if installation['account']['type']=='Organization' else 'repo-')+str(installation['account']['id'] if installation['account']['type']=='Organization' else repo['id'])]={'github_url':url,'app_installation_id':installation['id'],'runner_group_id':group_id,'profiles':profiles}
+    result['scopes'][('org-' if installation['account']['type']=='Organization' else 'repo-')+str(installation['account']['id'] if installation['account']['type']=='Organization' else repo['id'])]={'github_url':url,'app_installation_id':installation['id'],'runner_group_id':group_id,'profiles':profiles,'max_vms':request.get('max_vms',1)}
     return result
 
 def main():
@@ -34,11 +45,14 @@ def main():
     p.add_argument('--config',required=True);p.add_argument('--request',required=True);p.add_argument('--output',required=True)
     p.add_argument('--trusted-workflows',action='store_true',help='operator has reviewed beta trust and workflow policy')
     p.add_argument('--workflow',default='.github/workflows/chickadee.yml',help='main-branch workflow allowed for org groups')
+    p.add_argument('--queue',action='append',help='explicit additional queue; repeat as needed (default: chickadee only)')
     args=p.parse_args()
     if not args.trusted_workflows:raise ValueError('operator admission and trusted-workflow review required')
     if not re.fullmatch(r'\.github/workflows/[A-Za-z0-9_-]+\.ya?ml',args.workflow):raise ValueError('use one main-branch workflow file')
     c=json.load(open(args.config));request=json.load(open(args.request))
+    if args.queue is not None:request['queues']=args.queue
     if not c.get('profiles') and not c.get('scopes'):raise ValueError('first migrate flat config to the image/profile catalog')
+    requested_profiles(c,request) # Reject unknown queues before any GitHub mutation.
     iid=request['installation_id'];rid=request['repository']['id']
     if type(iid)!=int or iid<=0 or type(rid)!=int or rid<=0:raise ValueError('invalid installation/repository ID')
     jwt=setup.app_jwt(c['app_client_id'],pathlib.Path(c['app_key_file']))

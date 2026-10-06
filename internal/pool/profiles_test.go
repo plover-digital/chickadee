@@ -322,3 +322,42 @@ func TestSameLabelScopesRouteSeparatelyAndShareCapacity(t *testing.T) {
 		t.Fatal(e)
 	}
 }
+
+func TestScopeQuotaDoesNotBlockAnotherCustomer(t *testing.T) {
+	c, _, boots, running, start := profileFixture(t)
+	small := c.Profiles["chickadee-small-ubuntu-2404"]
+	c.Profiles = nil
+	c.Scopes = map[string]config.Scope{
+		"one": {GitHubURL: "https://github.com/one/repo", Max: 1, Profiles: map[string]config.Profile{"chickadee": small, "chickadee-small-ubuntu-2404": small}},
+		"two": {GitHubURL: "https://github.com/two/repo", Max: 1, Profiles: map[string]config.Profile{"chickadee": small}},
+	}
+	backends := map[string]Backend{}
+	jit := make(chan string, 20)
+	for _, p := range c.ProfileConfigs() {
+		backends[p.Key()] = &profileBackend{profile: p.ScaleSet, jit: jit}
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	demand := make(chan Demand, 10)
+	done := make(chan error, 1)
+	go func() { done <- runProfiles(ctx, c, backends, demand, start) }()
+	demand <- Demand{config.ScopeKey("https://github.com/one/repo", "chickadee"), 1}
+	first := awaitBoot(t, boots)
+	awaitRunning(t, running)
+	demand <- Demand{config.ScopeKey("https://github.com/one/repo", "chickadee-small-ubuntu-2404"), 1}
+	demand <- Demand{config.ScopeKey("https://github.com/two/repo", "chickadee"), 1}
+	second := awaitBoot(t, boots)
+	awaitRunning(t, running)
+	if second.c.GitHubURL == first.c.GitHubURL {
+		t.Fatal("customer exceeded quota")
+	}
+	select {
+	case <-boots:
+		t.Fatal("extra guest bypassed scope quota")
+	case <-time.After(1100 * time.Millisecond):
+	}
+	cancel()
+	if e := <-done; !errors.Is(e, context.Canceled) {
+		t.Fatal(e)
+	}
+}

@@ -4,6 +4,7 @@ m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 class Admission(unittest.TestCase):
  def setUp(self):
   self.config={'github_url':'https://github.com/EXAMPLE-ORG','app_installation_id':1,'runner_group_id':2,'profiles':{'chickadee':{'image':'rocky-102','resources':'medium','warm_pool':1,'max_vms':1}},'limits':{'max_vms':2,'max_vcpus':6,'max_memory_mib':12288}}
+  self.config['profiles']['chickadee-medium-ubuntu-2404']={'image':'ubuntu-2404','resources':'medium','warm_pool':0,'max_vms':1}
   self.repo={'id':7,'full_name':'example-user/example-repo'}
   self.install={'id':3,'account':{'id':4,'login':'example-user','type':'User'}}
   self.request={'account':self.install['account'],'repository':self.repo}
@@ -21,3 +22,15 @@ class Admission(unittest.TestCase):
   c=m.proposed(self.config,self.request,self.install,self.repo,9)
   self.assertEqual(c['scopes']['org-4']['github_url'],'https://github.com/example-user')
   self.assertEqual(c['scopes']['org-4']['runner_group_id'],9)
+
+ def test_default_only_and_explicit_additional_queue(self):
+  c=m.proposed(self.config,self.request,self.install,self.repo,1)
+  self.assertEqual(list(c['scopes']['repo-7']['profiles']),['chickadee'])
+  self.request['queues']=['chickadee-medium-ubuntu-2404']
+  c=m.proposed(c,self.request,self.install,self.repo,1)
+  self.assertEqual(set(c['scopes']['repo-7']['profiles']),{'chickadee','chickadee-medium-ubuntu-2404'})
+  self.request.pop('queues')
+  self.assertEqual(m.proposed(c,self.request,self.install,self.repo,1),c)
+ def test_unknown_queue_rejected(self):
+  self.request['queues']=['chickadee-large-ubuntu-2404']
+  with self.assertRaises(ValueError):m.proposed(self.config,self.request,self.install,self.repo,1)

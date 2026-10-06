@@ -50,9 +50,10 @@ type Installation struct {
 	Permissions map[string]string `json:"permissions"`
 }
 type Repository struct {
-	ID      int64  `json:"id"`
-	Name    string `json:"full_name"`
-	Private bool   `json:"private"`
+	ID          int64           `json:"id"`
+	Name        string          `json:"full_name"`
+	Private     bool            `json:"private"`
+	Permissions map[string]bool `json:"permissions"`
 }
 type Choice struct {
 	Installation Installation
@@ -66,7 +67,13 @@ type Enrollment struct {
 	Repository     Repository `json:"repository"`
 	Scope          string     `json:"scope"`
 	Status         string     `json:"status"`
+	Queues         []string   `json:"queues,omitempty"`
+	EnabledQueues  []string   `json:"enabled_queues,omitempty"`
+	DesiredState   string     `json:"desired_state,omitempty"`
+	Message        string     `json:"message,omitempty"`
+	Updated        time.Time  `json:"updated_at,omitempty"`
 	Created        time.Time  `json:"created_at"`
+	Usage          []UsageDay `json:"usage,omitempty"`
 }
 type oauthState struct {
 	Cookie, Verifier string
@@ -93,6 +100,7 @@ type page struct {
 	User                 *User
 	Choices              []Choice
 	Enrollments          []Enrollment
+	ExtraQueues          []string
 	LoginReady           bool
 }
 
@@ -138,6 +146,7 @@ func New(c Config) (*Server, error) {
 	s.mux.HandleFunc("GET /dashboard", s.dashboard)
 	s.mux.HandleFunc("POST /enroll", s.enroll)
 	s.mux.HandleFunc("POST /logout", s.logout)
+	s.mux.HandleFunc("POST /manage", s.manage)
 	s.mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		_, _ = w.Write([]byte("ok\n"))
@@ -331,7 +340,7 @@ func (s *Server) choices(ctx context.Context, v session) ([]Choice, error) {
 	}
 	var out []Choice
 	for _, i := range list.Installations {
-		if i.AppID != s.cfg.AppID || i.ID <= 0 || i.Account.ID <= 0 || (i.Account.Type != "User" && i.Account.Type != "Organization") {
+		if i.AppID != s.cfg.AppID || i.ID <= 0 || i.Account.ID <= 0 || (i.Account.Type != "User" && i.Account.Type != "Organization") || (i.Account.Type == "User" && i.Account.ID != v.User.ID) {
 			continue
 		}
 		var repos struct {
@@ -345,7 +354,7 @@ func (s *Server) choices(ctx context.Context, v session) ([]Choice, error) {
 			return nil, errors.New("repository list exceeds beta limit")
 		}
 		for _, repo := range repos.Repositories {
-			if repo.ID > 0 {
+			if repo.ID > 0 && repo.Permissions["admin"] {
 				out = append(out, Choice{i, repo})
 			}
 		}
@@ -359,7 +368,7 @@ func (s *Server) dashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	choices, e := s.choices(r.Context(), v)
-	p := page{Title: "Your repositories", User: &v.User, CSRF: v.CSRF, Choices: choices}
+	p := page{Title: "Your repositories", User: &v.User, CSRF: v.CSRF, Choices: choices, ExtraQueues: extraQueues}
 	if e != nil {
 		p.Message = "GitHub access could not be verified. Sign in again, or check your App installation permissions."
 	}
@@ -385,9 +394,50 @@ func (s *Server) postSession(w http.ResponseWriter, r *http.Request) (string, se
 	}
 	return sid, v, true
 }
+
+var extraQueues = []string{"chickadee-small-rocky-102", "chickadee-medium-rocky-102", "chickadee-small-ubuntu-2404", "chickadee-medium-ubuntu-2404"}
+
+func requestedQueues(values []string) ([]string, error) {
+	if len(values) > 5 {
+		return nil, errors.New("too many queues")
+	}
+	queues := []string{"chickadee"}
+	for _, q := range values {
+		if q == "chickadee" {
+			continue
+		}
+		valid := false
+		for _, allowed := range extraQueues {
+			if q == allowed {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			return nil, errors.New("unknown queue")
+		}
+		duplicate := false
+		for _, existing := range queues {
+			if existing == q {
+				duplicate = true
+				break
+			}
+		}
+		if !duplicate {
+			queues = append(queues, q)
+		}
+	}
+	return queues, nil
+}
+
 func (s *Server) enroll(w http.ResponseWriter, r *http.Request) {
 	_, v, ok := s.postSession(w, r)
 	if !ok {
+		return
+	}
+	queues, err := requestedQueues(r.PostForm["queue"])
+	if err != nil {
+		http.Error(w, "Invalid queue selection", 400)
 		return
 	}
 	iid, e1 := strconv.ParseInt(r.FormValue("installation_id"), 10, 64)
@@ -420,8 +470,31 @@ func (s *Server) enroll(w http.ResponseWriter, r *http.Request) {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	for _, entry := range s.enrollments {
+	for i, entry := range s.enrollments {
 		if entry.InstallationID == iid && entry.Repository.ID == rid && entry.User.ID == v.User.ID {
+			merged := append([]string(nil), entry.Queues...)
+			if len(merged) == 0 {
+				merged = []string{"chickadee"}
+			}
+			for _, queue := range queues {
+				found := false
+				for _, old := range merged {
+					if old == queue {
+						found = true
+						break
+					}
+				}
+				if !found {
+					merged = append(merged, queue)
+				}
+			}
+			entries := append([]Enrollment(nil), s.enrollments...)
+			entries[i].Queues = merged
+			if e = s.saveLocked(entries); e != nil {
+				http.Error(w, "Request could not be saved", 500)
+				return
+			}
+			s.enrollments = entries
 			http.Redirect(w, r, "/dashboard", 303)
 			return
 		}
@@ -434,7 +507,7 @@ func (s *Server) enroll(w http.ResponseWriter, r *http.Request) {
 	if choice.Installation.Account.Type == "Organization" {
 		scope = "organization"
 	}
-	entries := append(append([]Enrollment(nil), s.enrollments...), Enrollment{random(), v.User, iid, choice.Installation.Account, choice.Repository, scope, "pending", time.Now().UTC()})
+	entries := append(append([]Enrollment(nil), s.enrollments...), Enrollment{ID: random(), User: v.User, InstallationID: iid, Account: choice.Installation.Account, Repository: choice.Repository, Scope: scope, Status: "pending", Queues: queues, DesiredState: "active", Created: time.Now().UTC()})
 	if e = s.saveLocked(entries); e != nil {
 		http.Error(w, "Request could not be saved", 500)
 		return

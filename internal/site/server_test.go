@@ -98,7 +98,7 @@ func TestEnrollmentVerifiesRepositoryAndNeverPersistsToken(t *testing.T) {
 			t.Fatal("missing auth")
 		}
 		if strings.HasPrefix(r.URL.Path, "/user/installations/") {
-			return response(`{"total_count":1,"repositories":[{"id":99,"full_name":"tester/repo","private":true}]}`), nil
+			return response(`{"total_count":1,"repositories":[{"id":99,"full_name":"tester/repo","private":true,"permissions":{"admin":true}}]}`), nil
 		}
 		return response(`{"total_count":1,"installations":[{"id":8,"app_id":42,"account":{"id":7,"login":"tester","type":"User"},"permissions":{"administration":"write"}}]}`), nil
 	})
@@ -157,5 +157,19 @@ func TestPageHeadersAndInstallTarget(t *testing.T) {
 	s.ServeHTTP(rec, httptest.NewRequest("GET", "/install", nil))
 	if rec.Header().Get("Location") != "https://github.com/apps/chickadee-run/installations/new" {
 		t.Fatal("wrong App")
+	}
+}
+
+func TestQueueRequestsDefaultAndRejectUnknown(t *testing.T) {
+	q, e := requestedQueues(nil)
+	if e != nil || len(q) != 1 || q[0] != "chickadee" {
+		t.Fatal("default enables extra queues")
+	}
+	q, e = requestedQueues([]string{"chickadee-medium-ubuntu-2404", "chickadee-medium-ubuntu-2404"})
+	if e != nil || len(q) != 2 {
+		t.Fatal("opt-in queues not deduplicated")
+	}
+	if _, e = requestedQueues([]string{"chickadee-large-ubuntu-2404"}); e == nil {
+		t.Fatal("unknown queue accepted")
 	}
 }

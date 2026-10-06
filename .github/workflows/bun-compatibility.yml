@@ -27,7 +27,7 @@ jobs:
         run: |
           set -eu
           printf 'HOME=%s uid=%s\n' "$HOME" "$(id -u)"
-          command -v tar unzip zstd
+          for tool in tar unzip zstd; do command -v "$tool"; done
           test ! -e "$HOME/.bun/bin/bun"
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
@@ -44,6 +44,8 @@ jobs:
           ls -ld "$HOME" "$HOME/.bun" "$HOME/.bun/bin" || true
           ls -l "$HOME/.bun/bin/bun" || true
           readlink "$HOME/.bun/bin/bun" || true
+          # Old workdir layouts restored HOME caches to this wrong location.
+          ls -l /opt/actions-runner/.bun/bin/bun || true
       - name: Verify uncached installation on failure
         if: failure()
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2

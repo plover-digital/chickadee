@@ -140,3 +140,41 @@ func TestSeparateGitHubScopesWithSameLabel(t *testing.T) {
 		t.Fatal("warm budget exceeded across scopes")
 	}
 }
+
+func TestScopeConcurrencyIncludesAllWarmQueues(t *testing.T) {
+	c := scopedCatalog(t)
+	s := c.Scopes["primary"]
+	s.Max = 1
+	p := s.Profiles["chickadee-small-ubuntu-2404"]
+	p.Warm = 1
+	s.Profiles["chickadee-small-ubuntu-2404"] = p
+	c.Scopes["primary"] = s
+	if c.Validate() == nil {
+		t.Fatal("combined scope warms exceeded scope limit")
+	}
+	s.Max = 3
+	c.Scopes["primary"] = s
+	if c.Validate() == nil {
+		t.Fatal("scope exceeded host limit")
+	}
+}
+
+func TestDisabledScopeKeepsValidatedOwnershipButDoesNotPoll(t *testing.T) {
+	c := scopedCatalog(t)
+	s := c.Scopes["tester"]
+	s.Disabled = true
+	c.Scopes["tester"] = s
+	if e := c.Validate(); e != nil {
+		t.Fatal(e)
+	}
+	for _, p := range c.ProfileConfigs() {
+		if p.GitHubURL == s.GitHubURL {
+			t.Fatal("disabled scope is still polling")
+		}
+	}
+	s.InstallationID = 0
+	c.Scopes["tester"] = s
+	if c.Validate() == nil {
+		t.Fatal("disabled ownership not validated")
+	}
+}

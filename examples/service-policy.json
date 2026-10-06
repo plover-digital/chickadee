@@ -1,0 +1,10 @@
+{
+  "approved_users": {
+    "123456789": {
+      "queues": ["chickadee"],
+      "max_vms": 1
+    }
+  },
+  "managed_requests": [],
+  "workflow": ".github/workflows/ci.yaml"
+}

@@ -46,6 +46,14 @@ func bootstrap() error {
 	if e = raw(s); e != nil {
 		return e
 	}
+	environment, e := runnerEnvironment()
+	if e != nil {
+		return e
+	}
+	credential, e := runnerCredential()
+	if e != nil {
+		return e
+	}
 	r := protocol.NewReader(s)
 	if e = protocol.Write(s, protocol.Frame{V: 1, Type: "READY"}); e != nil {
 		return e
@@ -59,8 +67,8 @@ func bootstrap() error {
 	}
 	cmd := exec.Command("/opt/actions-runner/bin/Runner.Listener", "run", "--jitconfig", f.JIT)
 	cmd.Dir = "/opt/actions-runner"
-	cmd.Env = []string{"HOME=/home/runner", "USER=runner", "PATH=/usr/local/bin:/usr/bin:/bin", "LANG=C.UTF-8"}
-	cmd.SysProcAttr = &syscall.SysProcAttr{Credential: &syscall.Credential{Uid: 1000, Gid: 1000, NoSetGroups: false}}
+	cmd.Env = environment
+	cmd.SysProcAttr = &syscall.SysProcAttr{Credential: credential}
 	cmd.Stdout = io.Discard
 	cmd.Stderr = io.Discard
 	code := 0

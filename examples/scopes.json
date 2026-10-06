@@ -83,32 +83,9 @@
           "resources": "medium",
           "warm_pool": 0,
           "max_vms": 1
-        },
-        "chickadee-small-ubuntu-2404": {
-          "image": "ubuntu-2404",
-          "resources": "small",
-          "warm_pool": 0,
-          "max_vms": 2
-        },
-        "chickadee-medium-ubuntu-2404": {
-          "image": "ubuntu-2404",
-          "resources": "medium",
-          "warm_pool": 0,
-          "max_vms": 1
-        },
-        "chickadee-small-rocky-102": {
-          "image": "rocky-102",
-          "resources": "small",
-          "warm_pool": 0,
-          "max_vms": 2
-        },
-        "chickadee-medium-rocky-102": {
-          "image": "rocky-102",
-          "resources": "medium",
-          "warm_pool": 0,
-          "max_vms": 1
         }
-      }
+      },
+      "max_vms": 1
     }
   }
 }
