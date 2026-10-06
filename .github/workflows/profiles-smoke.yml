@@ -48,6 +48,9 @@ jobs:
         run: |
           set -euo pipefail
           . /etc/os-release
+          actual_mib=$(awk '/MemTotal:/ { print int($2/1024) }' /proc/meminfo)
+          printf 'observed: os=%s version=%s cpus=%s all_cpus=%s memory_mib=%s uid=%s\n' "$ID" "$VERSION_ID" "$(nproc)" "$(nproc --all)" "$actual_mib" "$(id -u)"
+          if [ "$ID" = rocky ]; then /usr/sbin/getenforce; fi
           test "$ID" = "$EXPECT_OS"
           test "$VERSION_ID" = "$EXPECT_VERSION"
           test "$(nproc)" = "$EXPECT_CPUS"
