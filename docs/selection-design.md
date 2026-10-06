@@ -36,13 +36,17 @@ is required for the first selectable-profile implementation.
 ## OS versions and workflow names
 
 Use `chickadee-{size}-{os}-{version}`. OS version is part of the OS selector,
-with dots represented as hyphens: `ubuntu-24-04` and `rocky-9-8`. The initial
+with dots removed: `ubuntu-2404` and `rocky-98`. The initial
 catalog has small (2 vCPU / 4 GiB), medium (4 / 8) and large (8 / 16) for each
 OS: six selectable profiles. Operators enable only the profiles that fit their
 host; an enabled profile may have a zero warm target and boot on demand.
 
-Examples: `chickadee-small-ubuntu-24-04`, `chickadee-medium-rocky-9-8` and
-`chickadee-large-ubuntu-24-04`. Do not expose an unversioned or `latest` alias
+Examples: `chickadee-small-ubuntu-2404`, `chickadee-medium-rocky-98` and
+`chickadee-large-ubuntu-2404`. Rocky 10.2 would use
+`chickadee-medium-rocky-102` when that release is supported. Store the full
+OS version separately in image metadata (`24.04`, `9.8`, `10.2`); resolve
+compact labels through the approved catalog rather than guessing where a dot
+belongs. Reject duplicate selectors for different releases. Do not expose an unversioned or `latest` alias
 initially, and do not change the size definitions silently.
 
 OS release and image revision are separate. Each release label points to an
@@ -75,8 +79,8 @@ All image paths below are examples, not artifacts shipped in this repository.
 ```json
 {
   "images": {
-    "ubuntu-24-04": {"path": "/var/lib/chickadee-images/ubuntu-24-04/20261006"},
-    "rocky-9-8": {"path": "/var/lib/chickadee-images/rocky-9-8/validated-version"}
+    "ubuntu-2404": {"path": "/var/lib/chickadee-images/ubuntu-2404/20261006"},
+    "rocky-98": {"path": "/var/lib/chickadee-images/rocky-98/validated-version"}
   },
   "resource_classes": {
     "small": {"cpus": 2, "memory_mib": 4096},
@@ -84,14 +88,14 @@ All image paths below are examples, not artifacts shipped in this repository.
     "large": {"cpus": 8, "memory_mib": 16384}
   },
   "profiles": {
-    "chickadee-small-ubuntu-24-04": {
-      "image": "ubuntu-24-04", "resources": "small", "warm_pool": 1, "max_vms": 2
+    "chickadee-small-ubuntu-2404": {
+      "image": "ubuntu-2404", "resources": "small", "warm_pool": 1, "max_vms": 2
     },
-    "chickadee-medium-rocky-9-8": {
-      "image": "rocky-9-8", "resources": "medium", "warm_pool": 0, "max_vms": 2
+    "chickadee-medium-rocky-98": {
+      "image": "rocky-98", "resources": "medium", "warm_pool": 0, "max_vms": 2
     },
-    "chickadee-large-ubuntu-24-04": {
-      "image": "ubuntu-24-04", "resources": "large", "warm_pool": 0, "max_vms": 1
+    "chickadee-large-ubuntu-2404": {
+      "image": "ubuntu-2404", "resources": "large", "warm_pool": 0, "max_vms": 1
     }
   },
   "limits": {"max_vms": 4, "max_vcpus": 16, "max_memory_mib": 32768}
@@ -101,7 +105,7 @@ All image paths below are examples, not artifacts shipped in this repository.
 Workflow selection remains one line:
 
 ```yaml
-runs-on: chickadee-medium-rocky-9-8
+runs-on: chickadee-medium-rocky-98
 ```
 
 A job targeting that label may run on any matching ephemeral runner in its scale

@@ -38,7 +38,7 @@ architecture, not by a magical GitHub YAML feature.
 
 For Chickadee's next implementation, use **operator-approved named profiles**.
 A single label maps to one known image/resource/policy combination, for example
-`chickadee-medium-ubuntu-24-04`. Do not start with a parser that accepts arbitrary
+`chickadee-medium-ubuntu-2404`. Do not start with a parser that accepts arbitrary
 image URLs, CPU allocations, shell hooks or network changes from workflow labels.
 
 The pinned [official scaleset client](https://github.com/actions/scaleset/blob/v0.4.0/README.md)

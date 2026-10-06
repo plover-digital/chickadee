@@ -48,5 +48,5 @@ Multiple profiles/images are the next design phase and are not implemented yet.
 
 Next image/profile targets: Ubuntu 24.04 and Rocky Linux 9.8, with labels
 `chickadee-{size}-{os}-{version}` (for example,
-`chickadee-small-ubuntu-24-04`). Rocky image building and multi-profile runtime
+`chickadee-small-ubuntu-2404`). Rocky image building and multi-profile runtime
 support remain unimplemented; see [selection design](selection-design.md).
