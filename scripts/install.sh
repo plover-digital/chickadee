@@ -28,10 +28,12 @@ import json
 c=json.load(open('/etc/chickadee/config.json'))
 assert c['state_dir']=='/var/lib/chickadee' and c['image_dir']=='/var/lib/chickadee-image'
 # Includes allowance for QEMU overhead and Go controller; cgroup bounds the whole service.
+# Host tasks include vCPU threads, disk I/O pools and emulator helper threads.
+# Guest processes do not count toward this host task budget.
 mem=c['max_vms']*(c['memory_mib']+512)+512
 cpu=c['max_vms']*c['cpus']*100
 with open('/etc/systemd/system/chickadee.service.d/resources.conf','w') as f:
- f.write(f'[Service]\nMemoryMax={mem}M\nCPUQuota={cpu}%\nTasksMax={64+c["max_vms"]*(c["cpus"]+16)}\n')
+ f.write(f'[Service]\nMemoryMax={mem}M\nCPUQuota={cpu}%\nTasksMax={64+c["max_vms"]*(c["cpus"]+160)}\n')
 PY
 systemctl daemon-reload
 printf '%s\n' 'Installed; service remains stopped. Store the App key, explicitly apply networking, then enable the services as documented.'

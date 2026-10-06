@@ -39,7 +39,7 @@ ReadWritePaths=/var/lib/chickadee
 MemoryMax=6G
 MemorySwapMax=0
 CPUQuota=400%
-TasksMax=256
+TasksMax=388
 LimitNOFILE=1024
 
 [Install]
