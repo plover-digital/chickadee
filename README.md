@@ -1,7 +1,7 @@
 # chickadee
 
 A small, self-hosted GitHub Actions runner pool for one Linux host. Each job gets an
-independently booted QEMU `microvm` with KVM, an Ubuntu 24.04 filesystem, and a fresh
+independently booted QEMU VM with KVM and a fresh
 qcow2 overlay. Warm guests have no GitHub credentials and no runner registration.
 
 **Working one-host prototype.** The real vertical slice has passed: preboot to
@@ -28,14 +28,15 @@ The host uses the official [actions/scaleset Go client](https://github.com/actio
 for GitHub App authentication, demand polling, acquisition, and JIT configuration.
 The controller uses no Kubernetes, database, webhook receiver, Docker daemon,
 snapshot, or VM suspension. Storage, serial sockets, logs, and the ownership
-journal are local. One controller and one dedicated scale set own the installation.
+journal are local. One controller owns all profiles, with a scale set per workflow
+label and shared host resource limits. Legacy single-profile config still works.
 
 ```mermaid
 flowchart LR
-  GH[GitHub scale set] -->|demand statistics| C[Go controller]
-  C -->|boot| W[Warm microvm: no credentials]
+  GH[GitHub scale sets] -->|demand statistics| C[Go controller]
+  C -->|boot| W[Warm VM: no credentials]
   W -->|READY over serial| C
-  C -->|fresh one-runner JIT over serial| R[Reserved microvm]
+  C -->|fresh one-runner JIT over serial| R[Reserved VM]
   R -->|outbound NAT| GH
   R -->|one job, diagnostics, DONE| C
   C --> D[Kill QEMU, wait, delete overlay]
@@ -66,7 +67,11 @@ The [Exa primary-source audit](docs/research-audit.md) tracks design guidance an
 remaining security gaps. The [plover-digital organization profile](docs/plover-digital.md)
 documents our pilot without including credentials or private host details.
 
-The [runner-platform comparison](docs/runner-platform-research.md) and
-[selectable-profile design draft](docs/selection-design.md) cover the proposed
-next step: different Linux image bundles and resource classes. These features
-are not implemented by the current single-profile controller.
+[Runner profiles](docs/profiles.md) select immutable OS images and CPU/RAM
+classes. The example default `runs-on: chickadee` uses medium (4 vCPU / 8 GiB)
+and Rocky 10.2; explicit labels such as `chickadee-small-ubuntu-2404` select
+other approved combinations. Ubuntu 24.04 uses microvm; Rocky 10.2 uses q35
+with its stock kernel and enforcing SELinux. New image support requires actual
+boot/job validation; see the validation log. Rocky 9.8 and Ubuntu 26.04 builders
+remain tracked work. The [provider comparison](docs/runner-platform-research.md)
+and [design rationale](docs/selection-design.md) explain the model.

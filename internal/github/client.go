@@ -17,7 +17,11 @@ type Client struct {
 	SetID int
 }
 
-func New(ctx context.Context, c config.Config) (*Client, error) {
+func New(ctx context.Context, c config.Config) (*Client, error) { return newClient(ctx, c, true) }
+
+// Existing never recreates a removed scale set during journal recovery.
+func Existing(ctx context.Context, c config.Config) (*Client, error) { return newClient(ctx, c, false) }
+func newClient(ctx context.Context, c config.Config, create bool) (*Client, error) {
 	u, e := url.Parse(c.GitHubURL)
 	if e != nil || u.Scheme != "https" || u.Host != "github.com" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
 		return nil, fmt.Errorf("prototype supports https://github.com org/repo scopes")
@@ -46,6 +50,9 @@ func New(ctx context.Context, c config.Config) (*Client, error) {
 	if e != nil {
 		return nil, fmt.Errorf("scale set lookup failed")
 	}
+	if set == nil && !create {
+		return &Client{API: api}, nil
+	}
 	if set == nil {
 		set, e = api.CreateRunnerScaleSet(ctx, &scaleset.RunnerScaleSet{Name: c.ScaleSet, RunnerGroupID: c.RunnerGroupID, RunnerSetting: scaleset.RunnerSetting{DisableUpdate: true}})
 		if e != nil {
@@ -72,7 +79,7 @@ func (c *Client) Remove(ctx context.Context, name string) error {
 	if r == nil {
 		return nil
 	}
-	if r.RunnerScaleSetID != c.SetID {
+	if c.SetID == 0 || r.RunnerScaleSetID != c.SetID {
 		return fmt.Errorf("runner ownership mismatch")
 	}
 	if e = c.API.RemoveRunner(ctx, int64(r.ID)); e != nil {

@@ -67,15 +67,16 @@ func start(ctx context.Context, c config.Config, slot int, id string, offline bo
 	if offline {
 		netdev = "user,id=net,restrict=on"
 	}
+	machineType, diskDevice, netDevice, rngDevice := machineDevices(c.Machine)
 	args := []string{"--fsize=" + strconv.FormatInt(int64(c.DiskGiB+1)<<30, 10) + ":" + strconv.FormatInt(int64(c.DiskGiB+1)<<30, 10), "--", "qemu-system-x86_64",
-		"-name", "chickadee-" + id, "-machine", "microvm,acpi=off,isa-serial=on,auto-kernel-cmdline=on", "-enable-kvm", "-cpu", "host", "-smp", strconv.Itoa(c.CPUs), "-m", strconv.Itoa(c.MemoryMiB),
-		"-object", "rng-random,id=rng,filename=/dev/urandom", "-device", "virtio-rng-device,rng=rng",
+		"-name", "chickadee-" + id, "-machine", machineType, "-enable-kvm", "-cpu", "host", "-smp", strconv.Itoa(c.CPUs), "-m", strconv.Itoa(c.MemoryMiB),
+		"-object", "rng-random,id=rng,filename=/dev/urandom", "-device", rngDevice + ",rng=rng",
 		"-nodefaults", "-no-user-config", "-display", "none", "-monitor", "none", "-no-reboot",
 		"-sandbox", "on,obsolete=deny,elevateprivileges=deny,spawn=deny,resourcecontrol=deny",
 		"-kernel", filepath.Join(c.ImageDir, "vmlinuz"), "-initrd", filepath.Join(c.ImageDir, "initrd"),
 		"-append", fmt.Sprintf("root=LABEL=chickadee rw console=tty0 quiet panic=1 reboot=t net.ifnames=0 ck.slot=%d", slot),
-		"-drive", "if=none,id=root,format=qcow2,file=" + disk, "-device", "virtio-blk-device,drive=root",
-		"-netdev", netdev, "-device", "virtio-net-device,netdev=net",
+		"-drive", "if=none,id=root,format=qcow2,file=" + disk, "-device", diskDevice + ",drive=root",
+		"-netdev", netdev, "-device", netDevice + ",netdev=net",
 		"-chardev", "socket,id=bootstrap,path=" + sock + ",server=on,wait=on", "-serial", "chardev:bootstrap"}
 	v.cmd = exec.Command("prlimit", args...)
 	v.cmd.Env = processEnv()
@@ -229,3 +230,11 @@ func (w *cappedWriter) Write(b []byte) (int, error) {
 
 // Hypervisor subprocesses need command lookup and a locale, not controller secrets.
 func processEnv() []string { return []string{"PATH=" + os.Getenv("PATH"), "LANG=C"} }
+
+// Machine types are image metadata, never arbitrary guest/workflow QEMU flags.
+func machineDevices(name string) (string, string, string, string) {
+	if name == "q35" {
+		return "q35", "virtio-blk-pci", "virtio-net-pci", "virtio-rng-pci"
+	}
+	return "microvm,acpi=off,isa-serial=on,auto-kernel-cmdline=on", "virtio-blk-device", "virtio-net-device", "virtio-rng-device"
+}

@@ -1,0 +1,437 @@
+[
+  {
+    "name": "binutils-2.41-63.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/b/binutils-2.41-63.el10.x86_64.rpm",
+    "sha256": "5a9bdb2ce9cfb33c93bc7cebd6993f7d69332a2ed49012ac94dc2f1d99f3a927"
+  },
+  {
+    "name": "binutils-gold-2.41-63.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/b/binutils-gold-2.41-63.el10.x86_64.rpm",
+    "sha256": "471e105d75907c03cbffbf5137ee48401286d1872e1c24dfaca807632f010461"
+  },
+  {
+    "name": "cpp-14.3.1-4.4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/cpp-14.3.1-4.4.el10.x86_64.rpm",
+    "sha256": "eb54c6ea8f749dc825b2c39ee0dbe66f10e02492e6425359f32c64114cb1dbd7"
+  },
+  {
+    "name": "dracut-107-9.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/d/dracut-107-9.el10_2.x86_64.rpm",
+    "sha256": "07eda83dbcbbe66fe462c09faea6ffd8d83bdbdec8ae7668ae5e440abd3faab2"
+  },
+  {
+    "name": "dracut-config-generic-107-9.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/d/dracut-config-generic-107-9.el10_2.x86_64.rpm",
+    "sha256": "c00b2e81bd788bd63515bffce2a2efdfcb4932ca8934e97b81e8dd00cdf9d24c"
+  },
+  {
+    "name": "dracut-config-rescue-107-9.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/d/dracut-config-rescue-107-9.el10_2.x86_64.rpm",
+    "sha256": "3619aaf7f7e88e4a7b98dafc7e0598693537779c0ce50c8e6605fb4dc1848503"
+  },
+  {
+    "name": "dracut-network-107-9.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/d/dracut-network-107-9.el10_2.x86_64.rpm",
+    "sha256": "537d588757969918fc1b6b1ccc0491c92f014d04c55511fc6ed8e7530dd112ba"
+  },
+  {
+    "name": "dracut-squash-107-9.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/d/dracut-squash-107-9.el10_2.x86_64.rpm",
+    "sha256": "c79dba86ba3c8c34aceab1356e2f9294eda59fa76a34630ccff42a7290f2ff26"
+  },
+  {
+    "name": "gcc-14.3.1-4.4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/gcc-14.3.1-4.4.el10.x86_64.rpm",
+    "sha256": "fdbe80a3814b1826f0e8fd6e8b458f7909bce742924f6095a300e078c594a888"
+  },
+  {
+    "name": "git-2.52.0-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/git-2.52.0-1.el10.x86_64.rpm",
+    "sha256": "7332a382d84ec25a135010ac3f12a7dc108c8c619d7f68e8844d575d8192a3c4"
+  },
+  {
+    "name": "git-core-2.52.0-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/git-core-2.52.0-1.el10.x86_64.rpm",
+    "sha256": "d5085785c55f38924e8c934dcba30a4c4b2018c37472a5cde07b7c0de4608afa"
+  },
+  {
+    "name": "git-core-doc-2.52.0-1.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/git-core-doc-2.52.0-1.el10.noarch.rpm",
+    "sha256": "325f2d557d74ad83433a21ddb8be12d6d8ff0b87bdbfa794857d98ab7a3ef408"
+  },
+  {
+    "name": "glibc-devel-2.39-121.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/glibc-devel-2.39-121.el10_2.x86_64.rpm",
+    "sha256": "f32c41e3b9cfb4b5a0cc33aa974ecc14879ef81c2540aa666c7ffae8bfd93691"
+  },
+  {
+    "name": "gzip-1.13-4.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/gzip-1.13-4.el10_2.x86_64.rpm",
+    "sha256": "e6f4f188872e9a715a959bb51e9dc5f683be9dec9e554e5604436a3bfac58b30"
+  },
+  {
+    "name": "kernel-core-6.12.0-211.61.1.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/k/kernel-core-6.12.0-211.61.1.el10_2.x86_64.rpm",
+    "sha256": "e3d6f7eaf4e5ea51ec588fbce1183debc11d227c48aedd013c88c84ef0f8b331"
+  },
+  {
+    "name": "kernel-headers-6.12.0-211.62.1.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/k/kernel-headers-6.12.0-211.62.1.el10_2.x86_64.rpm",
+    "sha256": "42b839d809fd8cfca1c4b8835cba519458eba51c645e5bb4b84ef9819261f6a6"
+  },
+  {
+    "name": "kernel-modules-core-6.12.0-211.61.1.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/k/kernel-modules-core-6.12.0-211.61.1.el10_2.x86_64.rpm",
+    "sha256": "e0d7c909368d193ffa6f9e3de244db9ae6b53268f9049e345785ae0c617be371"
+  },
+  {
+    "name": "libicu-74.2-5.el10_0.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libicu-74.2-5.el10_0.x86_64.rpm",
+    "sha256": "9d7388c3630e3afc374666ad4c44082dd755cc05b7a31482be17981d08f26f50"
+  },
+  {
+    "name": "libmpc-1.3.1-7.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libmpc-1.3.1-7.el10.x86_64.rpm",
+    "sha256": "d268295b5bfaceb99e5047c7fa2d2e83825b9ca7200e18cee2c07ce68fd4e6d6"
+  },
+  {
+    "name": "libxcrypt-devel-4.4.36-10.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libxcrypt-devel-4.4.36-10.el10.x86_64.rpm",
+    "sha256": "64f4e2d62dcaca2e4dd382851916869966cee313d062bcc09f6beacb3e90ceb6"
+  },
+  {
+    "name": "make-4.4.1-9.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/m/make-4.4.1-9.el10.x86_64.rpm",
+    "sha256": "54fc9e376ff398a752785afad8259539a6198d4ac614cea39c39e640a0a4563f"
+  },
+  {
+    "name": "openssl-3.5.8-1.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/o/openssl-3.5.8-1.el10_2.x86_64.rpm",
+    "sha256": "b29d2f070579c31d5bdc700b89bcd32bc51849e57d4693ca23c8bae9f2d29057"
+  },
+  {
+    "name": "openssl-fips-provider-3.5.8-1.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/o/openssl-fips-provider-3.5.8-1.el10_2.x86_64.rpm",
+    "sha256": "c4501e64919f883fbd95e5d747207c64861c3998c5af8b826b76a9fe4eea89ce"
+  },
+  {
+    "name": "openssl-libs-3.5.8-1.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/o/openssl-libs-3.5.8-1.el10_2.x86_64.rpm",
+    "sha256": "88a8e87a2d18ef0f6f0ee50c5c81e0afb8beb7c1f28efa1a63edd09703eb5657"
+  },
+  {
+    "name": "perl-AutoLoader-5.74-515.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-AutoLoader-5.74-515.el10_2.noarch.rpm",
+    "sha256": "e25a72b01418bc15c8860b4f89fd05deedffbe155219cab03f69c6e755435180"
+  },
+  {
+    "name": "perl-B-1.89-515.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-B-1.89-515.el10_2.x86_64.rpm",
+    "sha256": "a8f71f40c5744bde052702f97e1f89819fbb521b9cdaede6c5d875a26b8ed17b"
+  },
+  {
+    "name": "perl-Carp-1.54-511.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Carp-1.54-511.el10.noarch.rpm",
+    "sha256": "c1c5ab859ea695a218127cdf554d3d0554726bb97e0a6fef61471b6356dc5cc8"
+  },
+  {
+    "name": "perl-Class-Struct-0.68-515.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Class-Struct-0.68-515.el10_2.noarch.rpm",
+    "sha256": "6d6c6e7fce2de4bff201a7b72d51daa6b02c11983b476bf2f4b643e70cdc5a2f"
+  },
+  {
+    "name": "perl-Data-Dumper-2.189-512.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Data-Dumper-2.189-512.el10.x86_64.rpm",
+    "sha256": "25ea91a6e15b8a915939f511c2a7d3a891a549009b9b59867182693d99a61354"
+  },
+  {
+    "name": "perl-Digest-1.20-511.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Digest-1.20-511.el10.noarch.rpm",
+    "sha256": "66ff4be279a3b0050e2ddadcc36545502db467b21c31b17cb79f0037be3dbc8b"
+  },
+  {
+    "name": "perl-Digest-MD5-2.59-6.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Digest-MD5-2.59-6.el10.x86_64.rpm",
+    "sha256": "23182b2be209ffcc039f0b3a71460db16eff89f8bfbd289db9ac8063c82d9309"
+  },
+  {
+    "name": "perl-DynaLoader-1.56-515.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-DynaLoader-1.56-515.el10_2.x86_64.rpm",
+    "sha256": "b4f456cec2d51b5b0f6add761dba952135ae9ffa0b55f8a425790d6ac73059a5"
+  },
+  {
+    "name": "perl-Encode-3.21-511.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Encode-3.21-511.el10.x86_64.rpm",
+    "sha256": "17b9fda8ce6f9e6e80a9304f25ff2a6c5a82699eedf70930979624184531caec"
+  },
+  {
+    "name": "perl-Errno-1.38-515.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Errno-1.38-515.el10_2.x86_64.rpm",
+    "sha256": "cd6e405e860b0c72d48d2463fb2012818ce8d5911ad8c1fad9be9f5c746576a9"
+  },
+  {
+    "name": "perl-Error-0.17029-18.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Error-0.17029-18.el10.noarch.rpm",
+    "sha256": "2515655f9e6fc703173868df96f8d2354c3eddc205afb4c6366f7ab5e8deffb4"
+  },
+  {
+    "name": "perl-Exporter-5.78-511.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Exporter-5.78-511.el10.noarch.rpm",
+    "sha256": "401936edea5900d364dc821416251c9024526a3e18254d00785791f230c8cf79"
+  },
+  {
+    "name": "perl-Fcntl-1.18-515.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Fcntl-1.18-515.el10_2.x86_64.rpm",
+    "sha256": "5fe59f52bceeea55ab5c9210882b1936040a8c295cd9bb941baff58831c6254f"
+  },
+  {
+    "name": "perl-File-Basename-2.86-515.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-File-Basename-2.86-515.el10_2.noarch.rpm",
+    "sha256": "b54a07c6f65acee83febed25391896a29c47bc069ef408090bd57a630e09e726"
+  },
+  {
+    "name": "perl-File-Path-2.18-512.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-File-Path-2.18-512.el10.noarch.rpm",
+    "sha256": "6c0603df0ff5c3cf73237103668e25beb1f178438086ae45f515325a8c22f361"
+  },
+  {
+    "name": "perl-File-Temp-0.231.100-512.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-File-Temp-0.231.100-512.el10.noarch.rpm",
+    "sha256": "e9d320179140611b346adf33c3a8c997e120e7c2960fccbf72eada6c7e300d4e"
+  },
+  {
+    "name": "perl-File-stat-1.14-515.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-File-stat-1.14-515.el10_2.noarch.rpm",
+    "sha256": "3fa5b3e3b0d3246490756ba520ef96e605af9684f6aff5c3a530e1ceb5400c78"
+  },
+  {
+    "name": "perl-FileHandle-2.05-515.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-FileHandle-2.05-515.el10_2.noarch.rpm",
+    "sha256": "1e22781aa632f8c5da80c2abeb0f3f1f19d543d825f9219143cf6a99bff57876"
+  },
+  {
+    "name": "perl-Getopt-Long-2.58-3.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Getopt-Long-2.58-3.el10.noarch.rpm",
+    "sha256": "c194ccfaf6908ad9df93fb2dfc08e2184d62460a8a5d0e5a6876b1b5fc986dda"
+  },
+  {
+    "name": "perl-Getopt-Std-1.14-515.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Getopt-Std-1.14-515.el10_2.noarch.rpm",
+    "sha256": "7349e857d99fc7e068bcdb9010841ee7606d5924b076b801b18bd933827e8213"
+  },
+  {
+    "name": "perl-Git-2.52.0-1.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Git-2.52.0-1.el10.noarch.rpm",
+    "sha256": "c4f532cd55b165824284fcc3dd3acc634cd00a0c6eb0b6ca17b9b00d7d869051"
+  },
+  {
+    "name": "perl-HTTP-Tiny-0.088-512.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-HTTP-Tiny-0.088-512.el10.noarch.rpm",
+    "sha256": "3c27b90ae3e4e4f5879df3f9e1183c513d6128af072cf565172cdf3a8ae18595"
+  },
+  {
+    "name": "perl-IO-1.55-515.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-IO-1.55-515.el10_2.x86_64.rpm",
+    "sha256": "cd6db8fd6e235a5225f7ea2ebd9d3d6e8bfe0df3ebcd12ac2df4de552594ec1c"
+  },
+  {
+    "name": "perl-IO-Socket-IP-0.42-512.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-IO-Socket-IP-0.42-512.el10.noarch.rpm",
+    "sha256": "2beaf97bbfba31956f9adfa3e40da3716c4a899ea704519a2447c649e42e243c"
+  },
+  {
+    "name": "perl-IO-Socket-SSL-2.085-3.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-IO-Socket-SSL-2.085-3.el10.noarch.rpm",
+    "sha256": "5d2a4909b700d8facbbf605c1bb15bccce7d1f1e80530aec12cc3c3918814ce8"
+  },
+  {
+    "name": "perl-IPC-Open3-1.22-515.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-IPC-Open3-1.22-515.el10_2.noarch.rpm",
+    "sha256": "b110719a329dbcd423078a1612dbcefd7feb038a55959923e41f65d645c6b9db"
+  },
+  {
+    "name": "perl-MIME-Base64-3.16-511.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-MIME-Base64-3.16-511.el10.x86_64.rpm",
+    "sha256": "63a6949003aeb69babd7a2341e9d2ef29b74b1683de4eb2067b5022ebdfa60ab"
+  },
+  {
+    "name": "perl-Mozilla-CA-20231213-5.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Mozilla-CA-20231213-5.el10.noarch.rpm",
+    "sha256": "b114f958c073e84abac96c1dd1aa178590f8460e3ef734d0ec02de37265b782d"
+  },
+  {
+    "name": "perl-NDBM_File-1.17-515.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-NDBM_File-1.17-515.el10_2.x86_64.rpm",
+    "sha256": "e11e66296ef16cb27545e6d0c3bcfe8a83cc0062bb83a94af660c55801320450"
+  },
+  {
+    "name": "perl-Net-SSLeay-1.94-8.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Net-SSLeay-1.94-8.el10.x86_64.rpm",
+    "sha256": "c5706bc76179a3db157f6b12be21e6c9bf993779812bd0edbbe14a88920508d0"
+  },
+  {
+    "name": "perl-POSIX-2.20-515.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-POSIX-2.20-515.el10_2.x86_64.rpm",
+    "sha256": "2d0512435b782a5652e0730dfa7d71751771096a31e3ffa6861b27d670449b2d"
+  },
+  {
+    "name": "perl-PathTools-3.91-512.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-PathTools-3.91-512.el10.x86_64.rpm",
+    "sha256": "616cc4380398fbff679988ee35ee0901c79049e678b00f8d7865d60750625686"
+  },
+  {
+    "name": "perl-Pod-Escapes-1.07-511.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Pod-Escapes-1.07-511.el10.noarch.rpm",
+    "sha256": "c48eb015a18a74c079bfbc1bf3915ce3f6019caef49575d3f2a76390194b9909"
+  },
+  {
+    "name": "perl-Pod-Perldoc-3.28.01-512.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Pod-Perldoc-3.28.01-512.el10.noarch.rpm",
+    "sha256": "4e689332ba1053407d76d086b8cea49ba4cfc81d43acf89251ae51d8c457b424"
+  },
+  {
+    "name": "perl-Pod-Simple-3.45-511.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Pod-Simple-3.45-511.el10.noarch.rpm",
+    "sha256": "1940a6fe791bd750aaf9d6a76e2efcb13e1f3b712466d368fc3f6068ccfd6084"
+  },
+  {
+    "name": "perl-Pod-Usage-2.03-511.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Pod-Usage-2.03-511.el10.noarch.rpm",
+    "sha256": "f98029e19e5e9c2e24668d657bcd4412939cc4d01955f089b4e5cacfc3aaecc2"
+  },
+  {
+    "name": "perl-Scalar-List-Utils-1.63-511.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Scalar-List-Utils-1.63-511.el10.x86_64.rpm",
+    "sha256": "acd600c548e86b4f989d3f062b8020fb99db125172d681b9f43c0bcff5f609fe"
+  },
+  {
+    "name": "perl-SelectSaver-1.02-515.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-SelectSaver-1.02-515.el10_2.noarch.rpm",
+    "sha256": "36cf1a9f2e251a9ee3a061e8197ff2d333ac6a7aeced0050e589fac41b6c0681"
+  },
+  {
+    "name": "perl-Socket-2.038-511.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Socket-2.038-511.el10.x86_64.rpm",
+    "sha256": "9260056f809ae30530bb2043b4b29e679db719a439877a907dce38958e285cf7"
+  },
+  {
+    "name": "perl-Storable-3.32-511.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Storable-3.32-511.el10.x86_64.rpm",
+    "sha256": "617b30477fec3895c22a0a127e1ad719d993afcd4afe46e468ca806c6a9ad467"
+  },
+  {
+    "name": "perl-Symbol-1.09-515.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Symbol-1.09-515.el10_2.noarch.rpm",
+    "sha256": "5774712d9e9bfcf4c8093ba168ff0c1bb6c63cd5333fcd6f50986834f62ef701"
+  },
+  {
+    "name": "perl-Term-ANSIColor-5.01-512.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Term-ANSIColor-5.01-512.el10.noarch.rpm",
+    "sha256": "60f4e8f45f7e7bbf58ddeebfad3046a439f7a3242f59ac8fce03a1cad282c667"
+  },
+  {
+    "name": "perl-Term-Cap-1.18-511.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Term-Cap-1.18-511.el10.noarch.rpm",
+    "sha256": "b195686eba5623dc7538a06bd512518e3a2716820c5685805c46ea6040d99b80"
+  },
+  {
+    "name": "perl-TermReadKey-2.38-24.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-TermReadKey-2.38-24.el10.x86_64.rpm",
+    "sha256": "49c58e3615b13500892cf7ae3f3cb8a31961d64ed0a8db7890797077db257b34"
+  },
+  {
+    "name": "perl-Text-ParseWords-3.31-511.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Text-ParseWords-3.31-511.el10.noarch.rpm",
+    "sha256": "4c3709082dc67175c6e70deda5ab176d469250ef2e5159a19e8f5670a3b7ce27"
+  },
+  {
+    "name": "perl-Text-Tabs+Wrap-2024.001-511.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Text-Tabs+Wrap-2024.001-511.el10.noarch.rpm",
+    "sha256": "4f1abe1d3c1ed4dad1b7777d97466c6ae6e362ff0a12db886c37a7fb4496f292"
+  },
+  {
+    "name": "perl-Time-Local-1.350-511.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Time-Local-1.350-511.el10.noarch.rpm",
+    "sha256": "ce9f31d3463442a98c08f50680df3ad4f14b4ce3a9331450435ec7db3b20023f"
+  },
+  {
+    "name": "perl-URI-5.27-3.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-URI-5.27-3.el10.noarch.rpm",
+    "sha256": "63be69c9d9a63bdcf0b620035ac9c598f9329f0545a8b11c848fd1cb376372a9"
+  },
+  {
+    "name": "perl-base-2.27-515.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-base-2.27-515.el10_2.noarch.rpm",
+    "sha256": "2b65d292a00c63e075a9aada89b5e6df55151d12fa7a4888dfddd0e97a709234"
+  },
+  {
+    "name": "perl-constant-1.33-512.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-constant-1.33-512.el10.noarch.rpm",
+    "sha256": "8c0f5c336b85c846c72f451451eaea9b84d3692b3701c7a53881f5f53da79d68"
+  },
+  {
+    "name": "perl-if-0.61.000-515.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-if-0.61.000-515.el10_2.noarch.rpm",
+    "sha256": "c3fcaa04e8293b51dfd0cb77117fa2a9644c9469b5cf12eff71f75269066b650"
+  },
+  {
+    "name": "perl-interpreter-5.40.2-515.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-interpreter-5.40.2-515.el10_2.x86_64.rpm",
+    "sha256": "eb8483b3ded30d1fea2a48d18f77aa9b29fd04f9b85883a6234c0fc63bc9194a"
+  },
+  {
+    "name": "perl-lib-0.65-515.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-lib-0.65-515.el10_2.x86_64.rpm",
+    "sha256": "ee6c9534ff2bac08faf61db9de5a2667e763472a7e011ad4918ba4891d7c1ba5"
+  },
+  {
+    "name": "perl-libnet-3.15-512.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-libnet-3.15-512.el10.noarch.rpm",
+    "sha256": "2c9f1efd3546c86d0716512437eb340e2a4c1f5e427d7ff63b8091935ab963de"
+  },
+  {
+    "name": "perl-libs-5.40.2-515.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-libs-5.40.2-515.el10_2.x86_64.rpm",
+    "sha256": "f39cc099d9b7066774d78aeb919c72ce5d1d1431831e7b10c754c283f5549f12"
+  },
+  {
+    "name": "perl-locale-1.12-515.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-locale-1.12-515.el10_2.noarch.rpm",
+    "sha256": "21bfe11d524a612a33256131e7a77e10747ef332707384dec6f752730e34d50b"
+  },
+  {
+    "name": "perl-mro-1.29-515.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-mro-1.29-515.el10_2.x86_64.rpm",
+    "sha256": "411b0e8e3668138124edc668a3e7abdac316a6c26ceae44fcc77a15f8aeb459f"
+  },
+  {
+    "name": "perl-overload-1.37-515.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-overload-1.37-515.el10_2.noarch.rpm",
+    "sha256": "7fdc5329ca8963c6d3d27bea58089b13bc09afbec95c6bd939c52f21adb3f1f4"
+  },
+  {
+    "name": "perl-overloading-0.02-515.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-overloading-0.02-515.el10_2.noarch.rpm",
+    "sha256": "194f132e292e00921befe01767ba1ac9cb7297b7361cb96c9400896f3dafe3e1"
+  },
+  {
+    "name": "perl-parent-0.241-512.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-parent-0.241-512.el10.noarch.rpm",
+    "sha256": "57a4e30d9c656aea496d2c4531a7b427781016bdc7769a668f9d8c57d77f3cf2"
+  },
+  {
+    "name": "perl-podlators-5.01-511.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-podlators-5.01-511.el10.noarch.rpm",
+    "sha256": "3f09e0bb3f9a45f4f92654a9b5aa2bd9df0881fb481aaa238e853c52be5bdff3"
+  },
+  {
+    "name": "perl-vars-1.05-515.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-vars-1.05-515.el10_2.noarch.rpm",
+    "sha256": "cfd5d2203b2358330071c93af053054f1e2a6bce266027cc9dc6af05b76b0242"
+  },
+  {
+    "name": "tar-1.35-13.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/t/tar-1.35-13.el10_2.x86_64.rpm",
+    "sha256": "b6d8a274b1214338f2e858c945db5a136666514e762509cd7978fc32b2929535"
+  }
+]

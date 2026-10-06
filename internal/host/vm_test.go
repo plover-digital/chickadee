@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -131,5 +132,18 @@ func TestStartCannotOverwriteAnExistingVMDirectory(t *testing.T) {
 	b, e := os.ReadFile(disk)
 	if e != nil || string(b) != "existing VM disk" {
 		t.Fatal("failed start changed existing disk")
+	}
+}
+
+func TestMachineDeviceFamilies(t *testing.T) {
+	for _, name := range []string{"", "microvm", "q35"} {
+		machine, disk, network, rng := machineDevices(name)
+		if name == "q35" {
+			if machine != "q35" || disk != "virtio-blk-pci" || network != "virtio-net-pci" || rng != "virtio-rng-pci" {
+				t.Fatal("stock-kernel PCI devices missing")
+			}
+		} else if !strings.HasPrefix(machine, "microvm,") || disk != "virtio-blk-device" || network != "virtio-net-device" || rng != "virtio-rng-device" {
+			t.Fatal("legacy microvm device family changed")
+		}
 	}
 }

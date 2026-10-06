@@ -250,3 +250,24 @@ bin/chickadee -boot-check -config build/bootcheck.json
 
 Run this command as a normal user with KVM access, not with sudo.
 If boot fails, inspect private QEMU diagnostics in the scratch `logs/` directory.
+
+## Multiple profiles and Rocky guests
+
+The documented **host** remains Ubuntu 24.04; the guest OS can differ. For
+small/medium Rocky 10.2 plus Ubuntu 24.04 queues, use
+[profiles.md](profiles.md) and [examples/profiles.json](../examples/profiles.json).
+Rocky is built with `scripts/build-rocky-image.sh OUTPUT_DIR` or the public
+image workflow's `rocky-102` selection. It uses a pinned Rocky GenericCloud
+image, an exact URL/SHA-256 RPM lock and local RPM signature checks with the
+source image's Rocky key. The stock kernel and matching dracut initrd boot on
+QEMU q35. SELinux remains enforcing. Ubuntu's existing image uses microvm.
+Neither path preinstalls Go or assumes a workload language.
+
+Build the two bundles into separate clean directories, install each with
+`scripts/install-image.sh`, and point the catalog at their immutable revision
+paths. The installer creates resource budgets from the aggregate catalog limits.
+Archive verified Rocky source/RPM inputs: upstream mirrors may retire old RPMs.
+The package lock is reviewed input pinning, not bit-for-bit filesystem output
+reproducibility. Update it deliberately for security fixes; never resolve latest
+packages during a nominally pinned build. Rocky 9.8 and Ubuntu 26.04 builders
+remain separate tracked work.

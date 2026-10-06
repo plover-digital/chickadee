@@ -1,17 +1,20 @@
 # Selectable runner profiles: proposed design
 
-Status: design draft, informed by [runner-platform research](runner-platform-research.md).
-The current controller has not yet implemented this schema or multiple profiles.
+Status: original design rationale, informed by [runner-platform research](runner-platform-research.md).
+The implementation and accepted schema are documented in [profiles.md](profiles.md)
+and [examples/profiles.json](../examples/profiles.json). The fragment below is
+historical design context, not the accepted configuration.
 This extends the originally single-profile prototype at the user's request;
 it does not introduce Kubernetes, databases, snapshots or multiple hosts.
 
 ## Four separate objects
 
-**Image bundle:** immutable root disk plus matching versioned kernel/initrd and
+**Image bundle:** declares QEMU machine type (`microvm` or `q35`) and immutable root disk plus matching versioned kernel/initrd and
 manifest/checksums. Describes OS/version, architecture, runner/bootstrap versions
 and tested capabilities. The controller is independent of the workload's language.
 The initial OS targets are **Ubuntu 24.04**, **Ubuntu 26.04** and
-**Rocky Linux 9.8** and **Rocky Linux 10.2**, all Linux amd64. Ubuntu 24.04 has an existing builder;
+**Rocky Linux 9.8** and **Rocky Linux 10.2**, all Linux amd64. Rocky uses q35 and its stock kernel;
+Ubuntu 24.04 retains its validated microvm image. Ubuntu 24.04 has an existing builder;
 Ubuntu 26.04 and Rocky are new implementation targets and are not yet supported
 by the shipped builder. All must implement
 the same bounded serial/bootstrap and networking contract.
@@ -67,8 +70,8 @@ substituting Rocky 9 or a different CPU model.
 
 Rocky's [versioned cloud image artifacts](https://docs.rockylinux.org/10/teams/rel_eng/image/)
 are potential inputs, not proof of microvm compatibility. The Rocky builder
-must pin and verify its inputs, check its kernel's virtio-mmio command-line
-support, prepare a matching dracut initrd and runner dependencies, and validate
+must pin and verify its inputs, use q35 with the stock distribution kernel,
+prepare a matching dracut initrd with virtio PCI drivers and runner dependencies, and validate
 its filesystem, networking and SELinux behavior. Do not disable SELinux merely
 to get a smoke test passing. Support is earned by READY, a real one-job run,
 cleanup/replacement and restart tests for every OS release.
@@ -193,5 +196,5 @@ initial supported trust boundary.
 - Installer/preflight/systemd resource budgets cover all admitted shapes/images
   and cannot oversubscribe physical memory silently.
 
-No runtime/profile/cache feature is enabled merely by this draft. Existing
+Cache features and unvalidated image targets are not enabled by this draft. Existing
 single-host lifecycle, networking restrictions and trust limitations remain.

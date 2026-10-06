@@ -10,7 +10,7 @@ capability; the separately reviewed root network setup creates the TAPs and NAT.
 ## Lifecycle
 
 1. Create `vms/<random-id>/disk.qcow2` against the immutable base. Start QEMU
-   microvm with a versioned host kernel and initrd, fixed vCPU/RAM and the TAP slot.
+   VM (microvm or q35, selected by the approved image) with a versioned kernel and initrd, fixed vCPU/RAM and the TAP slot.
 2. Connect the private Unix serial socket and await `READY` within
    the boot timeout. The root bootstrap has disabled terminal echo and canonical
    input, and owns `/dev/ttyS0`. No getty or kernel console writes to this channel.
@@ -135,3 +135,13 @@ with the guest, but a successful escape into QEMU could read the App key or othe
 VM state. Seccomp does not provide a per-VM filesystem boundary. Stronger UID,
 namespace and MAC isolation, plus per-VM host resource control, must precede a
 managed-service security claim. See the [Exa primary-source audit](research-audit.md).
+
+## Profile scheduling
+
+A catalog resolves image identity, machine type and resource class before worker
+creation. `chickadee` is a normal default profile; explicit size/OS-version labels
+have independent scale sets. One actor tracks all VMs and TAP slots under shared
+VM/vCPU/RAM limits. Retiring guests hold capacity until cleanup succeeds.
+Credential-free warm guests can be retired to admit demand on another queue;
+credentialed guests are never reused or evicted for that reason. See
+[profiles](profiles.md) for queue fairness, budgets and recovery.

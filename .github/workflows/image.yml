@@ -1,6 +1,14 @@
 name: Build runner image
 on:
   workflow_dispatch:
+    inputs:
+      os:
+        description: Versioned OS image
+        type: choice
+        default: ubuntu-2404
+        options:
+          - ubuntu-2404
+          - rocky-102
 permissions:
   contents: read
 jobs:
@@ -31,7 +39,14 @@ jobs:
           printf 'SUPERMIN_KERNEL_VERSION=%s\n' "$kernel_version" >> "$GITHUB_ENV"
           printf 'SUPERMIN_MODULES=/lib/modules/%s\n' "$kernel_version" >> "$GITHUB_ENV"
       - name: Build credential-free runner image
-        run: make image
+        env:
+          IMAGE_OS: ${{ inputs.os }}
+        run: |
+          case "$IMAGE_OS" in
+            ubuntu-2404) make image ;;
+            rocky-102) scripts/build-rocky-image.sh ;;
+            *) exit 1 ;;
+          esac
       - name: Archive versioned image artifacts
         run: tar -czf build/chickadee-image.tar.gz -C images .
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -52,6 +67,7 @@ jobs:
           import json, os
           c = json.load(open('examples/config.json'))
           c['image_dir'] = os.path.abspath('images')
+          c['machine'] = json.load(open('images/manifest.json'))['machine']
           c['state_dir'] = '/tmp/ck-bootcheck'
           json.dump(c, open('build/bootcheck.json', 'w'))
           PY

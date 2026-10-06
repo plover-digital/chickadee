@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -25,10 +26,11 @@ type Event struct {
 	Err  error
 }
 type entry struct {
-	state  VM
-	slot   int
-	assign chan string
-	retire chan struct{}
+	profile string
+	state   VM
+	slot    int
+	assign  chan string
+	retire  chan struct{}
 }
 
 type machine interface {
@@ -126,36 +128,100 @@ func run(ctx context.Context, c config.Config, b Backend, desired <-chan int, st
 	defer owner.Close()
 	return runOwned(ctx, c, b, desired, start)
 }
+
+// Demand is authoritative assigned-job demand for one scale set.
+type Demand struct {
+	Profile  string
+	Assigned int
+}
+
+func RunProfilesOwned(ctx context.Context, c config.Config, backends map[string]Backend, desired <-chan Demand, owner *Ownership) error {
+	if owner == nil {
+		return fmt.Errorf("state ownership required")
+	}
+	return runProfiles(ctx, c, backends, desired, func(ctx context.Context, c config.Config, slot int, id string) (machine, error) {
+		return host.Start(ctx, c, slot, id)
+	})
+}
+func CleanupProfiles(ctx context.Context, c config.Config, backends map[string]Backend, owner *Ownership) error {
+	if owner == nil {
+		return fmt.Errorf("state ownership required")
+	}
+	return reconcileProfiles(ctx, c, backends)
+}
 func runOwned(ctx context.Context, c config.Config, b Backend, desired <-chan int, start starter) error {
-	var e error
-	// Fail closed on reconciliation failure rather than create further registrations.
-	if e = reconcile(ctx, c, b); e != nil {
+	// Compatibility adapter for the original public one-profile API.
+	adapterCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	demands := make(chan Demand, 16)
+	go func() {
+		defer close(demands)
+		for {
+			select {
+			case <-adapterCtx.Done():
+				return
+			case n, ok := <-desired:
+				if !ok {
+					return
+				}
+				select {
+				case demands <- Demand{c.ScaleSet, n}:
+				case <-adapterCtx.Done():
+					return
+				}
+			}
+		}
+	}()
+	return runProfiles(ctx, c, map[string]Backend{c.ScaleSet: b}, demands, start)
+}
+func runProfiles(ctx context.Context, c config.Config, backends map[string]Backend, desired <-chan Demand, start starter) error {
+	if e := reconcileProfiles(ctx, c, backends); e != nil {
 		return e
 	}
+	configs := map[string]config.Config{}
+	names := []string{}
+	for _, p := range c.ProfileConfigs() {
+		if backends[p.ScaleSet] == nil {
+			return fmt.Errorf("profile backend missing")
+		}
+		configs[p.ScaleSet] = p
+		names = append(names, p.ScaleSet)
+	}
+	limits := c.HostLimits()
 	runCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	events := make(chan Event, 2*c.Max)
+	events := make(chan Event, 2*limits.Max)
 	entries := map[string]*entry{}
 	var wg sync.WaitGroup
 	defer func() { cancel(); wg.Wait() }()
 	tick := time.NewTicker(time.Second)
 	defer tick.Stop()
-	requested := 0
-	nextBoot := time.Time{}
+	requested := map[string]int{}
+	nextBoot := map[string]time.Time{}
 	nextReconcile := time.Time{}
+	// FIFO admission blocks smaller new boots behind an older request that cannot
+	// fit, so sustained small-job traffic cannot starve a medium/large profile.
+	waiting := []string{}
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case n, ok := <-desired:
+		case d, ok := <-desired:
 			if !ok {
+				if ctx.Err() != nil {
+					return ctx.Err()
+				}
 				return fmt.Errorf("demand stream closed")
 			}
-			nextRequested := min(c.Max, max(0, n))
-			if nextRequested != requested {
-				slog.Info("Runner demand changed", "requested", nextRequested)
+			p, ok := configs[d.Profile]
+			if !ok {
+				return fmt.Errorf("unknown demand profile")
 			}
-			requested = nextRequested
+			n := min(p.Max, max(0, d.Assigned))
+			if n != requested[d.Profile] {
+				slog.Info("Runner demand changed", "profile", d.Profile, "requested", n)
+			}
+			requested[d.Profile] = n
 		case ev := <-events:
 			v := entries[ev.ID]
 			if v == nil {
@@ -163,86 +229,114 @@ func runOwned(ctx context.Context, c config.Config, b Backend, desired <-chan in
 			}
 			switch ev.Kind {
 			case "ready":
-				v.state.State = Ready
-				slog.Info("VM ready", "vm", ev.ID)
+				if v.state.State != Dead {
+					v.state.State = Ready
+					slog.Info("VM ready", "vm", ev.ID, "profile", v.profile)
+				}
 			case "done":
 				v.state.Destroy()
 				delete(entries, ev.ID)
-				cleanupCtx, cc := context.WithTimeout(ctx, 15*time.Second)
-				cleanupErr := reconcile(cleanupCtx, c, b)
-				cc()
-				nextReconcile = time.Now().Add(30 * time.Second)
-				if cleanupErr != nil {
-					slog.Warn("registration cleanup pending")
-				}
+				// Registration removal is retried by the bounded periodic reconciliation.
+				nextReconcile = time.Time{}
 				if ev.Err != nil {
-					nextBoot = time.Now().Add(2 * time.Second)
-					slog.Warn("VM retired", "vm", ev.ID, "reason", ev.Err.Error())
+					nextBoot[v.profile] = time.Now().Add(2 * time.Second)
+					slog.Warn("VM retired", "vm", ev.ID, "profile", v.profile, "reason", ev.Err.Error())
 				} else {
-					slog.Info("VM destroyed; overlay removed", "vm", ev.ID)
+					slog.Info("VM destroyed; overlay removed", "vm", ev.ID, "profile", v.profile)
 				}
 			case "fatal":
 				return ev.Err
+			default:
+				return fmt.Errorf("unknown VM event kind")
 			}
 		case <-tick.C:
 			activeIDs := map[string]bool{}
 			for id := range entries {
 				activeIDs[id] = true
 			}
-			if e = host.PruneLogs(c.StateDir, activeIDs); e != nil {
+			if e := host.PruneLogs(c.StateDir, activeIDs); e != nil {
 				return e
 			}
-			if time.Now().Before(nextReconcile) {
-				break
-			}
-			nextReconcile = time.Now().Add(30 * time.Second)
-			cleanupCtx, cc := context.WithTimeout(ctx, 15*time.Second)
-			e = reconcile(cleanupCtx, c, b)
-			cc()
-			if e != nil {
-				slog.Warn("registration cleanup pending")
+			if !time.Now().Before(nextReconcile) {
+				nextReconcile = time.Now().Add(30 * time.Second)
+				cleanupCtx, cc := context.WithTimeout(ctx, 15*time.Second)
+				e := reconcileProfiles(cleanupCtx, c, backends)
+				cc()
+				if e != nil {
+					slog.Warn("registration cleanup pending")
+				}
 			}
 		}
-		active := 0
-		for _, v := range entries {
-			if v.state.State == Spent || v.state.State == Reserved {
+		counts := func(name string) (total, active, idle int) {
+			for _, v := range entries {
+				if v.profile != name {
+					continue
+				}
+				total++
+				switch v.state.State {
+				case Spent, Reserved:
+					active++
+				case Ready, Booting:
+					idle++
+				}
+			}
+			return
+		}
+		for _, name := range names {
+			p := configs[name]
+			_, active, _ := counts(name)
+			for _, v := range entries {
+				if active >= requested[name] {
+					break
+				}
+				if v.profile != name || v.state.State != Ready {
+					continue
+				}
+				if e := v.state.Reserve(); e != nil {
+					return e
+				}
+				if e := v.state.Spend(); e != nil {
+					return e
+				}
+				runnerName := name + "-" + v.state.ID
+				if e := host.Save(c.StateDir, host.Record{ID: v.state.ID, Name: runnerName, GitHubURL: c.GitHubURL, RunnerGroupID: c.RunnerGroupID, NotBefore: time.Now().Add(10 * time.Minute)}); e != nil {
+					return e
+				}
+				v.assign <- runnerName
 				active++
+				slog.Info("VM reserved for one job", "vm", v.state.ID, "profile", p.ScaleSet)
 			}
 		}
-		for _, v := range entries {
-			if active >= requested {
-				break
-			}
-			if v.state.State != Ready {
-				continue
-			}
-			if e = v.state.Reserve(); e != nil {
-				return e
-			}
-			if e = v.state.Spend(); e != nil {
-				return e
-			}
-			name := c.ScaleSet + "-" + v.state.ID
-			if e = host.Save(c.StateDir, host.Record{ID: v.state.ID, Name: name, GitHubURL: c.GitHubURL, RunnerGroupID: c.RunnerGroupID, NotBefore: time.Now().Add(10 * time.Minute)}); e != nil {
-				return e
-			}
-			v.assign <- name
-			active++
-			slog.Info("VM reserved for one job", "vm", v.state.ID)
+		// Keep waiting order stable across new messages and tick events.
+		needs := func(name string) bool {
+			total, active, idle := counts(name)
+			return total < configs[name].Max && active+idle < requested[name]
 		}
-		target := Target(c.Warm, c.Max, active, requested)
-		surplus := len(entries) - target
-		for _, v := range entries {
-			if surplus <= 0 {
-				break
-			}
-			if v.state.State == Ready {
-				v.state.State = Dead
-				close(v.retire)
-				surplus--
+		kept := waiting[:0]
+		queued := map[string]bool{}
+		for _, name := range waiting {
+			if needs(name) {
+				kept = append(kept, name)
+				queued[name] = true
 			}
 		}
-		for len(entries) < target && !time.Now().Before(nextBoot) {
+		waiting = kept
+		for _, name := range names {
+			if needs(name) && !queued[name] {
+				waiting = append(waiting, name)
+			}
+		}
+		fits := func(p config.Config) bool {
+			cpu, ram := p.CPUs, p.MemoryMiB
+			for _, v := range entries {
+				r := configs[v.profile]
+				cpu += r.CPUs
+				ram += r.MemoryMiB
+			}
+			return len(entries) < limits.Max && cpu <= limits.CPUs && ram <= limits.MemoryMiB
+		}
+		retire := func(v *entry) { v.state.State = Dead; close(v.retire) }
+		boot := func(name string) {
 			used := map[int]bool{}
 			for _, v := range entries {
 				used[v.slot] = true
@@ -255,10 +349,73 @@ func runOwned(ctx context.Context, c config.Config, b Backend, desired <-chan in
 			for entries[id] != nil {
 				id = host.NewID()
 			}
-			v := &entry{state: VM{ID: id, State: Booting}, slot: slot, assign: make(chan string, 1), retire: make(chan struct{})}
+			v := &entry{profile: name, state: VM{ID: id, State: Booting}, slot: slot, assign: make(chan string, 1), retire: make(chan struct{})}
 			entries[id] = v
 			wg.Add(1)
-			go func(v *entry) { defer wg.Done(); worker(runCtx, c, b, v, events, start) }(v)
+			go func() { defer wg.Done(); worker(runCtx, configs[name], backends[name], v, events, start) }()
+		}
+		// Shrink canceled/excess warm capacity, retaining resources until done.
+		for _, name := range names {
+			total, active, _ := counts(name)
+			surplus := total - Target(configs[name].Warm, configs[name].Max, active, requested[name])
+			for _, v := range entries {
+				if v.profile == name && v.state.State == Dead {
+					surplus--
+				}
+			}
+			for _, v := range entries {
+				if surplus <= 0 {
+					break
+				}
+				if v.profile == name && (v.state.State == Ready || v.state.State == Booting) {
+					retire(v)
+					surplus--
+				}
+			}
+		}
+		for len(waiting) > 0 {
+			name := waiting[0]
+			p := configs[name]
+			if time.Now().Before(nextBoot[name]) {
+				break
+			}
+			if !fits(p) {
+				// Reclaim optional uncredentialed warm guests; never evict job guests.
+				for _, other := range names {
+					if other == name {
+						continue
+					}
+					_, a, idle := counts(other)
+					spare := idle - max(0, requested[other]-a)
+					for _, v := range entries {
+						if spare <= 0 {
+							break
+						}
+						if v.profile == other && (v.state.State == Ready || v.state.State == Booting) {
+							retire(v)
+							spare--
+						}
+					}
+				}
+				break
+			}
+			boot(name)
+			waiting = waiting[1:]
+			if needs(name) {
+				waiting = append(waiting, name)
+			}
+		}
+		// Do not fill optional warms while an older job request needs capacity.
+		if len(waiting) == 0 {
+			for _, name := range names {
+				p := configs[name]
+				total, active, _ := counts(name)
+				target := Target(p.Warm, p.Max, active, requested[name])
+				for total < target && fits(p) && !time.Now().Before(nextBoot[name]) {
+					boot(name)
+					total++
+				}
+			}
 		}
 	}
 }
@@ -305,22 +462,44 @@ func worker(ctx context.Context, c config.Config, b Backend, v *entry, events ch
 	report("done", e)
 }
 func reconcile(ctx context.Context, c config.Config, b Backend) error {
+	return reconcileProfiles(ctx, c, map[string]Backend{c.ScaleSet: b})
+}
+
+// RecordProfile derives the immutable scale-set identity from a private intent.
+// Old records need no migration and removed profiles remain recoverable.
+func RecordProfile(c config.Config, r host.Record) (string, error) {
+	if r.GitHubURL != c.GitHubURL || r.RunnerGroupID != c.RunnerGroupID {
+		return "", fmt.Errorf("journal scope changed; restore original GitHub URL and runner group")
+	}
+	suffix := "-" + r.ID
+	name := strings.TrimSuffix(r.Name, suffix)
+	if name == r.Name || !config.Name.MatchString(name) {
+		return "", fmt.Errorf("invalid journal profile")
+	}
+	if len(c.Profiles) == 0 && name != c.ScaleSet {
+		return "", fmt.Errorf("journal scope changed; restore original scale-set configuration")
+	}
+	return name, nil
+}
+func recordScope(c config.Config, r host.Record) error { _, e := RecordProfile(c, r); return e }
+func reconcileProfiles(ctx context.Context, c config.Config, backends map[string]Backend) error {
 	records, e := host.Records(c.StateDir)
 	if e != nil {
 		return e
 	}
 	for _, r := range records {
-		if e = recordScope(c, r); e != nil {
+		name, e := RecordProfile(c, r)
+		if e != nil {
 			return e
 		}
-		// An existing VM directory means that registration may still be active.
+		b := backends[name]
+		if b == nil {
+			return fmt.Errorf("journal profile backend missing")
+		}
 		if _, e = os.Stat(filepath.Join(c.StateDir, "vms", r.ID)); e == nil {
 			continue
 		} else if !os.IsNotExist(e) {
 			return e
-		}
-		if r.Name != c.ScaleSet+"-"+r.ID {
-			return fmt.Errorf("journal scale set mismatch; restore original configuration")
 		}
 		if e = b.Remove(ctx, r.Name); e != nil {
 			return e
@@ -331,13 +510,6 @@ func reconcile(ctx context.Context, c config.Config, b Backend) error {
 		if e = host.Forget(c.StateDir, r.ID); e != nil {
 			return e
 		}
-	}
-	return nil
-}
-
-func recordScope(c config.Config, r host.Record) error {
-	if r.GitHubURL != c.GitHubURL || r.RunnerGroupID != c.RunnerGroupID || r.Name != c.ScaleSet+"-"+r.ID {
-		return fmt.Errorf("journal scope changed; restore the original GitHub URL, runner group and scale-set configuration")
 	}
 	return nil
 }

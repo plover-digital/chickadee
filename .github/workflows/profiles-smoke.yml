@@ -1,0 +1,70 @@
+name: Runner profile validation
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  profile:
+    if: github.repository == 'plover-digital/chickadee' && github.ref == 'refs/heads/main'
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - label: chickadee
+            os: rocky
+            version: '10.2'
+            cpus: 4
+            memory_mib: 8192
+          - label: chickadee-small-rocky-102
+            os: rocky
+            version: '10.2'
+            cpus: 2
+            memory_mib: 4096
+          - label: chickadee-medium-rocky-102
+            os: rocky
+            version: '10.2'
+            cpus: 4
+            memory_mib: 8192
+          - label: chickadee-small-ubuntu-2404
+            os: ubuntu
+            version: '24.04'
+            cpus: 2
+            memory_mib: 4096
+          - label: chickadee-medium-ubuntu-2404
+            os: ubuntu
+            version: '24.04'
+            cpus: 4
+            memory_mib: 8192
+    runs-on: ${{ matrix.label }}
+    timeout-minutes: 10
+    steps:
+      - name: Verify selected OS, shape and guest isolation
+        env:
+          EXPECT_OS: ${{ matrix.os }}
+          EXPECT_VERSION: ${{ matrix.version }}
+          EXPECT_CPUS: ${{ matrix.cpus }}
+          EXPECT_MEMORY_MIB: ${{ matrix.memory_mib }}
+        run: |
+          set -euo pipefail
+          . /etc/os-release
+          test "$ID" = "$EXPECT_OS"
+          test "$VERSION_ID" = "$EXPECT_VERSION"
+          test "$(nproc)" = "$EXPECT_CPUS"
+          actual_mib=$(awk '/MemTotal:/ { print int($2/1024) }' /proc/meminfo)
+          test "$actual_mib" -ge "$((EXPECT_MEMORY_MIB-256))"
+          test "$actual_mib" -le "$EXPECT_MEMORY_MIB"
+          test "$(id -u)" = 1000
+          test ! -e /var/run/docker.sock
+          if [ "$ID" = rocky ]; then
+            test "$(/usr/sbin/getenforce)" = Enforcing
+          fi
+          printf 'profile verified: os=%s version=%s cpus=%s memory_mib=%s\n' "$ID" "$VERSION_ID" "$(nproc)" "$actual_mib"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.26.3'
+          cache: false
+      - run: make build test

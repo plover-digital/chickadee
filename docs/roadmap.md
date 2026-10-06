@@ -52,9 +52,10 @@ not belong in the first one-host vertical slice. Shared caches, dashboards,
 snapshot cloning, multi-host scheduling and HA remain deferred. The user has
 now requested multiple resource/image selections; see the
 [profile design draft](selection-design.md) and [platform comparison](runner-platform-research.md).
-Multiple profiles/images are the next design phase and are not implemented yet.
+The shared profile scheduler and image catalog are implemented; new image
+release support requires real boot/job validation. See [profiles](profiles.md).
 
 Next image/profile targets: Ubuntu 24.04/26.04 and Rocky Linux 9.8/10.2, with labels
 `chickadee-{size}-{os}-{version}` (for example,
-`chickadee-small-ubuntu-2404`). Ubuntu 26.04/Rocky image building and multi-profile runtime
-support remain unimplemented; see [selection design](selection-design.md).
+`chickadee-small-ubuntu-2404`). Ubuntu 26.04 and Rocky 9.8 image builders remain unimplemented;
+Rocky 10.2 uses stock-kernel q35 while Ubuntu 24.04 retains microvm; see [selection design](selection-design.md).

@@ -6,7 +6,7 @@ build:
 
 test:
 	go test -race -mod=readonly ./...
-	python3 -m unittest discover -s scripts -p test_setup_app.py
+	python3 -m unittest discover -s scripts -p 'test_*.py'
 
 test-offline:
 	go test -race ./internal/protocol ./internal/pool ./internal/host ./internal/config ./cmd/chickadee-guest

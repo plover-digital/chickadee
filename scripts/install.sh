@@ -6,9 +6,14 @@ set -euo pipefail
 [[ $ID == ubuntu && $VERSION_ID == 24.04 && $(uname -m) == x86_64 ]] || { echo 'Documented installer requires Ubuntu 24.04 amd64.' >&2; exit 1; }
 cd "$(dirname "$0")/.."
 config=${1:?Usage: install.sh CONFIG_JSON}
-[[ -f bin/chickadee && -f images/base.qcow2 ]]
+[[ -f bin/chickadee ]]
 bin/chickadee -config "$config" -check
-(cd images && sha256sum --check --status SHA256SUMS)
+catalog=$(python3 -c 'import json,sys;print(bool(json.load(open(sys.argv[1])).get("profiles")))' "$config")
+if [[ $catalog == False ]]; then
+  (cd images && sha256sum --check --status SHA256SUMS)
+else
+  echo 'Catalog installation: install each immutable bundle with scripts/install-image.sh first.'
+fi
 if ! id chickadee >/dev/null 2>&1; then useradd --system --user-group --home-dir /var/lib/chickadee --shell /usr/sbin/nologin chickadee; fi
 install -d -m 0750 -o root -g chickadee /etc/chickadee
 install -d -m 0700 -o chickadee -g chickadee /var/lib/chickadee
@@ -16,24 +21,16 @@ install -d -m 0755 /var/lib/chickadee-image /usr/local/lib/chickadee
 [[ ! -e /etc/chickadee/config.json ]] || { echo 'Existing installation; stop controller and review config/image upgrade manually.' >&2; exit 1; }
 install -m 0640 -o root -g chickadee "$config" /etc/chickadee/config.json
 install -m 0755 bin/chickadee /usr/local/bin/chickadee
-cp -a images/. /var/lib/chickadee-image/
-chown -R root:root /var/lib/chickadee-image
-find /var/lib/chickadee-image -type d -exec chmod 0755 {} +
-find /var/lib/chickadee-image -type f -exec chmod 0444 {} +
-install -m 0755 scripts/network.sh scripts/preflight.sh /usr/local/lib/chickadee/
+if [[ $catalog == False ]]; then
+ cp -a images/. /var/lib/chickadee-image/
+ chown -R root:root /var/lib/chickadee-image
+ find /var/lib/chickadee-image -type d -exec chmod 0755 {} +
+ find /var/lib/chickadee-image -type f -exec chmod 0444 {} +
+fi
+install -m 0755 scripts/network.sh scripts/preflight.sh scripts/profile-settings.py /usr/local/lib/chickadee/
 install -m 0644 deploy/chickadee.service deploy/chickadee-network.service /etc/systemd/system/
 mkdir -p /etc/systemd/system/chickadee.service.d
-python3 - <<'PY'
-import json
-c=json.load(open('/etc/chickadee/config.json'))
-assert c['state_dir']=='/var/lib/chickadee' and c['image_dir']=='/var/lib/chickadee-image'
-# Includes allowance for QEMU overhead and Go controller; cgroup bounds the whole service.
-# Host tasks include vCPU threads, disk I/O pools and emulator helper threads.
-# Guest processes do not count toward this host task budget.
-mem=c['max_vms']*(c['memory_mib']+512)+512
-cpu=c['max_vms']*c['cpus']*100
-with open('/etc/systemd/system/chickadee.service.d/resources.conf','w') as f:
- f.write(f'[Service]\nMemoryMax={mem}M\nCPUQuota={cpu}%\nTasksMax={64+c["max_vms"]*(c["cpus"]+160)}\n')
-PY
+python3 scripts/profile-settings.py resources /etc/chickadee/config.json > /etc/systemd/system/chickadee.service.d/resources.conf
+python3 scripts/profile-settings.py preflight /etc/chickadee/config.json
 systemctl daemon-reload
 printf '%s\n' 'Installed; service remains stopped. Store the App key, explicitly apply networking, then enable the services as documented.'

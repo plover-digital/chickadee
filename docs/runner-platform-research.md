@@ -48,8 +48,9 @@ unambiguous resource/image routing. A single VM remains at most one job; it is
 not bound to the particular workflow-job event that prompted provisioning.
 
 The proposed configuration is in [selection-design.md](selection-design.md).
-It is **not implemented** by this research commit; the current binary still
-supports one scale set and image/resource profile.
+It was **not implemented** by the original research commit. The subsequent
+controller implementation and accepted catalog schema are in [profiles.md](profiles.md).
+Rocky uses q35 with its stock kernel; the microvm comparison is deferred.
 
 ## Images, distributions and capabilities
 

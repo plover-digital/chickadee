@@ -13,6 +13,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -55,49 +56,101 @@ func run(path string, cleanup, bootCheck bool) error {
 	}
 	defer owner.Close()
 	if bootCheck {
-		for i := 0; i < 2; i++ {
-			id := host.NewID()
-			vm, e := host.StartBootCheck(ctx, c, 1, id)
-			if e != nil {
-				if vm != nil {
-					if ce := vm.Cleanup(); ce != nil {
-						return ce
+		for _, profile := range c.ProfileConfigs() {
+			for i := 0; i < 2; i++ {
+				id := host.NewID()
+				vm, e := host.StartBootCheck(ctx, profile, 1, id)
+				if e != nil {
+					if vm != nil {
+						if ce := vm.Cleanup(); ce != nil {
+							return ce
+						}
 					}
+					return e
 				}
-				return e
+				slog.Info("boot check READY", "vm", id)
+				if e = vm.Cleanup(); e != nil {
+					return e
+				}
+				slog.Info("boot check QEMU exited and disk deleted", "vm", id)
 			}
-			slog.Info("boot check READY", "vm", id)
-			if e = vm.Cleanup(); e != nil {
-				return e
-			}
-			slog.Info("boot check QEMU exited and disk deleted", "vm", id)
 		}
 		return nil
 	}
-	initCtx, cc := context.WithTimeout(ctx, 60*time.Second)
-	b, e := github.New(initCtx, c)
-	cc()
+
+	profiles := c.ProfileConfigs()
+	backends := map[string]pool.Backend{}
+	clients := map[string]*github.Client{}
+	for _, p := range profiles {
+		initCtx, cc := context.WithTimeout(ctx, 60*time.Second)
+		b, e := github.New(initCtx, p)
+		cc()
+		if e != nil {
+			return e
+		}
+		backends[p.ScaleSet] = b
+		clients[p.ScaleSet] = b
+	}
+	records, e := host.Records(c.StateDir)
 	if e != nil {
 		return e
+	}
+	for _, r := range records {
+		name, e := pool.RecordProfile(c, r)
+		if e != nil {
+			return e
+		}
+		if backends[name] != nil {
+			continue
+		}
+		recovery := profiles[0]
+		recovery.ScaleSet = name
+		initCtx, cc := context.WithTimeout(ctx, 60*time.Second)
+		b, e := github.Existing(initCtx, recovery)
+		cc()
+		if e != nil {
+			return e
+		}
+		backends[name] = b
 	}
 	if cleanup {
 		cleanCtx, cc := context.WithTimeout(ctx, 60*time.Second)
 		defer cc()
-		return pool.Cleanup(cleanCtx, c, b, owner)
+		return pool.CleanupProfiles(cleanCtx, c, backends, owner)
 	}
-	demand := make(chan int, 16)
-	pollErrors := make(chan error, 1)
-	poolErrors := make(chan error, 1)
-	go func() { pollErrors <- b.Poll(ctx, c.ScaleSet, c.Max, demand) }()
-	go func() { poolErrors <- pool.RunOwned(ctx, c, b, demand, owner) }()
-	select {
-	case e = <-pollErrors:
-		cancel()
-		<-poolErrors
-		return e
-	case e = <-poolErrors:
-		cancel()
-		<-pollErrors
-		return e
+	demand := make(chan pool.Demand, 32)
+	results := make(chan error, len(profiles)+1)
+	var wg sync.WaitGroup
+	for _, p := range profiles {
+		wg.Add(1)
+		go func(p config.Config) {
+			defer wg.Done()
+			values := make(chan int, 16)
+			pollDone := make(chan error, 1)
+			go func() { pollDone <- clients[p.ScaleSet].Poll(ctx, p.ScaleSet, p.Max, values) }()
+			for {
+				select {
+				case n := <-values:
+					select {
+					case demand <- pool.Demand{Profile: p.ScaleSet, Assigned: n}:
+					case <-ctx.Done():
+						results <- <-pollDone
+						return
+					}
+				case e := <-pollDone:
+					results <- e
+					return
+				case <-ctx.Done():
+					results <- <-pollDone
+					return
+				}
+			}
+		}(p)
 	}
+	wg.Add(1)
+	go func() { defer wg.Done(); results <- pool.RunProfilesOwned(ctx, c, backends, demand, owner) }()
+	e = <-results
+	cancel()
+	wg.Wait()
+	return e
 }

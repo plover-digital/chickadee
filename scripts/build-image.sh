@@ -112,7 +112,7 @@ guestfish --ro -a build/base.qcow2 -m /dev/sda download "/boot/initrd.img-$versi
 ln -s "vmlinuz-$version" images/vmlinuz
 ln -s "initrd-$version" images/initrd
 mv build/base.qcow2 images/base.qcow2
-printf '{"disk_gib":16,"ubuntu_release":"%s","snapshot":"%s","runner":"%s","kernel":"%s"}\n' "$release" "$snapshot" "$runner" "$version" > images/manifest.json
+printf '{"disk_gib":16,"os":"ubuntu","os_version":"24.04","architecture":"amd64","machine":"microvm","ubuntu_release":"%s","snapshot":"%s","runner":"%s","kernel":"%s"}\n' "$release" "$snapshot" "$runner" "$version" > images/manifest.json
 (cd images && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt > SHA256SUMS)
 chmod 0444 images/*
 echo 'Image built. Keep the manifest and checksums with these immutable artifacts.'
