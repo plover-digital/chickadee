@@ -32,7 +32,8 @@ journal are local. One controller and one dedicated scale set own the installati
 ```mermaid
 flowchart LR
   GH[GitHub scale set] -->|demand statistics| C[Go controller]
-  C -->|READY over serial| W[Warm microvm: no credentials]
+  C -->|boot| W[Warm microvm: no credentials]
+  W -->|READY over serial| C
   C -->|fresh one-runner JIT over serial| R[Reserved microvm]
   R -->|outbound NAT| GH
   R -->|one job, diagnostics, DONE| C

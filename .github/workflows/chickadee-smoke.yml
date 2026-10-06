@@ -5,6 +5,7 @@ permissions:
   contents: read
 jobs:
   first:
+    if: github.repository == 'plover-digital/chickadee' && github.ref == 'refs/heads/main'
     runs-on: chickadee
     timeout-minutes: 5
     outputs:

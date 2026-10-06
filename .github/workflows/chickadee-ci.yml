@@ -2,6 +2,8 @@
 # Keep this workflow limited to trusted commits. Public fork PRs use hosted CI.
 name: plover-digital main-branch build and test
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
