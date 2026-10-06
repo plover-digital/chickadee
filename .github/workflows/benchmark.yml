@@ -1,0 +1,39 @@
+name: Runner performance comparison
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  benchmark:
+    if: github.repository == 'plover-digital/chickadee' && github.ref == 'refs/heads/main'
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - {runner: chickadee, sample: 1}
+          - {runner: ubuntu-24.04, sample: 1}
+          - {runner: chickadee, sample: 2}
+          - {runner: ubuntu-24.04, sample: 2}
+          - {runner: chickadee, sample: 3}
+          - {runner: ubuntu-24.04, sample: 3}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.26.3'
+          cache: false
+      - name: Measure build and test
+        run: python3 scripts/benchmark.py
+        env:
+          BENCH_PLATFORM: ${{ matrix.runner }}
+          BENCH_SAMPLE: ${{ matrix.sample }}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: benchmark-${{ matrix.runner }}-${{ matrix.sample }}
+          path: benchmark.json
+          retention-days: 7
