@@ -56,9 +56,20 @@ type Repository struct {
 	Permissions map[string]bool `json:"permissions"`
 }
 type Choice struct {
-	Installation Installation
-	Repository   Repository
+	Installation   Installation
+	Repository     Repository
+	SelectedQueues []string
 }
+
+func (c Choice) HasQueue(queue string) bool {
+	for _, q := range c.SelectedQueues {
+		if q == queue {
+			return true
+		}
+	}
+	return false
+}
+
 type Enrollment struct {
 	ID             string     `json:"id"`
 	User           User       `json:"user"`
@@ -158,7 +169,7 @@ func New(c Config) (*Server, error) {
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.Header().Set("Referrer-Policy", "no-referrer")
+	w.Header().Set("Referrer-Policy", "same-origin")
 	w.Header().Set("Cache-Control", "no-store")
 	s.mux.ServeHTTP(w, r)
 }
@@ -355,7 +366,7 @@ func (s *Server) choices(ctx context.Context, v session) ([]Choice, error) {
 		}
 		for _, repo := range repos.Repositories {
 			if repo.ID > 0 && repo.Permissions["admin"] {
-				out = append(out, Choice{i, repo})
+				out = append(out, Choice{Installation: i, Repository: repo})
 			}
 		}
 	}
@@ -373,8 +384,31 @@ func (s *Server) dashboard(w http.ResponseWriter, r *http.Request) {
 		p.Message = "GitHub access could not be verified. Sign in again, or check your App installation permissions."
 	}
 	s.mu.Lock()
+	for i := range p.Choices {
+		for _, entry := range s.enrollments {
+			if entry.User.ID == v.User.ID && entry.InstallationID == p.Choices[i].Installation.ID && entry.Repository.ID == p.Choices[i].Repository.ID {
+				p.Choices[i].SelectedQueues = append([]string(nil), entry.Queues...)
+				break
+			}
+		}
+	}
 	for _, entry := range s.enrollments {
 		if entry.User.ID == v.User.ID {
+			authorized := false
+			if e == nil {
+				for _, choice := range choices {
+					if choice.Installation.ID == entry.InstallationID && choice.Repository.ID == entry.Repository.ID {
+						authorized = true
+						break
+					}
+				}
+			}
+			if !authorized {
+				entry.Usage = nil
+				entry.EnabledQueues = nil
+				entry.Status = "permission-required"
+				entry.Message = "Current GitHub administration access could not be verified. Restore access or sign in again to view usage and manage queues."
+			}
 			p.Enrollments = append(p.Enrollments, entry)
 		}
 	}
@@ -472,24 +506,9 @@ func (s *Server) enroll(w http.ResponseWriter, r *http.Request) {
 	defer s.mu.Unlock()
 	for i, entry := range s.enrollments {
 		if entry.InstallationID == iid && entry.Repository.ID == rid && entry.User.ID == v.User.ID {
-			merged := append([]string(nil), entry.Queues...)
-			if len(merged) == 0 {
-				merged = []string{"chickadee"}
-			}
-			for _, queue := range queues {
-				found := false
-				for _, old := range merged {
-					if old == queue {
-						found = true
-						break
-					}
-				}
-				if !found {
-					merged = append(merged, queue)
-				}
-			}
 			entries := append([]Enrollment(nil), s.enrollments...)
-			entries[i].Queues = merged
+			entries[i].Queues = queues
+			entries[i].Updated = time.Now().UTC()
 			if e = s.saveLocked(entries); e != nil {
 				http.Error(w, "Request could not be saved", 500)
 				return

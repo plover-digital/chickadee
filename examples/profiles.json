@@ -12,14 +12,14 @@
       "path": "/var/lib/chickadee-images/ubuntu-2404/v1",
       "os": "ubuntu",
       "version": "24.04",
-      "disk_gib": 16,
+      "disk_gib": 48,
       "machine": "microvm"
     },
     "rocky-102": {
       "path": "/var/lib/chickadee-images/rocky-102/v1",
       "os": "rocky",
       "version": "10.2",
-      "disk_gib": 16,
+      "disk_gib": 48,
       "machine": "q35"
     }
   },

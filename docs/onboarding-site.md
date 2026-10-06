@@ -127,8 +127,8 @@ permission checks. Personal installations require their owner; managing an
 organization repository requires GitHub repository administration permission.
 
 The small dashboard usage graph shows up to seven UTC days of **completed,
-credentialed VM lifetime**, supplied by the operator's private status relay.
-Values include VM startup and cleanup and exclude currently running VMs and
+reserved VM time**, supplied by the operator's private status relay.
+Values include runner connection, execution and cleanup and exclude currently running VMs and
 credential-free warm-pool VMs. They describe compute usage, not GitHub job
 execution time or billable minutes. Exact daily values are available below
 the graph in an accessible table; no history produces an empty-state message.
@@ -136,3 +136,24 @@ Usage is visible only alongside that signed-in user's activation requests.
 
 See [managed beta](managed-beta.md) for the optional approval/status bridge,
 pause/disconnect behavior and usage measurement limits.
+
+Repository setup forms are collapsed by default. Existing requested queues are
+preselected; submitting the form replaces the selection, so unchecking an
+optional queue requests its removal. The default `chickadee` queue remains
+included. Enabled queues show the applied configuration until the operator's
+reconciliation and graceful drain complete. Removing one optional queue does
+not request removal of the repository or its other queues.
+
+An operator may import an already admitted tester's verified metadata through
+`POST /import-enrollment` on the private Unix admin listener. This route is
+absent from the public website. Imports deduplicate by user, installation, and
+repository numeric IDs; they never overwrite an existing customer's queue or
+pause/disconnect request. The operator must verify GitHub identity, selected
+repositories, and deployed queues before importing metadata. The site stores
+no credentials in these records.
+
+Each dashboard visit also checks current GitHub repository administration
+access. If that access cannot be verified, the site retains the user's request
+metadata and explains the permission problem, while hiding usage, enabled
+workflow examples, and management controls. This does not mutate deployed
+operator state; the private reconciler handles actual access removal.

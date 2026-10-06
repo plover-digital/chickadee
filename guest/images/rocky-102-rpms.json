@@ -1,5 +1,165 @@
 [
   {
+    "name": "ModemManager-glib-1.22.0-7.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/m/ModemManager-glib-1.22.0-7.el10.x86_64.rpm",
+    "sha256": "44a86466a8c54725752db492b8e85a68a7c82d73b8c9aa33fa3b0881ef14ccab"
+  },
+  {
+    "name": "aardvark-dns-1.17.1-1.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/a/aardvark-dns-1.17.1-1.el10_2.x86_64.rpm",
+    "sha256": "ee39182f2a83a7421116d24c45455bac1622fb74db3e3b65fdec1cf1dec78261"
+  },
+  {
+    "name": "adwaita-cursor-theme-46.0-3.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/a/adwaita-cursor-theme-46.0-3.el10.noarch.rpm",
+    "sha256": "290402351168b31e3d71d7cb8778f9f632030e5a7d601746dd7c059373e427f8"
+  },
+  {
+    "name": "adwaita-icon-theme-46.0-3.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/a/adwaita-icon-theme-46.0-3.el10.noarch.rpm",
+    "sha256": "c4419020522ddb2c585e3368e065cd6fd1ede48529577ba56fc0279511d870de"
+  },
+  {
+    "name": "alsa-lib-1.2.15.3-2.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/a/alsa-lib-1.2.15.3-2.el10.x86_64.rpm",
+    "sha256": "59a84b28a047bec2a2dd8f66df22792057249930d4826652435ec3fd9ebb0ce2"
+  },
+  {
+    "name": "alternatives-1.30-2.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/a/alternatives-1.30-2.el10.x86_64.rpm",
+    "sha256": "3f3710935dd048e91b153a04b068d53a151f328bfc04464676fb384a4379a9eb"
+  },
+  {
+    "name": "annobin-docs-13.02-2.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/a/annobin-docs-13.02-2.el10.noarch.rpm",
+    "sha256": "f52769a377b037899cc4878f2a85942aab2b650e85888a793d437e9b9574b16f"
+  },
+  {
+    "name": "annobin-plugin-gcc-13.02-2.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/a/annobin-plugin-gcc-13.02-2.el10.x86_64.rpm",
+    "sha256": "71cc5b8ee024dd6979a7116723015bfeabbb1c8e4c7b42d88b96f1a6fb2fa7c2"
+  },
+  {
+    "name": "ant-1.10.15-1.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/a/ant-1.10.15-1.el10.noarch.rpm",
+    "sha256": "3dd7739c9154815ed5997005f7045356c40485c67348cf8b2de8a67ea8527945"
+  },
+  {
+    "name": "ant-lib-1.10.15-1.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/a/ant-lib-1.10.15-1.el10.noarch.rpm",
+    "sha256": "c9a52dd158fee449b7a81e3254254ad659272545dbb014429450af00b4006e0e"
+  },
+  {
+    "name": "ant-openjdk21-1.10.15-1.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/CRB/x86_64/os/Packages/a/ant-openjdk21-1.10.15-1.el10.noarch.rpm",
+    "sha256": "81422b5b772458502d0b69888e3061ad75b0827384c88ebd50563612e9e1e29d"
+  },
+  {
+    "name": "aopalliance-1.0-40.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/a/aopalliance-1.0-40.el10.noarch.rpm",
+    "sha256": "641b3486b2bd4012b4be90ba6495c518bff7b867fd22f108dbe4031e8246ffc4"
+  },
+  {
+    "name": "apache-commons-cli-1.9.0-1.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/a/apache-commons-cli-1.9.0-1.el10.noarch.rpm",
+    "sha256": "7983737bbfae25d52c936fdd3ebc7d005bcb6ecb76a0c6cc8520687150e0eb1b"
+  },
+  {
+    "name": "apache-commons-codec-1.17.1-1.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/a/apache-commons-codec-1.17.1-1.el10.noarch.rpm",
+    "sha256": "3bb41838fd8a07e9d985b0c0b42820f25a62da813a6b6405f2307dbad7e854b3"
+  },
+  {
+    "name": "apache-commons-io-2.16.1-1.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/a/apache-commons-io-2.16.1-1.el10.noarch.rpm",
+    "sha256": "7cd69a246f05332f26add7b744990f7ffb9ebc56b97ef1802698df394f7de6ec"
+  },
+  {
+    "name": "at-spi2-atk-2.56.1-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/a/at-spi2-atk-2.56.1-1.el10.x86_64.rpm",
+    "sha256": "14afaa484f59c723c5044213b279cab9d21d95aaec839d2b6908442eab79f1ac"
+  },
+  {
+    "name": "at-spi2-core-2.56.1-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/a/at-spi2-core-2.56.1-1.el10.x86_64.rpm",
+    "sha256": "f898328005d9ae5b86f0a1355b2808658474080952c4d526236ea95ff7122aa7"
+  },
+  {
+    "name": "atinject-1.0.5-13.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/a/atinject-1.0.5-13.el10.noarch.rpm",
+    "sha256": "6f272b8de14a4df15ba859d85e8aebd648f9d8cd700b7f54c4e04581f5d63b82"
+  },
+  {
+    "name": "atk-2.56.1-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/a/atk-2.56.1-1.el10.x86_64.rpm",
+    "sha256": "33bb9983d32efd3eaea229c5076b09e195a9e3278b3f78652c53be72d369ca15"
+  },
+  {
+    "name": "attr-2.6.0-1.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/a/attr-2.6.0-1.el10_2.x86_64.rpm",
+    "sha256": "b014aa94a51deca92e4278a66b4a154c1166a1481d95cda52523f3a6363ffe2b"
+  },
+  {
+    "name": "audit-libs-4.0.3-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/a/audit-libs-4.0.3-5.el10.x86_64.rpm",
+    "sha256": "b82f4b8fae532ae99f0515f48c8ed3d88798e648344e61ac3c0e3bfe7da6f977"
+  },
+  {
+    "name": "authselect-1.5.2-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/a/authselect-1.5.2-1.el10.x86_64.rpm",
+    "sha256": "fc8370c0a713783a80239505a5a407b87b7c37cc2a8e7d64bdcb36aa9ec4c67e"
+  },
+  {
+    "name": "authselect-libs-1.5.2-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/a/authselect-libs-1.5.2-1.el10.x86_64.rpm",
+    "sha256": "19f583b64c6203d12a657e81d1259f877395a13a6cf7523e6dbc3af004a9d206"
+  },
+  {
+    "name": "autoconf-2.71-13.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/a/autoconf-2.71-13.el10.noarch.rpm",
+    "sha256": "05c30e8f8ba0d8b4bc1e0d23a55565822037d10504f4ea9643196f8e416df364"
+  },
+  {
+    "name": "automake-1.16.5-20.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/a/automake-1.16.5-20.el10.noarch.rpm",
+    "sha256": "4d661c6e4edd00fef5fc836a3428864e4d481cb729ca7c8c547f602e93b09bf9"
+  },
+  {
+    "name": "avahi-glib-0.9~rc2-2.el10_0.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/a/avahi-glib-0.9~rc2-2.el10_0.x86_64.rpm",
+    "sha256": "6c7c7b4ecd52f762a6f67d08a98a2f6bfe21f51eb6c12a0e8153c0f20f8b5971"
+  },
+  {
+    "name": "avahi-libs-0.9~rc2-2.el10_0.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/a/avahi-libs-0.9~rc2-2.el10_0.x86_64.rpm",
+    "sha256": "675bf726601c8bc1b7ea1f482d94aed842b0895e812d6a2acc13a3944fb9d537"
+  },
+  {
+    "name": "basesystem-11-22.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/b/basesystem-11-22.el10.noarch.rpm",
+    "sha256": "4af901669a21dca5daeef8dfbb57ce115bf5c80c246c8693576703e2a81d189b"
+  },
+  {
+    "name": "bash-5.2.26-6.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/b/bash-5.2.26-6.el10.x86_64.rpm",
+    "sha256": "7cab082f05eaf1f45bcf84c0a1c8207ca21864a88eef48656098a6b6ec847218"
+  },
+  {
+    "name": "bind-libs-9.18.33-15.el10_2.12.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/b/bind-libs-9.18.33-15.el10_2.12.x86_64.rpm",
+    "sha256": "5a280e6ad3c1eddb1e6b8fe7964b86a1dd2ec08c6caf6dc489d2871962e07c44"
+  },
+  {
+    "name": "bind-license-9.18.33-15.el10_2.12.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/b/bind-license-9.18.33-15.el10_2.12.noarch.rpm",
+    "sha256": "9957d990f2ee8f816569ba04227e37d1a145cb9d17be521f9a4d70241d16166e"
+  },
+  {
+    "name": "bind-utils-9.18.33-15.el10_2.12.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/b/bind-utils-9.18.33-15.el10_2.12.x86_64.rpm",
+    "sha256": "ac56006073ad1d357c3f517de2937444f8758ae64df878d5aaa8b499e1c5867e"
+  },
+  {
     "name": "binutils-2.41-63.el10.x86_64.rpm",
     "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/b/binutils-2.41-63.el10.x86_64.rpm",
     "sha256": "5a9bdb2ce9cfb33c93bc7cebd6993f7d69332a2ed49012ac94dc2f1d99f3a927"
@@ -10,9 +170,239 @@
     "sha256": "471e105d75907c03cbffbf5137ee48401286d1872e1c24dfaca807632f010461"
   },
   {
+    "name": "bluez-libs-5.85-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/b/bluez-libs-5.85-1.el10.x86_64.rpm",
+    "sha256": "4a56706affbee212f42638f924cff5f6f965328d02037c4d0c4bc97731bf7190"
+  },
+  {
+    "name": "buildah-1.43.1-6.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/b/buildah-1.43.1-6.el10_2.x86_64.rpm",
+    "sha256": "ce739ef58a087e40221df7194aa137a87dfa34e65ed6c99de0b696fafc6ec1b6"
+  },
+  {
+    "name": "bzip2-1.0.8-25.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/b/bzip2-1.0.8-25.el10.x86_64.rpm",
+    "sha256": "afa2f24ec9d38bee5640b640b226958fff136af093d6ea24b09eaf413c363e16"
+  },
+  {
+    "name": "bzip2-libs-1.0.8-25.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/b/bzip2-libs-1.0.8-25.el10.x86_64.rpm",
+    "sha256": "b8dfb5a864863fbdf3453a444654b13a0832bc903221480adecb7e65f46c01f7"
+  },
+  {
+    "name": "ca-certificates-2025.2.80_v9.0.305-102.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/c/ca-certificates-2025.2.80_v9.0.305-102.el10.noarch.rpm",
+    "sha256": "fb3e6f93a2cc5b162f30e4641d937d58fa762ed482795da8ae21972b1f6a2193"
+  },
+  {
+    "name": "cairo-1.18.2-2.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/cairo-1.18.2-2.el10_2.1.x86_64.rpm",
+    "sha256": "9105279200717dbc065d01210049c58744876c487900a79588837866b980dd20"
+  },
+  {
+    "name": "cairo-gobject-1.18.2-2.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/cairo-gobject-1.18.2-2.el10_2.1.x86_64.rpm",
+    "sha256": "ffa0acd86cd7c44a18a513b7ff3bc9dccfdc9e22173696166ae26f7c3d0ec024"
+  },
+  {
+    "name": "catatonit-0.2.1-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/catatonit-0.2.1-1.el10.x86_64.rpm",
+    "sha256": "cd466a2ceb8875c53bd6d35b19d78db01282792ed4b8d52edd4b4ea223c55257"
+  },
+  {
+    "name": "cdi-api-2.0.2-15.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/cdi-api-2.0.2-15.el10.noarch.rpm",
+    "sha256": "42a190208601fd9bad954da0c0d1a259a09519e0f57fb2bf8ee35254400bb7ae"
+  },
+  {
+    "name": "checkpolicy-3.10-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/checkpolicy-3.10-1.el10.x86_64.rpm",
+    "sha256": "45380da3919be4c546a49fdedc4eaf7fb543da86d2b7ad2e45ec2cb9061e331d"
+  },
+  {
+    "name": "clang-21.1.8-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/clang-21.1.8-1.el10.x86_64.rpm",
+    "sha256": "c64d0f6daaf7e84c70e147da1fc20eb4b92fc87301d40ce8a7802e8663592138"
+  },
+  {
+    "name": "clang-libs-21.1.8-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/clang-libs-21.1.8-1.el10.x86_64.rpm",
+    "sha256": "7a37c942c580e7eecba79c28a824e61c3cbd317dbec94e649cdce900b03b1953"
+  },
+  {
+    "name": "clang-resource-filesystem-21.1.8-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/clang-resource-filesystem-21.1.8-1.el10.x86_64.rpm",
+    "sha256": "c4e6d4619e7d813aec1d8172f994df205676fc9b661be3f066fc0029bff77c14"
+  },
+  {
+    "name": "cmake-3.31.8-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/cmake-3.31.8-1.el10.x86_64.rpm",
+    "sha256": "46feb3841f2b43ecadb82c83cab7dab1d7a048cc4041b8794b552c9adba47fe9"
+  },
+  {
+    "name": "cmake-data-3.31.8-1.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/cmake-data-3.31.8-1.el10.noarch.rpm",
+    "sha256": "a7170d886b12bf05c7523dd886a0a3f2b4efed4f263139efc881ac1c355c46cb"
+  },
+  {
+    "name": "cmake-filesystem-3.31.8-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/cmake-filesystem-3.31.8-1.el10.x86_64.rpm",
+    "sha256": "3f80becc46df2aad49e42a3d6ba4fcdfde26c73ea07a620df9c7b299694f8920"
+  },
+  {
+    "name": "colord-libs-1.4.7-6.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/colord-libs-1.4.7-6.el10.x86_64.rpm",
+    "sha256": "7d9930e13f9f3b5049cd93c24cf5f15f51b6788f20f508bab7eb6fc6c0d52270"
+  },
+  {
+    "name": "compiler-rt-21.1.8-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/compiler-rt-21.1.8-1.el10.x86_64.rpm",
+    "sha256": "dd781a8f8ee7845336687b871bcbd0eb94689dc863916566ceddaff44a7e4004"
+  },
+  {
+    "name": "conmon-2.2.1-2.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/conmon-2.2.1-2.el10.x86_64.rpm",
+    "sha256": "be0dd6c7b1d83c197387078c9ef03a4a73f460b431b54de20803fa188db4e748"
+  },
+  {
+    "name": "container-selinux-2.246.0-1.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/container-selinux-2.246.0-1.el10.noarch.rpm",
+    "sha256": "413350fc466d619a4a2831e6b01175cf752525e240e60509f122ff6b59059a1d"
+  },
+  {
+    "name": "containers-common-5.8-2.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/containers-common-5.8-2.el10.noarch.rpm",
+    "sha256": "a8e534c856a375f53fe692d8bd1299f6cd321178edbb5efd41b55cb167a06b7d"
+  },
+  {
+    "name": "containers-common-extra-5.8-2.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/containers-common-extra-5.8-2.el10.noarch.rpm",
+    "sha256": "001db82bc2a8a107cf55cfb4abeee70768bfe9575f4219449901fe74f01d5344"
+  },
+  {
+    "name": "coreutils-9.5-8.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/c/coreutils-9.5-8.el10_2.1.x86_64.rpm",
+    "sha256": "7895b6922d990c8863eb668871f063d32aef836bcaa1a5f27dd335fe558d7319"
+  },
+  {
+    "name": "coreutils-common-9.5-8.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/c/coreutils-common-9.5-8.el10_2.1.x86_64.rpm",
+    "sha256": "80d03b446e7de02f4d16ab87f067f0b0c1765d01ed56f7d2b243168135100ba2"
+  },
+  {
     "name": "cpp-14.3.1-4.4.el10.x86_64.rpm",
     "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/cpp-14.3.1-4.4.el10.x86_64.rpm",
     "sha256": "eb54c6ea8f749dc825b2c39ee0dbe66f10e02492e6425359f32c64114cb1dbd7"
+  },
+  {
+    "name": "cracklib-2.9.11-8.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/c/cracklib-2.9.11-8.el10.x86_64.rpm",
+    "sha256": "dde81ec954f9893964555d586c05d47c3fa210fe26df9a3446119a8d8afdd7fd"
+  },
+  {
+    "name": "cracklib-dicts-2.9.11-8.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/c/cracklib-dicts-2.9.11-8.el10.x86_64.rpm",
+    "sha256": "2b5356fc405cb6d6637d15c5548997e70098a00e646ec6de010c1f2aab206a22"
+  },
+  {
+    "name": "criu-4.2-2.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/criu-4.2-2.el10_2.x86_64.rpm",
+    "sha256": "52a3594f403eefa25bd9d0a557843b80754ce2eb73de2148744baf3674614f3f"
+  },
+  {
+    "name": "criu-libs-4.2-2.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/criu-libs-4.2-2.el10_2.x86_64.rpm",
+    "sha256": "bff6d781328a976c33d16a87cefc8531520806b34203a66867ffbe82a3625ade"
+  },
+  {
+    "name": "crun-1.27-2.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/crun-1.27-2.el10_2.x86_64.rpm",
+    "sha256": "7bc4bbcfc0bfd1aa4017164619a8fc89e17241252359d0b2f0e35132d753979a"
+  },
+  {
+    "name": "crypto-policies-20260216-1.git0e54016.el10_2.2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/c/crypto-policies-20260216-1.git0e54016.el10_2.2.noarch.rpm",
+    "sha256": "e1fdcaa6d8dfad283883441c88cae7da33a894ce5ce11eb57e6423b3812a0d5f"
+  },
+  {
+    "name": "crypto-policies-scripts-20260216-1.git0e54016.el10_2.2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/c/crypto-policies-scripts-20260216-1.git0e54016.el10_2.2.noarch.rpm",
+    "sha256": "9b08f571c2de907330a419b29bd1208db652dab50344084f425d5c6d860e60eb"
+  },
+  {
+    "name": "cryptsetup-libs-2.8.1-2.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/c/cryptsetup-libs-2.8.1-2.el10.x86_64.rpm",
+    "sha256": "9f4009371d6be9f0de83a88e3bd8ec3108c39276eea929b81f8728360be2aaa8"
+  },
+  {
+    "name": "cups-filesystem-2.4.10-18.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/c/cups-filesystem-2.4.10-18.el10_2.noarch.rpm",
+    "sha256": "502539c35ad86835cc6354ba50bcad498d1e2c118e9cea93de0264a402e6d4b7"
+  },
+  {
+    "name": "cups-libs-2.4.10-18.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/c/cups-libs-2.4.10-18.el10_2.x86_64.rpm",
+    "sha256": "beba7594f932a1285ed5b0b67af21dfea144465bf77c6fc2e1d76798713bfdf0"
+  },
+  {
+    "name": "curl-8.12.1-4.el10_2.6.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/c/curl-8.12.1-4.el10_2.6.x86_64.rpm",
+    "sha256": "b38b46d4ff3356d2184a5380e0eeac885e31e2aa8fd3deff930c261172259ca9"
+  },
+  {
+    "name": "cyrus-sasl-gssapi-2.1.28-30.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/c/cyrus-sasl-gssapi-2.1.28-30.el10_2.x86_64.rpm",
+    "sha256": "8208e39e3c7e85c5ca7cc532e96954c2c3f60313f35940db8a6a9bdb62f960bc"
+  },
+  {
+    "name": "cyrus-sasl-lib-2.1.28-30.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/c/cyrus-sasl-lib-2.1.28-30.el10_2.x86_64.rpm",
+    "sha256": "2c60ba981d7c6c0d49c46c13ec0c59bafceb19ad8882249a64b67e25efeae8b0"
+  },
+  {
+    "name": "dbus-1.14.10-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/d/dbus-1.14.10-5.el10.x86_64.rpm",
+    "sha256": "857444ebab5068eaad2a7df8d173e6d70b75be6f676a4b13be447986e9416498"
+  },
+  {
+    "name": "dbus-broker-36-5.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/d/dbus-broker-36-5.el10_2.x86_64.rpm",
+    "sha256": "0f5b3005efceee6b35c1ec939b6ab7e6cd49a85a5ef972ab6e65d6c6da95648f"
+  },
+  {
+    "name": "dbus-common-1.14.10-5.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/d/dbus-common-1.14.10-5.el10.noarch.rpm",
+    "sha256": "84ac15c6e63a448fc1d81b64649312cd6b35c4f8aef806b7f24bc9334ccf4362"
+  },
+  {
+    "name": "dbus-libs-1.14.10-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/d/dbus-libs-1.14.10-5.el10.x86_64.rpm",
+    "sha256": "966b6f686ffa14e52d73400e66d0e5867f8918e4a4054ffe93d6f725061367d2"
+  },
+  {
+    "name": "dconf-0.40.0-17.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/d/dconf-0.40.0-17.el10.x86_64.rpm",
+    "sha256": "303dbc53e67b61a39c7e8166a9bbe9a204e3bb4e4df286be464dc9111591807b"
+  },
+  {
+    "name": "default-fonts-core-sans-4.1-3.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/d/default-fonts-core-sans-4.1-3.el10.noarch.rpm",
+    "sha256": "c281e81b9861567b3f89768053518e603593ebb9443fe0089401db00907b8ded"
+  },
+  {
+    "name": "device-mapper-1.02.210-2.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/d/device-mapper-1.02.210-2.el10.x86_64.rpm",
+    "sha256": "c2d1335e1497f8d5fba817c54099693e11ac599f0f791a3c9f05f971c828bc2f"
+  },
+  {
+    "name": "device-mapper-libs-1.02.210-2.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/d/device-mapper-libs-1.02.210-2.el10.x86_64.rpm",
+    "sha256": "46467ffec30b7c47f03d3b20e33e428284baf8bece7b44145a97f8d267faac09"
+  },
+  {
+    "name": "diffutils-3.10-8.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/d/diffutils-3.10-8.el10.x86_64.rpm",
+    "sha256": "32bfb2c9581634d73ffc53c20ad86f1b6656f8b4a93017a25ac0c7f67a5919c0"
   },
   {
     "name": "dracut-107-9.el10_2.x86_64.rpm",
@@ -40,9 +430,264 @@
     "sha256": "c79dba86ba3c8c34aceab1356e2f9294eda59fa76a34630ccff42a7290f2ff26"
   },
   {
+    "name": "duktape-2.7.0-10.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/d/duktape-2.7.0-10.el10.x86_64.rpm",
+    "sha256": "d7a58d492c5f4c18dbb51e788da71f7e2680c4494efbf572a317282db90d89cb"
+  },
+  {
+    "name": "dwz-0.16-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/d/dwz-0.16-1.el10.x86_64.rpm",
+    "sha256": "1707de7d7d380cfab87729c393eb14f98a65ac0c89505efeedd42e5cbc3bed04"
+  },
+  {
+    "name": "ed-1.20-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/e/ed-1.20-5.el10.x86_64.rpm",
+    "sha256": "ab0b11795136b5f2bcc69c48ac072497459eb440e360dd6ac279e43d458ae918"
+  },
+  {
+    "name": "efi-srpm-macros-6-7.el10.rocky.0.1.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/e/efi-srpm-macros-6-7.el10.rocky.0.1.noarch.rpm",
+    "sha256": "d212996164fd048e7253eeaa96725336c5a301b5ffc7a5043bd5aa1dbd02a434"
+  },
+  {
+    "name": "elfutils-debuginfod-client-0.194-2.el10.rocky.0.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/e/elfutils-debuginfod-client-0.194-2.el10.rocky.0.1.x86_64.rpm",
+    "sha256": "c043431e8e0695f1bb0d36f341c41a6e4c23c1d5aa5ca5ea57de848bf6e6f0d3"
+  },
+  {
+    "name": "elfutils-default-yama-scope-0.194-2.el10.rocky.0.1.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/e/elfutils-default-yama-scope-0.194-2.el10.rocky.0.1.noarch.rpm",
+    "sha256": "d8e8f00a4f1cfc0271506c72991545948a1abf34aff5a0e5b522a1c6acf56a34"
+  },
+  {
+    "name": "elfutils-libelf-0.194-2.el10.rocky.0.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/e/elfutils-libelf-0.194-2.el10.rocky.0.1.x86_64.rpm",
+    "sha256": "3d6dce240b1095082b9f4673c6bd418fe74f050e4cb9a710aa2435854ca3cfe5"
+  },
+  {
+    "name": "elfutils-libs-0.194-2.el10.rocky.0.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/e/elfutils-libs-0.194-2.el10.rocky.0.1.x86_64.rpm",
+    "sha256": "e96f25d599d8b39c6f37d52e5d0377a8901a132d226b3d9bb61ca77bac8a8dbc"
+  },
+  {
+    "name": "emacs-filesystem-29.4-13.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/e/emacs-filesystem-29.4-13.el10_2.noarch.rpm",
+    "sha256": "55e36fa5b5bf696b92e393432215dbe9f0cf94df7f3d301dc4d0727172dc2007"
+  },
+  {
+    "name": "exempi-2.6.4-7.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/e/exempi-2.6.4-7.el10.x86_64.rpm",
+    "sha256": "010952ce417f6f6808f6325d3a3a2e76051e997bac5f86dbc772a225f40ad1ff"
+  },
+  {
+    "name": "exiv2-0.28.3-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/e/exiv2-0.28.3-5.el10.x86_64.rpm",
+    "sha256": "5d94a9c416c8fa95be4607eb297717cad1a2ebd5e5bf9b567a6855cc8b370a2b"
+  },
+  {
+    "name": "exiv2-libs-0.28.3-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/e/exiv2-libs-0.28.3-5.el10.x86_64.rpm",
+    "sha256": "7700f4813c3f99627b4363b4ba7b36792042e0de5d1f2131ad016d5f81dd5d82"
+  },
+  {
+    "name": "expat-2.7.3-1.el10_2.5.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/e/expat-2.7.3-1.el10_2.5.x86_64.rpm",
+    "sha256": "83847154cf92cdc090fe18a70184a887325c06750f30e4f1f9e7f0c4bb0039d5"
+  },
+  {
+    "name": "fdk-aac-free-2.0.0-15.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/f/fdk-aac-free-2.0.0-15.el10.x86_64.rpm",
+    "sha256": "379eccb38e0726f35e802bbe9b8dd6803d5ad7affafbe49b3d1442597b7b9a64"
+  },
+  {
+    "name": "fftw-libs-single-3.3.10-15.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/f/fftw-libs-single-3.3.10-15.el10.x86_64.rpm",
+    "sha256": "a51524bb02c03adf210fe4f4b17147c70a050c3c3eb2dc5c66cac28d01978cbe"
+  },
+  {
+    "name": "file-5.45-9.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/f/file-5.45-9.el10.x86_64.rpm",
+    "sha256": "07a69ecaf7597ac04de81e333b2c3c0e342dff9af9124890769d62d9991bfd43"
+  },
+  {
+    "name": "file-libs-5.45-9.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/f/file-libs-5.45-9.el10.x86_64.rpm",
+    "sha256": "1a2ffc2a117ffccf12bc6d62f1f9e0a8a7ba357b5721adb027bd6060973dbb9b"
+  },
+  {
+    "name": "filesystem-3.18-17.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/f/filesystem-3.18-17.el10.x86_64.rpm",
+    "sha256": "cc8b303041adc1c9834a1eb961b262e86b03d6050f8ec2d11ded7d5c47d60152"
+  },
+  {
+    "name": "findutils-4.10.0-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/f/findutils-4.10.0-5.el10.x86_64.rpm",
+    "sha256": "bf7897bd9a7966c0a80d2d6eb221653994f9955d1a1ec333e894cd901db2d8c0"
+  },
+  {
+    "name": "flac-libs-1.4.3-6.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/f/flac-libs-1.4.3-6.el10.x86_64.rpm",
+    "sha256": "103feae75aefbc5d16797b7b2e8ee6120a1537a11a2a719b0c3fae5b5a77f394"
+  },
+  {
+    "name": "fontconfig-2.15.0-7.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/f/fontconfig-2.15.0-7.el10.x86_64.rpm",
+    "sha256": "e2b50f0f04e07a0696965d0b369a4ebf746e7f7de07357b331b09e5dfcd8731e"
+  },
+  {
+    "name": "fonts-filesystem-2.0.5-18.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/f/fonts-filesystem-2.0.5-18.el10.noarch.rpm",
+    "sha256": "d00ef1629798c4f92e784666ed0199bc806096c147661378b777ba36a3897f5e"
+  },
+  {
+    "name": "fonts-srpm-macros-2.0.5-18.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/f/fonts-srpm-macros-2.0.5-18.el10.noarch.rpm",
+    "sha256": "49f2501c2ec65457ada5bed94737bd781de4d2f12fe38e396a618d685a1756fe"
+  },
+  {
+    "name": "forge-srpm-macros-0.4.0-6.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/f/forge-srpm-macros-0.4.0-6.el10.noarch.rpm",
+    "sha256": "48876ab255b9d39bd3ff299ff148f0679f2acc70532d382537b0ea63fff791c5"
+  },
+  {
+    "name": "freetype-2.13.2-8.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/f/freetype-2.13.2-8.el10.x86_64.rpm",
+    "sha256": "3874a5a730006f3b3745abdad2dd6e9a79d21cf9fb4661dd8ca4e2ec10e3e3b1"
+  },
+  {
+    "name": "fribidi-1.0.14-4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/f/fribidi-1.0.14-4.el10.x86_64.rpm",
+    "sha256": "7cd1f62cbdba62e5b28eb38a60a2fca9526510005e0b96aacd226fb130d41bca"
+  },
+  {
+    "name": "fstrm-0.6.1-12.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/f/fstrm-0.6.1-12.el10.x86_64.rpm",
+    "sha256": "819100b38b73de853310c97b3651df0625afd7920a26ee6b5a2937e68125b5dc"
+  },
+  {
+    "name": "fuse-common-3.16.2-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/f/fuse-common-3.16.2-5.el10.x86_64.rpm",
+    "sha256": "9daf2175c9550ce29ee4bb43f67b9babf280b7952605b4822abbdc9f963e3b33"
+  },
+  {
+    "name": "fuse3-3.16.2-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/f/fuse3-3.16.2-5.el10.x86_64.rpm",
+    "sha256": "34275ecec64e60ea3b8680022f2f68cb56d08611700232b4e5559b897dae8dce"
+  },
+  {
+    "name": "fuse3-libs-3.16.2-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/f/fuse3-libs-3.16.2-5.el10.x86_64.rpm",
+    "sha256": "32cfec04b8a2a6002e4e1bd9d50779efe4925bd6f42fb8d2d3da4d6061294e55"
+  },
+  {
+    "name": "gawk-5.3.0-6.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/gawk-5.3.0-6.el10_2.1.x86_64.rpm",
+    "sha256": "478d6d9236158172926ef4be31927083804ca57e46d12837f8da18938b054370"
+  },
+  {
+    "name": "gawk-all-langpacks-5.3.0-6.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/gawk-all-langpacks-5.3.0-6.el10_2.1.x86_64.rpm",
+    "sha256": "be09c330b75a0d24471460d5c4d080230706eda53c893b2555d2bea3f81230d9"
+  },
+  {
     "name": "gcc-14.3.1-4.4.el10.x86_64.rpm",
     "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/gcc-14.3.1-4.4.el10.x86_64.rpm",
     "sha256": "fdbe80a3814b1826f0e8fd6e8b458f7909bce742924f6095a300e078c594a888"
+  },
+  {
+    "name": "gcc-c++-14.3.1-4.4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/gcc-c++-14.3.1-4.4.el10.x86_64.rpm",
+    "sha256": "3c7fdc3cef30a2f293e6f02e4fbf71019e9ff6db43e00e04d11127ea4363f6c4"
+  },
+  {
+    "name": "gcc-gfortran-14.3.1-4.4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/gcc-gfortran-14.3.1-4.4.el10.x86_64.rpm",
+    "sha256": "b500583c16e32a1ba5c6019f60771564d1cc79860001b3503ded914e72cd0758"
+  },
+  {
+    "name": "gcc-plugin-annobin-14.3.1-4.4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/gcc-plugin-annobin-14.3.1-4.4.el10.x86_64.rpm",
+    "sha256": "c0c9dffdf1198f0c5932c817c8c2cede0b0ea0c966c33c270f4f7d858be2625d"
+  },
+  {
+    "name": "gcc-toolset-15-binutils-2.44-8.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/gcc-toolset-15-binutils-2.44-8.el10.x86_64.rpm",
+    "sha256": "e32ff91b2e6766c189f9cb515fbb8350755a3ccb37f0db8c13bcd6d2860c3f2d"
+  },
+  {
+    "name": "gcc-toolset-15-gcc-15.2.1-7.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/gcc-toolset-15-gcc-15.2.1-7.el10.x86_64.rpm",
+    "sha256": "10308a059d118aca4b25c07f906c0ddad6725bb8cb55d78fe99a2b4f9e72580a"
+  },
+  {
+    "name": "gcc-toolset-15-gcc-c++-15.2.1-7.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/gcc-toolset-15-gcc-c++-15.2.1-7.el10.x86_64.rpm",
+    "sha256": "140fa4c926b52ae2cc970ff081b273951da8f3684e3c1b41bf522cc5440f8f1f"
+  },
+  {
+    "name": "gcc-toolset-15-libatomic-devel-15.2.1-7.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/gcc-toolset-15-libatomic-devel-15.2.1-7.el10.x86_64.rpm",
+    "sha256": "92cfd5482bd897a730bd2ca0ada6bda49c2cc939cae8e4152f126b30a43eda60"
+  },
+  {
+    "name": "gcc-toolset-15-libstdc++-devel-15.2.1-7.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/gcc-toolset-15-libstdc++-devel-15.2.1-7.el10.x86_64.rpm",
+    "sha256": "9e3f737bafffbe9452832a5985957bee84b554f8a5d6ba96cfa53116723cbfa6"
+  },
+  {
+    "name": "gcc-toolset-15-runtime-15.0-11.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/gcc-toolset-15-runtime-15.0-11.el10.x86_64.rpm",
+    "sha256": "a774a24536bd8364cd229136c2e762fd2a7c594a826b245ed423107e5a346282"
+  },
+  {
+    "name": "gdbm-1.23-14.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/gdbm-1.23-14.el10.x86_64.rpm",
+    "sha256": "3df170410844459c5449e19a8c34e3738a0ea129ddfe1681c239206fadeb982b"
+  },
+  {
+    "name": "gdbm-libs-1.23-14.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/gdbm-libs-1.23-14.el10.x86_64.rpm",
+    "sha256": "373a3c49225efed92569c2230502733ba60f8a341e400507d05e5f3f7274a98a"
+  },
+  {
+    "name": "gdk-pixbuf2-2.42.12-4.el10_1.5.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/gdk-pixbuf2-2.42.12-4.el10_1.5.x86_64.rpm",
+    "sha256": "0f10e2b54827459dc8d4d0c0a5b693c99f30fe993618d13fc9f6c1c49aa29204"
+  },
+  {
+    "name": "gdk-pixbuf2-modules-2.42.12-4.el10_1.5.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/gdk-pixbuf2-modules-2.42.12-4.el10_1.5.x86_64.rpm",
+    "sha256": "de5a7450e05a6ac80992886ef49a286abe72c5ac2df44a62b236faed2052c073"
+  },
+  {
+    "name": "geoclue2-2.7.2-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/geoclue2-2.7.2-1.el10.x86_64.rpm",
+    "sha256": "5431798d8618e85423a0d74972ea778db16268952ba5a7f7ff2c041975c3b4f7"
+  },
+  {
+    "name": "gettext-0.22.5-6.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/gettext-0.22.5-6.el10.x86_64.rpm",
+    "sha256": "11f2bd3ec44812c136261565a5e262d9c425faca05a7f44f6af30a24305c5aa2"
+  },
+  {
+    "name": "gettext-envsubst-0.22.5-6.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/gettext-envsubst-0.22.5-6.el10.x86_64.rpm",
+    "sha256": "6a497e0cc8807954ab1511d4f4988b3ac6308c147427506ade957d555737e158"
+  },
+  {
+    "name": "gettext-libs-0.22.5-6.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/gettext-libs-0.22.5-6.el10.x86_64.rpm",
+    "sha256": "08bd0593319c53fc7773aad94e011a1d75db5870b49fe28c17966d894012ffce"
+  },
+  {
+    "name": "gettext-runtime-0.22.5-6.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/gettext-runtime-0.22.5-6.el10.x86_64.rpm",
+    "sha256": "ddfcbd612a98d90688579b38544a234bb231758eab6c70db44d15756734f8d64"
+  },
+  {
+    "name": "giflib-5.2.1-25.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/giflib-5.2.1-25.el10_2.x86_64.rpm",
+    "sha256": "79a1ecd5d35366e0cfa5884d120aaeb900bcb26da68ffb55e937dd1736cb695a"
   },
   {
     "name": "git-2.52.0-1.el10.x86_64.rpm",
@@ -60,14 +705,299 @@
     "sha256": "325f2d557d74ad83433a21ddb8be12d6d8ff0b87bdbfa794857d98ab7a3ef408"
   },
   {
-    "name": "glibc-devel-2.39-121.el10_2.x86_64.rpm",
-    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/glibc-devel-2.39-121.el10_2.x86_64.rpm",
-    "sha256": "f32c41e3b9cfb4b5a0cc33aa974ecc14879ef81c2540aa666c7ffae8bfd93691"
+    "name": "git-lfs-3.7.1-5.el10_2.7.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/git-lfs-3.7.1-5.el10_2.7.x86_64.rpm",
+    "sha256": "30614b9c8115486a66e327fc087acc6a19d0150a194d542dd3e3bc2b89ebbd97"
+  },
+  {
+    "name": "glib-networking-2.80.0-3.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/glib-networking-2.80.0-3.el10.x86_64.rpm",
+    "sha256": "64813065f8b098b3746719ac2e292623a891997e98dc3e33caab5cb4dcd95b45"
+  },
+  {
+    "name": "glib2-2.80.4-12.el10_2.22.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/glib2-2.80.4-12.el10_2.22.x86_64.rpm",
+    "sha256": "a783b6c0f6cb3c9c3f335ef0f8fac5edf6cd882fd32195386838d2b0ed39b298"
+  },
+  {
+    "name": "glibc-2.39-128.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/glibc-2.39-128.el10_2.x86_64.rpm",
+    "sha256": "0af7f2aefc705d477e7e155981c8112f8fa3827b4fa8c526691c7a41b1f19172"
+  },
+  {
+    "name": "glibc-common-2.39-128.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/glibc-common-2.39-128.el10_2.x86_64.rpm",
+    "sha256": "81dcf047ce5ed19c506bd3cda72f80f87f12f0b9ce2e92e59f5d6c1604d80657"
+  },
+  {
+    "name": "glibc-devel-2.39-128.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/glibc-devel-2.39-128.el10_2.x86_64.rpm",
+    "sha256": "3116af11c612afcbd6aaf5f4a38f1561e7134e426415998a097bd0b480aa3328"
+  },
+  {
+    "name": "glibc-gconv-extra-2.39-128.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/glibc-gconv-extra-2.39-128.el10_2.x86_64.rpm",
+    "sha256": "ff0a87c0f5ea15da0640156a14c006c9a3666746fab181c72692244afa737398"
+  },
+  {
+    "name": "glibc-langpack-en-2.39-128.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/glibc-langpack-en-2.39-128.el10_2.x86_64.rpm",
+    "sha256": "beaf76d8978fdc029eaa261fc3a0c3e907d1992907fa751db919d86f73cadfbb"
+  },
+  {
+    "name": "glibc-minimal-langpack-2.39-128.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/glibc-minimal-langpack-2.39-128.el10_2.x86_64.rpm",
+    "sha256": "74f6779150cf632600a4e7f2fc1e440ee90770524f63b3d08b0b74e1c8790f18"
+  },
+  {
+    "name": "gmp-6.2.1-12.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/gmp-6.2.1-12.el10.x86_64.rpm",
+    "sha256": "105bb31fd35c791d0ee1425fbcb6fc874bdd4e3d0c4cc920a51b39821f347393"
+  },
+  {
+    "name": "gnupg2-2.4.5-4.el10_1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/gnupg2-2.4.5-4.el10_1.x86_64.rpm",
+    "sha256": "0a1906a6f3c078b709367f238d7fd2718c2888b69593082064f62de4532df5bd"
+  },
+  {
+    "name": "gnutls-3.8.10-4.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/gnutls-3.8.10-4.el10_2.x86_64.rpm",
+    "sha256": "6c6cdde9762ee644bd58aeaaaad60b7ae11658c9618ba349309695d5083b9ed2"
+  },
+  {
+    "name": "go-srpm-macros-3.8.0-1.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/go-srpm-macros-3.8.0-1.el10.noarch.rpm",
+    "sha256": "5f36f52813f16849f6c2fa1d629c873359ab5cb96682f1a576dde681010999ee"
+  },
+  {
+    "name": "gobject-introspection-1.79.1-6.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/gobject-introspection-1.79.1-6.el10.x86_64.rpm",
+    "sha256": "21f9e767c373380feb4d6c6d553be0b1c31dc7b2c07cc577a06e8ba626b65492"
+  },
+  {
+    "name": "google-guice-5.1.0-12.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/google-guice-5.1.0-12.el10.noarch.rpm",
+    "sha256": "0a673e1140477b4005e1a158b51ab390a8507da0cdf89fbd525c2f8cca7a9497"
+  },
+  {
+    "name": "google-noto-fonts-common-20240401-5.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/google-noto-fonts-common-20240401-5.el10.noarch.rpm",
+    "sha256": "9941d741c4206c32a7278114551149d4df85eada6c17d2afcd8d76c28ae9c596"
+  },
+  {
+    "name": "google-noto-sans-vf-fonts-20240401-5.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/google-noto-sans-vf-fonts-20240401-5.el10.noarch.rpm",
+    "sha256": "865a82c575a9c3a9a18522524c05aefd1981bfe558930dcb0102dc1665fc4723"
+  },
+  {
+    "name": "gpgme-1.23.2-6.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/gpgme-1.23.2-6.el10.x86_64.rpm",
+    "sha256": "fe605aae10673133e5f8bec68309db6dade4429547b7e6940ac1e6f80e7881d8"
+  },
+  {
+    "name": "gpgmepp-1.23.2-6.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/gpgmepp-1.23.2-6.el10.x86_64.rpm",
+    "sha256": "0c760bcca8a16e1bb1df668c7db51d49fa43756c01d3dcf08c090ac53dca5964"
+  },
+  {
+    "name": "graphene-1.10.6-10.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/graphene-1.10.6-10.el10.x86_64.rpm",
+    "sha256": "4a68f428a1ecdedbcdefbdfd6f0560b8badae8bc612b4badeb11c4560db013cb"
+  },
+  {
+    "name": "graphite2-1.3.14-17.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/graphite2-1.3.14-17.el10.x86_64.rpm",
+    "sha256": "3978de4b40cde3af551cad9d0308021299cd7441b9a5c7048aef9c06e06955c0"
+  },
+  {
+    "name": "grep-3.11-10.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/grep-3.11-10.el10.x86_64.rpm",
+    "sha256": "2750237f3e96231af4577a219c2deff91f505f37cd226d8c9abad01cb190e792"
+  },
+  {
+    "name": "groff-base-1.23.0-10.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/groff-base-1.23.0-10.el10.x86_64.rpm",
+    "sha256": "6241f259c15393be50e6114f8a9068b8df4d8d75d9b3ef7f99e0e5ba48afefe6"
+  },
+  {
+    "name": "gsettings-desktop-schemas-47.1-4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/gsettings-desktop-schemas-47.1-4.el10.x86_64.rpm",
+    "sha256": "c983454773b2f3054daa9ec750f692b1bf98f2ea920dd0426e12c77081458a51"
+  },
+  {
+    "name": "gsm-1.0.22-8.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/gsm-1.0.22-8.el10.x86_64.rpm",
+    "sha256": "116c523014e9ad37439d1a0a5c9a6c8f9fe9df70148d60cc4587b3ae5a550639"
+  },
+  {
+    "name": "gstreamer1-1.26.7-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/gstreamer1-1.26.7-5.el10.x86_64.rpm",
+    "sha256": "ca83e31edae6fd386a212068bc89489b6c4898156fcc01950ccab387a3b63b73"
+  },
+  {
+    "name": "gstreamer1-plugins-base-1.26.7-2.el10_2.2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/gstreamer1-plugins-base-1.26.7-2.el10_2.2.x86_64.rpm",
+    "sha256": "2d65eb650c764dc9c27eac5a5bc4e4b9f983303c78b3de5662ca326f7f93a881"
+  },
+  {
+    "name": "gtk-update-icon-cache-3.24.43-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/gtk-update-icon-cache-3.24.43-5.el10.x86_64.rpm",
+    "sha256": "9ab3a80a4a9a1eb2c3e207154755dcd5a06aa3384faf1f646319a4c8271bb849"
+  },
+  {
+    "name": "gtk3-3.24.43-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/gtk3-3.24.43-5.el10.x86_64.rpm",
+    "sha256": "580f42ce1551092a9dc274e08b825a7b043295f07530b45c11738e8fd0643fc5"
+  },
+  {
+    "name": "guava-32.1.3-6.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/g/guava-32.1.3-6.el10.noarch.rpm",
+    "sha256": "1413202e09edf384ff21477388f489b3b8d9d720d8b7b0e149770a330fd876dd"
   },
   {
     "name": "gzip-1.13-4.el10_2.x86_64.rpm",
     "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/g/gzip-1.13-4.el10_2.x86_64.rpm",
     "sha256": "e6f4f188872e9a715a959bb51e9dc5f683be9dec9e554e5604436a3bfac58b30"
+  },
+  {
+    "name": "harfbuzz-8.4.0-6.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/h/harfbuzz-8.4.0-6.el10.x86_64.rpm",
+    "sha256": "bfcfbc9f4cff3c349526e1ccabf0d4fa8d1b27322bc93240f15107159632b47c"
+  },
+  {
+    "name": "hicolor-icon-theme-0.17-20.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/h/hicolor-icon-theme-0.17-20.el10.noarch.rpm",
+    "sha256": "98467d43d20e6afad1966f598ff9fac0d884c6e97cf302d8b5bacce2f6710018"
+  },
+  {
+    "name": "httpcomponents-client-4.5.14-9.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/h/httpcomponents-client-4.5.14-9.el10.noarch.rpm",
+    "sha256": "6ced9b9eb2cba2279781363dd7c0cd3374ce56de16a3fa8862ae640393d30c8c"
+  },
+  {
+    "name": "httpcomponents-core-4.4.16-9.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/h/httpcomponents-core-4.4.16-9.el10.noarch.rpm",
+    "sha256": "635f3f850e4e199672250cc15219315ba4a784d66a4e620c3d056e7dc1a207f7"
+  },
+  {
+    "name": "hwdata-0.379-10.8.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/h/hwdata-0.379-10.8.el10.noarch.rpm",
+    "sha256": "7ab33323e6186162d0a94a822db38f6d0c1ec027e625b190a7338712dd612fcf"
+  },
+  {
+    "name": "inih-58-3.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/i/inih-58-3.el10.x86_64.rpm",
+    "sha256": "840f403b76e59ced98e4752d9de989342e4438a5b042d542988596ddbbfcb8a1"
+  },
+  {
+    "name": "inih-cpp-58-3.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/i/inih-cpp-58-3.el10.x86_64.rpm",
+    "sha256": "ea02bdb20b5b24c9f80004de028afc81fc2a9a4ad88c8b99114a070e5900a128"
+  },
+  {
+    "name": "intel-vsc-firmware-20260804-23.2.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/i/intel-vsc-firmware-20260804-23.2.el10_2.noarch.rpm",
+    "sha256": "e402e226e32a961b718eaa236ac928d158d74b0f6b06c24caa5bbfdef79878ff"
+  },
+  {
+    "name": "iptables-libs-1.8.11-16.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/i/iptables-libs-1.8.11-16.el10_2.x86_64.rpm",
+    "sha256": "b2d94196b2adb6fc8e1dd1aa898fa6d8b9eba250000c156cb13f6f846fbe720c"
+  },
+  {
+    "name": "iputils-20240905-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/i/iputils-20240905-5.el10.x86_64.rpm",
+    "sha256": "e6dc7bc1f74b12e72c9cdfdb6e314a9d6a228bd411bb5c6b88f3b9ceff74af03"
+  },
+  {
+    "name": "iso-codes-4.16.0-6.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/i/iso-codes-4.16.0-6.el10.noarch.rpm",
+    "sha256": "84f90c92f1fae89b76da8828ab088b6bfff2e0d014dbfd2d59bd185442ca8b21"
+  },
+  {
+    "name": "jakarta-annotations-1.3.5-23.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/j/jakarta-annotations-1.3.5-23.el10.noarch.rpm",
+    "sha256": "62d0bc8cd030f04140b0a957f9dffe0a9ba95f9bd21b40749eba884ab106d822"
+  },
+  {
+    "name": "jansi-2.4.1-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/j/jansi-2.4.1-5.el10.x86_64.rpm",
+    "sha256": "00bf9c8183589d79aecab7245aaf07e6fd7df653df6a5493d77be15bd60b3f8b"
+  },
+  {
+    "name": "jansson-2.14-3.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/j/jansson-2.14-3.el10.x86_64.rpm",
+    "sha256": "57f9c81975b42e67632066c0873db7f0ab9c1581ca5f66cdb8eae20aca2491b6"
+  },
+  {
+    "name": "java-21-openjdk-21.0.12.1.1-1.2.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/j/java-21-openjdk-21.0.12.1.1-1.2.el10_2.x86_64.rpm",
+    "sha256": "168637db312fcdbaa77b9fc99815d805343dd2f82b6cd895faf7d7c8da2348d7"
+  },
+  {
+    "name": "java-21-openjdk-devel-21.0.12.1.1-1.2.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/j/java-21-openjdk-devel-21.0.12.1.1-1.2.el10_2.x86_64.rpm",
+    "sha256": "53e842e983f54292d75c5baa6c3142b7b3bbbb27a9ea1e43f7a17407e1644bcf"
+  },
+  {
+    "name": "java-21-openjdk-headless-21.0.12.1.1-1.2.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/j/java-21-openjdk-headless-21.0.12.1.1-1.2.el10_2.x86_64.rpm",
+    "sha256": "de33b95b827a85bd6089f061b9b33023cefe79b074471cda91be20f00f4bea9a"
+  },
+  {
+    "name": "javapackages-filesystem-6.4.0-1.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/j/javapackages-filesystem-6.4.0-1.el10.noarch.rpm",
+    "sha256": "4f0b877e2cd9556920f589493998679afc392543f4272868dd0d6b9c903c1033"
+  },
+  {
+    "name": "javapackages-tools-6.4.0-1.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/j/javapackages-tools-6.4.0-1.el10.noarch.rpm",
+    "sha256": "b917428623e1e55f5d83f23d6ba68fb12d497c3e9a0883da47771670f01d3b31"
+  },
+  {
+    "name": "jbigkit-libs-2.1-31.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/j/jbigkit-libs-2.1-31.el10.x86_64.rpm",
+    "sha256": "abffd98ca1c1c417de8f24761e529072d7ceafabfb15938c03804dc938b8f48e"
+  },
+  {
+    "name": "jcl-over-slf4j-1.7.32-13.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/j/jcl-over-slf4j-1.7.32-13.el10.noarch.rpm",
+    "sha256": "2b3754b0806a6091d53ff81275c07819ba3ce22662f236b69ba2b59d23a1e2b0"
+  },
+  {
+    "name": "jq-1.7.1-11.el10_2.2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/j/jq-1.7.1-11.el10_2.2.x86_64.rpm",
+    "sha256": "1f1f5bbf07bbcdab6dd7391c61fccc726fd53ef654e23bee17ae20cd86f30a3d"
+  },
+  {
+    "name": "json-c-0.18-3.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/j/json-c-0.18-3.el10.x86_64.rpm",
+    "sha256": "8dfa09211b76f9fe1c9182b5214fcdf35534213436554e029c14e07f11b9ecd2"
+  },
+  {
+    "name": "json-glib-1.8.0-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/j/json-glib-1.8.0-5.el10.x86_64.rpm",
+    "sha256": "df69cfc4f2b7191c83780921e8bb983b7f04073adbeb9ef74dd8b7d7b57bc281"
+  },
+  {
+    "name": "jsr-305-3.0.2-17.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/j/jsr-305-3.0.2-17.el10.noarch.rpm",
+    "sha256": "0e3cb21f554fd3d00ae1dc73d5e5ee6a278fb298a28a4c71c9db01b276a06170"
+  },
+  {
+    "name": "kbd-2.6.4-8.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/k/kbd-2.6.4-8.el10_2.x86_64.rpm",
+    "sha256": "174127b6482b5bae89e99adacd4d142d9a85ee95fa3aca9788bbab7fd78e7b56"
+  },
+  {
+    "name": "kbd-legacy-2.6.4-8.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/k/kbd-legacy-2.6.4-8.el10_2.noarch.rpm",
+    "sha256": "8758502585353454af3f0637c2d249158a300a1752522d1ebb99c3623293bca9"
+  },
+  {
+    "name": "kbd-misc-2.6.4-8.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/k/kbd-misc-2.6.4-8.el10_2.noarch.rpm",
+    "sha256": "34db7e9e6c949888225a6c0ffbe59e24f9852623537b34bde5848a5f90cc6877"
   },
   {
     "name": "kernel-core-6.12.0-211.61.1.el10_2.x86_64.rpm",
@@ -85,9 +1015,404 @@
     "sha256": "e0d7c909368d193ffa6f9e3de244db9ae6b53268f9049e345785ae0c617be371"
   },
   {
+    "name": "kernel-srpm-macros-1.0-27.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/k/kernel-srpm-macros-1.0-27.el10.noarch.rpm",
+    "sha256": "c4ad7f864f23c203067c920d747f26924386d5cdc26d98018316551181e92695"
+  },
+  {
+    "name": "keyutils-libs-1.6.3-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/k/keyutils-libs-1.6.3-5.el10.x86_64.rpm",
+    "sha256": "9bf80d1c93d9b11c2e937c896571641bf4f3646a7a91f589e4c502708f5b260e"
+  },
+  {
+    "name": "kmod-31-13.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/k/kmod-31-13.el10.x86_64.rpm",
+    "sha256": "d6c6c04731a0a010fd63b14a82a1625509356b6e12cbfea982fe498b02c3ef1f"
+  },
+  {
+    "name": "kmod-libs-31-13.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/k/kmod-libs-31-13.el10.x86_64.rpm",
+    "sha256": "ac8c65fcc58313f67c5832b7dfdd059dcdc84e984f12e88508a29b89fc9bd311"
+  },
+  {
+    "name": "krb5-libs-1.21.3-10.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/k/krb5-libs-1.21.3-10.el10_2.x86_64.rpm",
+    "sha256": "25fb80d1a14779b0143287d46c9c618e6fe80a684acb6e0ddc7f7fedcbfe69d6"
+  },
+  {
+    "name": "lame-libs-3.100-19.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/lame-libs-3.100-19.el10.x86_64.rpm",
+    "sha256": "7f6bc0654abb6f25c29b01b8f9b7f6db9a935b01e6cd60cd32547b831f177785"
+  },
+  {
+    "name": "lcms2-2.16-6.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/lcms2-2.16-6.el10.x86_64.rpm",
+    "sha256": "ea6213c2538005dcd2268811f1c6caaed60b4b0f0cf456e84aa3497ad0e68cec"
+  },
+  {
+    "name": "less-661-3.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/less-661-3.el10.x86_64.rpm",
+    "sha256": "d3dca1949e02646bc6bccd1f4a4a9e022360341d4243b7705e2a9dd1425fa825"
+  },
+  {
+    "name": "libX11-1.8.10-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libX11-1.8.10-1.el10.x86_64.rpm",
+    "sha256": "17290c1adad836111e9e4c845a219893339ec132f24773e3e6a2325ae0a0db41"
+  },
+  {
+    "name": "libX11-common-1.8.10-1.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libX11-common-1.8.10-1.el10.noarch.rpm",
+    "sha256": "6c614b190332011e58bcb12651314edaeec1a85faef9529971232f6959ec9afe"
+  },
+  {
+    "name": "libX11-xcb-1.8.10-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libX11-xcb-1.8.10-1.el10.x86_64.rpm",
+    "sha256": "9997a5fa911f09111f5c5c2ca89175e849a9bcbd18c7f131686995ae3a81cd84"
+  },
+  {
+    "name": "libXau-1.0.11-8.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libXau-1.0.11-8.el10.x86_64.rpm",
+    "sha256": "d48cafb4362555d65e3b5f89541fb46dab7b8d32780a6905e60f0e3107ac1e5f"
+  },
+  {
+    "name": "libXcomposite-0.4.6-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libXcomposite-0.4.6-5.el10.x86_64.rpm",
+    "sha256": "f88d01d96023e17535e75a2d816d640df42b8842c38a9e4539ad8434a16d02d9"
+  },
+  {
+    "name": "libXcursor-1.2.1-9.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libXcursor-1.2.1-9.el10.x86_64.rpm",
+    "sha256": "3c0533550ca6caaa6827c5141a1f16aaf9e6fca2b9869c25f2c2383904e4d41a"
+  },
+  {
+    "name": "libXdamage-1.1.6-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libXdamage-1.1.6-5.el10.x86_64.rpm",
+    "sha256": "63d495dd9b4af1290a2ab2a0cd1624936c849bf5aac58faef549eb95b00cc60a"
+  },
+  {
+    "name": "libXext-1.3.6-3.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libXext-1.3.6-3.el10.x86_64.rpm",
+    "sha256": "507ffe1911853759f79e267121a36ebebe76d9a0c407eae8f01bb90686acd126"
+  },
+  {
+    "name": "libXfixes-6.0.1-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libXfixes-6.0.1-5.el10.x86_64.rpm",
+    "sha256": "e7834f749946ba00544b7de19713b275b0804cd7883760deec7f28a6de1e7fd8"
+  },
+  {
+    "name": "libXft-2.3.8-8.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libXft-2.3.8-8.el10.x86_64.rpm",
+    "sha256": "644c55ba061b55b5a15705c6d8aedca1eb7af8d213fb82a11a8e4f7336faadcd"
+  },
+  {
+    "name": "libXi-1.8.1-7.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libXi-1.8.1-7.el10.x86_64.rpm",
+    "sha256": "7ddb789a0d6dcab43d23576597e95f298c325efb51754e755081d7530e3b60bb"
+  },
+  {
+    "name": "libXinerama-1.1.5-8.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libXinerama-1.1.5-8.el10.x86_64.rpm",
+    "sha256": "1598ccb86562eb8d82215a55834e683a2cc07ab8b4d043b71191f16cb6529b85"
+  },
+  {
+    "name": "libXrandr-1.5.4-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libXrandr-1.5.4-5.el10.x86_64.rpm",
+    "sha256": "a56cad66a66da49c8ee0a018e50cf7aa3393d571ed26adccacca612ccf4baf58"
+  },
+  {
+    "name": "libXrender-0.9.11-8.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libXrender-0.9.11-8.el10.x86_64.rpm",
+    "sha256": "db9dcd9a509c5286a6c50f415a4dcaeb5e1fe6e864cdb939ff9c5ad9d8a903e6"
+  },
+  {
+    "name": "libXtst-1.2.4-8.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libXtst-1.2.4-8.el10.x86_64.rpm",
+    "sha256": "fd7404143b2fddb734a53ae61eafbefbc0dfa3b564a031ad282428a6b356cefe"
+  },
+  {
+    "name": "libXv-1.0.12-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libXv-1.0.12-5.el10.x86_64.rpm",
+    "sha256": "09f087b749f8c5b99bf97b143b20971009760508fcf41f9bc50ce8f8208bfc2e"
+  },
+  {
+    "name": "libXxf86vm-1.1.5-8.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libXxf86vm-1.1.5-8.el10.x86_64.rpm",
+    "sha256": "e3a7cdd734d7d69a4e1a42d89d5c1d3a83545bc9a2423b9bb19a8d5b6d77717f"
+  },
+  {
+    "name": "libacl-2.4.0-1.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libacl-2.4.0-1.el10_2.x86_64.rpm",
+    "sha256": "b6e84953c487fe1ec1794691cc85b6ea85c2333fb19a3410dc85be6397093b0f"
+  },
+  {
+    "name": "libarchive-3.7.7-11.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libarchive-3.7.7-11.el10_2.x86_64.rpm",
+    "sha256": "ee415ffcd28b3a076ef02685a9201dbe84e1507c679f3a0af2d1881e6439ac05"
+  },
+  {
+    "name": "libassuan-2.5.6-6.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libassuan-2.5.6-6.el10.x86_64.rpm",
+    "sha256": "42eb11651b6a9fcf098da7da17df393a6e4eca02cf4339b3d05789d07fe877aa"
+  },
+  {
+    "name": "libasyncns-0.8-30.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libasyncns-0.8-30.el10.x86_64.rpm",
+    "sha256": "6c22725528a50e96e3232ae2e987213eea1d9ccb70da1f7ada589854639aa48e"
+  },
+  {
+    "name": "libatomic-14.3.1-4.4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libatomic-14.3.1-4.4.el10.x86_64.rpm",
+    "sha256": "18420c4714f5561fe5cc52c7f11056d9e41ecdfd0232252ed3cb6d0738b72ef7"
+  },
+  {
+    "name": "libattr-2.6.0-1.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libattr-2.6.0-1.el10_2.x86_64.rpm",
+    "sha256": "bb59444d580d5ea8f72b7bb158a932b001e688eade9ca1352556877885185fa0"
+  },
+  {
+    "name": "libblkid-2.40.2-18.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libblkid-2.40.2-18.el10.x86_64.rpm",
+    "sha256": "c42e0debb4130dea3f77dd4b32853c2a773aa426cfca5523cab4fb3875ce5e0a"
+  },
+  {
+    "name": "libbpf-1.7.0-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libbpf-1.7.0-1.el10.x86_64.rpm",
+    "sha256": "00b313d643cd096cb880e2fe19e9385e3122edca6a604fe2b2cecbf2cf8af662"
+  },
+  {
+    "name": "libbrotli-1.1.0-7.el10_1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libbrotli-1.1.0-7.el10_1.x86_64.rpm",
+    "sha256": "f757218c089f4a404b67893247d6242b64c18120761b5d393605806687eff9c1"
+  },
+  {
+    "name": "libcamera-0.6.0-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libcamera-0.6.0-1.el10.x86_64.rpm",
+    "sha256": "60b2d31a1a03776969df7468206713479bf21ba804c823d1096989ae25b91122"
+  },
+  {
+    "name": "libcamera-ipa-0.6.0-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libcamera-ipa-0.6.0-1.el10.x86_64.rpm",
+    "sha256": "5193f986aadccb76e5c8d9526c9925ecebf98b3133b3274755310afbc4e890cb"
+  },
+  {
+    "name": "libcanberra-0.30-37.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libcanberra-0.30-37.el10.x86_64.rpm",
+    "sha256": "e569fb4e849ded22632e63b998e32eba390b8c6bcc32bc46cd7a00a0aace354a"
+  },
+  {
+    "name": "libcanberra-gtk3-0.30-37.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libcanberra-gtk3-0.30-37.el10.x86_64.rpm",
+    "sha256": "e6ff955c0bbf5d87f3880d70ae1929afa4d8384e0ba3183696a7fb780515d91e"
+  },
+  {
+    "name": "libcap-2.69-7.el10_1.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libcap-2.69-7.el10_1.1.x86_64.rpm",
+    "sha256": "950756f967c17dd2f6b2f656bf34244eb709ae6bb5d17d00f13575db74c126df"
+  },
+  {
+    "name": "libcap-ng-0.8.4-6.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libcap-ng-0.8.4-6.el10.x86_64.rpm",
+    "sha256": "4fce88bd251c58ceb04f0f007be361eb2ce3650749646f34143f8273aecf0e50"
+  },
+  {
+    "name": "libcbor-0.11.0-3.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libcbor-0.11.0-3.el10.x86_64.rpm",
+    "sha256": "b7591cf2e167e09090b27dcdb25c528f78cae7734c49b66812505fe4ea75f443"
+  },
+  {
+    "name": "libcom_err-1.47.1-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libcom_err-1.47.1-5.el10.x86_64.rpm",
+    "sha256": "8031435190eb44947f6225979ddf677fba4c48426a5d769be8525d89a879e800"
+  },
+  {
+    "name": "libcurl-8.12.1-4.el10_2.6.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libcurl-8.12.1-4.el10_2.6.x86_64.rpm",
+    "sha256": "8328774a8e3b2bba426e18b8aee53f3631cd67715ddd79c23e29e99da9c619f1"
+  },
+  {
+    "name": "libdatrie-0.2.13-11.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libdatrie-0.2.13-11.el10.x86_64.rpm",
+    "sha256": "c9d1ff93bb6c8c323310cab63ed50ffd1a06ee8666add455dc0bb089ba0cdddc"
+  },
+  {
+    "name": "libdex-0.8.1-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libdex-0.8.1-1.el10.x86_64.rpm",
+    "sha256": "f7782d2871a9d31d6d334e1f07b1bf944be9721c9294698cf1020ec537c0abe6"
+  },
+  {
+    "name": "libdrm-2.4.128-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libdrm-2.4.128-1.el10.x86_64.rpm",
+    "sha256": "7163e9205f01064296403d557160eeb918d5b19a25d414b8ce8192a9188a49dc"
+  },
+  {
+    "name": "libeconf-0.6.2-4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libeconf-0.6.2-4.el10.x86_64.rpm",
+    "sha256": "dd89fefb1eee26bd47d89368c64e64392af79839beeee5ff1d85f8267491db4b"
+  },
+  {
+    "name": "libedit-3.1-52.20230828cvs.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libedit-3.1-52.20230828cvs.el10.x86_64.rpm",
+    "sha256": "ae4c51c757ef85bdac1fce18ec95497df11488de0dc3c55e9ff54e940256befc"
+  },
+  {
+    "name": "libepoxy-1.5.10-9.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libepoxy-1.5.10-9.el10.x86_64.rpm",
+    "sha256": "c9b3958f7f6309acd33985a0cb0600e30aece42024c18d3ad6574ee426fc45b3"
+  },
+  {
+    "name": "libevent-2.1.13-1.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libevent-2.1.13-1.el10_2.x86_64.rpm",
+    "sha256": "2e39efb8946036a611be1d69f7c7b7cc3662a85c78f5f61547f9de2e3de862ed"
+  },
+  {
+    "name": "libexif-0.6.24-9.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libexif-0.6.24-9.el10_2.1.x86_64.rpm",
+    "sha256": "e1fd08d6c0cf0d8678dfc596acef2781e8317c5ee2573b79e72aef1b847143cb"
+  },
+  {
+    "name": "libfdisk-2.40.2-18.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libfdisk-2.40.2-18.el10.x86_64.rpm",
+    "sha256": "3a248a77cc7be83eefcafbd565d4483d71909235cb091ee1fee8ae3df65ccaa6"
+  },
+  {
+    "name": "libffi-3.4.4-10.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libffi-3.4.4-10.el10.x86_64.rpm",
+    "sha256": "5c4b928aca868c444edc206a16a94160e2201d031a4b996ba81445009ffb5497"
+  },
+  {
+    "name": "libfido2-1.14.0-7.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libfido2-1.14.0-7.el10.x86_64.rpm",
+    "sha256": "8cf917862ed3d650d2561d817ee1a0901b0796f5951de1bdd060a300d25d65d3"
+  },
+  {
+    "name": "libfontenc-1.1.7-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libfontenc-1.1.7-5.el10.x86_64.rpm",
+    "sha256": "e8e699766e7e44552ed5b6e79bea373bf8c305dc97da7afd9c550df7a4400245"
+  },
+  {
+    "name": "libgcc-14.3.1-4.4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libgcc-14.3.1-4.4.el10.x86_64.rpm",
+    "sha256": "6f484aebcfe08bc0218c800019e74b79b326d654a0207fd7f5862583e8aed399"
+  },
+  {
+    "name": "libgcrypt-1.11.0-7.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libgcrypt-1.11.0-7.el10_2.x86_64.rpm",
+    "sha256": "82298e15c404ff7da4fdbe8f607be22f50bacb5c60e299a391bf81f4fe26cf0e"
+  },
+  {
+    "name": "libgexiv2-0.14.3-3.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libgexiv2-0.14.3-3.el10.x86_64.rpm",
+    "sha256": "f4b788b850b23c38910bda34695346deab30aa2b1f6582f94f70414132d15998"
+  },
+  {
+    "name": "libgfortran-14.3.1-4.4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libgfortran-14.3.1-4.4.el10.x86_64.rpm",
+    "sha256": "55dfde94dc1a1012da43c71b916693d31a723dee85febca2ef9d63932197f3a5"
+  },
+  {
+    "name": "libglvnd-1.7.0-7.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libglvnd-1.7.0-7.el10.x86_64.rpm",
+    "sha256": "7348ef87eadae994dd44debd1b36c65a51e98290da6654d44bba89e38cbd1378"
+  },
+  {
+    "name": "libglvnd-egl-1.7.0-7.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libglvnd-egl-1.7.0-7.el10.x86_64.rpm",
+    "sha256": "e47bb1e9804aa6af616fb60f1885297c82ab5fae02ea43fb26213f041273c530"
+  },
+  {
+    "name": "libglvnd-glx-1.7.0-7.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libglvnd-glx-1.7.0-7.el10.x86_64.rpm",
+    "sha256": "13e0249e24a7818d2552d4568ab250d8f8af8783bc06ab11af355e04e1ecbe81"
+  },
+  {
+    "name": "libgomp-14.3.1-4.4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libgomp-14.3.1-4.4.el10.x86_64.rpm",
+    "sha256": "be132413d8a8105e69ef165cbb71075a9af050c09c498c510ba7f9fa94b9d8cf"
+  },
+  {
+    "name": "libgpg-error-1.50-2.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libgpg-error-1.50-2.el10.x86_64.rpm",
+    "sha256": "0e4465203825954d485ec128a55a7be33678ac72fa3d84c475ae01b86ec1f69f"
+  },
+  {
+    "name": "libgsf-1.14.53-2.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libgsf-1.14.53-2.el10.x86_64.rpm",
+    "sha256": "cd5e72798eafe60159a5e9ea9026f8f2aa47dd3b1be5a5d5fafc2dd9ec01f425"
+  },
+  {
+    "name": "libgudev-238-7.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libgudev-238-7.el10.x86_64.rpm",
+    "sha256": "fffe5aba5c1bb7d031e8bafd9784ae1617b0187ed4ef678c4c85098d90f1412e"
+  },
+  {
+    "name": "libgusb-0.4.9-4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libgusb-0.4.9-4.el10.x86_64.rpm",
+    "sha256": "0a896560a2d60e073c0b7d244abc94863fd71d9d2207194f81cf6996c0245514"
+  },
+  {
+    "name": "libgxps-0.3.2-10.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libgxps-0.3.2-10.el10.x86_64.rpm",
+    "sha256": "4f75bfa2931b79721e1e3c47f855d0f1370572498cfdfaf585ff6c1cfbd0f9c0"
+  },
+  {
     "name": "libicu-74.2-5.el10_0.x86_64.rpm",
     "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libicu-74.2-5.el10_0.x86_64.rpm",
     "sha256": "9d7388c3630e3afc374666ad4c44082dd755cc05b7a31482be17981d08f26f50"
+  },
+  {
+    "name": "libicu-devel-74.2-5.el10_0.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libicu-devel-74.2-5.el10_0.x86_64.rpm",
+    "sha256": "d2f5b279ec7cbd92d012e31c74f991f7316c3cdb084fee26b1ac4cf05890dc7a"
+  },
+  {
+    "name": "libidn2-2.3.7-3.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libidn2-2.3.7-3.el10.x86_64.rpm",
+    "sha256": "ef86011a7b9b3327ae20dd526f33b5438838505caf2b55268093cd2509c10b9a"
+  },
+  {
+    "name": "libiptcdata-1.0.5-20.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libiptcdata-1.0.5-20.el10.x86_64.rpm",
+    "sha256": "3ee7942b0ea6542c71ed776e2101653c9f76f2d578d949949fc726b1efbed2b5"
+  },
+  {
+    "name": "libjpeg-turbo-3.0.2-4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libjpeg-turbo-3.0.2-4.el10.x86_64.rpm",
+    "sha256": "1af6139861227734cf2e47133b3fe828fc9062c65981f730a617ee184d3589ec"
+  },
+  {
+    "name": "libksba-1.6.7-2.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libksba-1.6.7-2.el10.x86_64.rpm",
+    "sha256": "4293768f002c5ce98361bc57ffc932628d139bd34524156af996766c34af6a84"
+  },
+  {
+    "name": "liblc3-1.1.3-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/liblc3-1.1.3-1.el10.x86_64.rpm",
+    "sha256": "2fe8c2119031db99af0c8797dfda4521d37f54b8311cc934363a8481df056227"
+  },
+  {
+    "name": "libldac-2.0.2.3-17.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libldac-2.0.2.3-17.el10.x86_64.rpm",
+    "sha256": "6961e4610570e92e2210318193cb84ac11c8b6ef5603e82cd287d7f57da85f24"
+  },
+  {
+    "name": "liblerc-4.0.0-8.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/liblerc-4.0.0-8.el10.x86_64.rpm",
+    "sha256": "4ed1fa47677f293ba71b02172c169ed02f9f60d47004c369e12e343f0679cc09"
+  },
+  {
+    "name": "libmaxminddb-1.9.1-4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libmaxminddb-1.9.1-4.el10.x86_64.rpm",
+    "sha256": "5cc24024873510deeb64c0e576a2fd5e3442ddd1f855df8eaf1746653c6b3a7d"
+  },
+  {
+    "name": "libmnl-1.0.5-7.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libmnl-1.0.5-7.el10.x86_64.rpm",
+    "sha256": "35eb8910c7649bb781bb8419616935792d529587a80864c9000cfd8b4e53957c"
+  },
+  {
+    "name": "libmount-2.40.2-18.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libmount-2.40.2-18.el10.x86_64.rpm",
+    "sha256": "83995f31b5690335b88a859824ad6dcd3bef68f13f64b88d72859ae10f535541"
   },
   {
     "name": "libmpc-1.3.1-7.el10.x86_64.rpm",
@@ -95,9 +1420,389 @@
     "sha256": "d268295b5bfaceb99e5047c7fa2d2e83825b9ca7200e18cee2c07ce68fd4e6d6"
   },
   {
+    "name": "libnet-1.3-7.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libnet-1.3-7.el10.x86_64.rpm",
+    "sha256": "4a9eba5d33f7b5748f6765589046721adbd66da88590ab69f2672d828f3c7281"
+  },
+  {
+    "name": "libnetfilter_conntrack-1.0.9-12.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libnetfilter_conntrack-1.0.9-12.el10.x86_64.rpm",
+    "sha256": "9e140f6d83a04a555aabee619ded1b2f2952f70fd8763b28e8a9367c64e2829d"
+  },
+  {
+    "name": "libnfnetlink-1.0.2-3.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libnfnetlink-1.0.2-3.el10.x86_64.rpm",
+    "sha256": "387ac350c7e6a14accf30e1d8bcb9a71b2804737583cd46fc073766f04c609da"
+  },
+  {
+    "name": "libnftnl-1.3.0-3.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libnftnl-1.3.0-3.el10.x86_64.rpm",
+    "sha256": "92c24cc6b58ef3850ba28c55626e46e2a500d4c9c4cafdff24a6495c6fe1f20e"
+  },
+  {
+    "name": "libnghttp2-1.68.0-3.el10_2.2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libnghttp2-1.68.0-3.el10_2.2.x86_64.rpm",
+    "sha256": "0d6776f251407130c67611f447008a9989701943063a428426ebeeeca625173a"
+  },
+  {
+    "name": "libnl3-3.11.0-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libnl3-3.11.0-1.el10.x86_64.rpm",
+    "sha256": "b6200034cd9551b0ae2d89d34582ab1213a7b99526a39709a32ba8b7a4461968"
+  },
+  {
+    "name": "libnotify-0.8.6-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libnotify-0.8.6-1.el10.x86_64.rpm",
+    "sha256": "58d2fa7e710fe00af9406bfa585f729bca5858708ab904af6802cc10f7306fd6"
+  },
+  {
+    "name": "libogg-1.3.5-10.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libogg-1.3.5-10.el10.x86_64.rpm",
+    "sha256": "2177cc6d5c2e87b5cb861e55a1a39f7888218ce13ad1e5aa0c617c9b7c5a4ff8"
+  },
+  {
+    "name": "libomp-21.1.8-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libomp-21.1.8-1.el10.x86_64.rpm",
+    "sha256": "76d91554c583876de8c266b1112b0ecf7be0f87ccefde9628550224ff387b1ec"
+  },
+  {
+    "name": "libomp-devel-21.1.8-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libomp-devel-21.1.8-1.el10.x86_64.rpm",
+    "sha256": "da8535aa33d907c8892f260d4f7cd8788bd9435c06b3a44ef7577b4781ff7911"
+  },
+  {
+    "name": "libosinfo-1.11.0-8.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libosinfo-1.11.0-8.el10.x86_64.rpm",
+    "sha256": "b6863e608b367db06e8b75fcb6aae0eafbe75ac4e04d524986c30e40bf3e3e6d"
+  },
+  {
+    "name": "libpciaccess-0.16-16.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libpciaccess-0.16-16.el10.x86_64.rpm",
+    "sha256": "895711d2825cf585a10a25542f9619c120af2de9ff05ff88e28ca145d5ea6d95"
+  },
+  {
+    "name": "libpkgconf-2.1.0-3.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libpkgconf-2.1.0-3.el10.x86_64.rpm",
+    "sha256": "ce1ae14445d8a3cf09909878d442968da9a049b473432504064459618ae15f75"
+  },
+  {
+    "name": "libpng-1.6.40-11.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libpng-1.6.40-11.el10_2.1.x86_64.rpm",
+    "sha256": "7e73b951d1fbb936f65b651a6d72de942a7f252c82682877c20239d6ebf75c38"
+  },
+  {
+    "name": "libportal-0.9.0-3.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libportal-0.9.0-3.el10.x86_64.rpm",
+    "sha256": "f2f77393b822594054040bf413365a13191e549b5a34ed1f5111f1a30b6b14a5"
+  },
+  {
+    "name": "libproxy-0.5.5-4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libproxy-0.5.5-4.el10.x86_64.rpm",
+    "sha256": "b0a3fe0811121c260153c84cb068808a3286223c62b8c6db0c73640384cdb470"
+  },
+  {
+    "name": "libpsl-0.21.5-6.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libpsl-0.21.5-6.el10.x86_64.rpm",
+    "sha256": "32d37cbe9416d2d729523261d342f0b7745cddb64c084768c9cfa13a52151ff3"
+  },
+  {
+    "name": "libpwquality-1.4.5-12.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libpwquality-1.4.5-12.el10.x86_64.rpm",
+    "sha256": "92590d1d78dab582eab87ce4d59a44de1a7f8d483345e6e7d820fc78d5981026"
+  },
+  {
+    "name": "libquadmath-14.3.1-4.4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libquadmath-14.3.1-4.4.el10.x86_64.rpm",
+    "sha256": "35e6b5bff035edd6ea2fdfc4441333fffeb4d1fe986cbc41b83ba4bd4fb4fcfa"
+  },
+  {
+    "name": "libquadmath-devel-14.3.1-4.4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libquadmath-devel-14.3.1-4.4.el10.x86_64.rpm",
+    "sha256": "ee6d3352448ee1ff221864b05a36efa5be8fdce58a8772d3b4212a4c894de875"
+  },
+  {
+    "name": "librsvg2-2.57.1-9.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/librsvg2-2.57.1-9.el10.x86_64.rpm",
+    "sha256": "1359cc1a839388349f84bdcaf03a949e03946199e6c46b26792c99ea2cb7940d"
+  },
+  {
+    "name": "libsbc-2.0-7.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libsbc-2.0-7.el10.x86_64.rpm",
+    "sha256": "0ea5eb8f4d3efd1898efd2f5624d709c7a09e0a7e3be8b2d83e040b0bfafe30f"
+  },
+  {
+    "name": "libseccomp-2.5.6-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libseccomp-2.5.6-1.el10.x86_64.rpm",
+    "sha256": "ee91ee0f4ad9b2b0deac8b215b2e9b335edfc43f6fc5cd90817f7dc4f3f1ccce"
+  },
+  {
+    "name": "libselinux-3.10-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libselinux-3.10-1.el10.x86_64.rpm",
+    "sha256": "625b19992e3d446095102e23c3b3a5279ece234b54286034be0aa4a31d45d5c3"
+  },
+  {
+    "name": "libselinux-utils-3.10-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libselinux-utils-3.10-1.el10.x86_64.rpm",
+    "sha256": "56b46afb8f5258ed030d1bee42ac4cbb742643356b5289ffbf4f544aef6c2d19"
+  },
+  {
+    "name": "libsemanage-3.10-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libsemanage-3.10-1.el10.x86_64.rpm",
+    "sha256": "22d6c2bbc83866457e1291eeb14d1cebdfdf5bbc1822e2d197cf49da1912b3c6"
+  },
+  {
+    "name": "libsepol-3.10-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libsepol-3.10-1.el10.x86_64.rpm",
+    "sha256": "af099df7a4e676252e4eb3cae2c446bcd0092dfc11b36ab3dfb259c3cba029cf"
+  },
+  {
+    "name": "libsmartcols-2.40.2-18.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libsmartcols-2.40.2-18.el10.x86_64.rpm",
+    "sha256": "14ca3de907cd5f90fdf3614f2dc46d7e2b7a4cf74babdd60dce62addea730079"
+  },
+  {
+    "name": "libsndfile-1.2.2-6.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libsndfile-1.2.2-6.el10_2.1.x86_64.rpm",
+    "sha256": "cd16a2bd3a1fa2ec55df8f1e6b8fa75c84a9574bee122334ae22aef27f27c346"
+  },
+  {
+    "name": "libsoup3-3.6.5-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libsoup3-3.6.5-5.el10.x86_64.rpm",
+    "sha256": "899cf8c6958e0804b2b43b97a0b07a49d60ed5117a2ee76a7e710958ef0c4e01"
+  },
+  {
+    "name": "libssh-0.12.0-3.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libssh-0.12.0-3.el10_2.x86_64.rpm",
+    "sha256": "ab82eb674b117517b7de9b029c9eb090b85a3d9f5e9818a09ffc66e44f8abee4"
+  },
+  {
+    "name": "libssh-config-0.12.0-3.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libssh-config-0.12.0-3.el10_2.noarch.rpm",
+    "sha256": "3bdb9782e49c93998dc755905ac0753453f5c30ed2c80bb587dd694ee69e32c4"
+  },
+  {
+    "name": "libstdc++-14.3.1-4.4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libstdc++-14.3.1-4.4.el10.x86_64.rpm",
+    "sha256": "342c4128ad2e04b518871c3029132405d0a8a36a94c0449262d08cc8350e62ba"
+  },
+  {
+    "name": "libstdc++-devel-14.3.1-4.4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libstdc++-devel-14.3.1-4.4.el10.x86_64.rpm",
+    "sha256": "7ce2f001978b0891c83c011e70443d318beaaf289cc670ae09d7aa25f6cab359"
+  },
+  {
+    "name": "libtasn1-4.20.0-5.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libtasn1-4.20.0-5.el10_2.x86_64.rpm",
+    "sha256": "db7abe9ca42d7ce71faac2e976881a48a21c83485c33261c2908fe8a4b7a3eb7"
+  },
+  {
+    "name": "libtdb-1.4.14-100.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libtdb-1.4.14-100.el10.x86_64.rpm",
+    "sha256": "179566c41a2e55790ac55e3460450e05160daeb62de2c4de5a8c5c731755c43d"
+  },
+  {
+    "name": "libthai-0.1.29-10.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libthai-0.1.29-10.el10.x86_64.rpm",
+    "sha256": "18db919f85a238c095803c53814822f42f35b5edac6a350057f6472ee291a873"
+  },
+  {
+    "name": "libtheora-1.1.1-39.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libtheora-1.1.1-39.el10.x86_64.rpm",
+    "sha256": "1efda0d73bc1f399db017926bc66ace20835e61482c3430b5425d8a2296b3937"
+  },
+  {
+    "name": "libtiff-4.6.0-8.el10_2.4.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libtiff-4.6.0-8.el10_2.4.x86_64.rpm",
+    "sha256": "207234b2c215ad997a789dd4576f2ea814c657607d352c44d7230b63063c01ba"
+  },
+  {
+    "name": "libtool-2.4.7-14.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libtool-2.4.7-14.el10.x86_64.rpm",
+    "sha256": "8972d91a4405cc791a2ad5c9c24bfd9d5469d103af58d04d6eeed76ea3989da4"
+  },
+  {
+    "name": "libtool-ltdl-2.4.7-14.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libtool-ltdl-2.4.7-14.el10.x86_64.rpm",
+    "sha256": "3ec337a2d615dc42dcee0e1726d5de3af41963b300e7d3a34bf5ea56e5dd3fea"
+  },
+  {
+    "name": "libtracker-sparql-3.7.3-4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libtracker-sparql-3.7.3-4.el10.x86_64.rpm",
+    "sha256": "b66d55e0d9f0fbf3ba6c3951da08d3661a167dd281a35b60a99bee52330cb0be"
+  },
+  {
+    "name": "libunistring-1.1-10.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libunistring-1.1-10.el10.x86_64.rpm",
+    "sha256": "77f05602cf5482434c6f90c9365f24be4a03073086762db3c093bb72729d4aa2"
+  },
+  {
+    "name": "liburing-2.12-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/liburing-2.12-1.el10.x86_64.rpm",
+    "sha256": "532e52467bd03ae2c5b06352a85576acc20269651d08e8e7a2a402e53231056b"
+  },
+  {
+    "name": "libusb1-1.0.30-1.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libusb1-1.0.30-1.el10_2.x86_64.rpm",
+    "sha256": "f06eab0a6b2adb6facae7c4153067862d6dea49f0e6e25a0817ecef394eb5a14"
+  },
+  {
+    "name": "libutempter-1.2.1-15.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libutempter-1.2.1-15.el10.x86_64.rpm",
+    "sha256": "ab9d3ed14877accc8e9f6f693e14890c9834a24fde28da8f16da956d11a037f8"
+  },
+  {
+    "name": "libuuid-2.40.2-18.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libuuid-2.40.2-18.el10.x86_64.rpm",
+    "sha256": "dab1cb9f6e8466e8ee0ce0f4b04d8e19b2d25cd308d13125598b4c267f43be02"
+  },
+  {
+    "name": "libuv-1.52.1-1.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libuv-1.52.1-1.el10_2.x86_64.rpm",
+    "sha256": "eb32340802db7b49802f20584301f5d21a1d982cc5e5e0d8b1da9f5067aa8026"
+  },
+  {
+    "name": "libverto-0.3.2-10.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libverto-0.3.2-10.el10.x86_64.rpm",
+    "sha256": "187b53d0490e2a16102f2f4507f6ba29b288be74ebed33062ca96d981592fadb"
+  },
+  {
+    "name": "libvorbis-1.3.7-12.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libvorbis-1.3.7-12.el10.x86_64.rpm",
+    "sha256": "ecd1d0e1d82600e6ed857ef3983e09bcd1f74bef86022529d4b685b7a439c1b1"
+  },
+  {
+    "name": "libwayland-client-1.24.0-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libwayland-client-1.24.0-1.el10.x86_64.rpm",
+    "sha256": "c9a22b343a77d0564223c14906b789edc30d070833c9375db2c893a9cc0797cb"
+  },
+  {
+    "name": "libwayland-cursor-1.24.0-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libwayland-cursor-1.24.0-1.el10.x86_64.rpm",
+    "sha256": "1b462ddd1bb620e38d855137bb1a9f4c2b842031ba912a276708a350f681d62a"
+  },
+  {
+    "name": "libwayland-egl-1.24.0-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libwayland-egl-1.24.0-1.el10.x86_64.rpm",
+    "sha256": "47c32b5afb50cba4e2c341587eeff9147a00f9175cba6a7b9fa3fd74943afd6a"
+  },
+  {
+    "name": "libwebp-1.3.2-10.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libwebp-1.3.2-10.el10.x86_64.rpm",
+    "sha256": "f5e7130af09ba0966575a30cc1cf31574fc10ecb9139bf22943150c1dd8bb64c"
+  },
+  {
+    "name": "libxcb-1.17.0-3.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libxcb-1.17.0-3.el10.x86_64.rpm",
+    "sha256": "1a77b992964cbfc03cb4119280614d71ffa18e4fd6a18ac68d44fc11d4383830"
+  },
+  {
+    "name": "libxcrypt-4.4.36-10.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libxcrypt-4.4.36-10.el10.x86_64.rpm",
+    "sha256": "06bb13ba608b57582b3dfc453645ec547d99b5fba934b4732c6c05b630b3f88b"
+  },
+  {
     "name": "libxcrypt-devel-4.4.36-10.el10.x86_64.rpm",
     "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libxcrypt-devel-4.4.36-10.el10.x86_64.rpm",
     "sha256": "64f4e2d62dcaca2e4dd382851916869966cee313d062bcc09f6beacb3e90ceb6"
+  },
+  {
+    "name": "libxkbcommon-1.7.0-4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libxkbcommon-1.7.0-4.el10.x86_64.rpm",
+    "sha256": "325d6b2fe75668634aa33bb6e4b7db634f9e6591c4b345b7d43b2cc273d4d412"
+  },
+  {
+    "name": "libxml2-2.12.5-10.el10_2.4.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libxml2-2.12.5-10.el10_2.4.x86_64.rpm",
+    "sha256": "14a31be147706e3f83434e76e4211a4f3bcb6e6f608ef6b1c1a78789c08e19ba"
+  },
+  {
+    "name": "libxshmfence-1.3.2-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libxshmfence-1.3.2-5.el10.x86_64.rpm",
+    "sha256": "af6c5596a7d0315d38c0b0e857932d8092be8c0839a482d135aff9656cf6dd0b"
+  },
+  {
+    "name": "libxslt-1.1.39-8.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/libxslt-1.1.39-8.el10_2.1.x86_64.rpm",
+    "sha256": "9f067ff7bd1ac912dd885c2c6c1cb593c78fcbece3650354b0ca771f04ff5cb4"
+  },
+  {
+    "name": "libyaml-0.2.5-16.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libyaml-0.2.5-16.el10.x86_64.rpm",
+    "sha256": "5f3d1104e87f4ced2b1b5809a212797033d6456f10ec4cec29a1f01a8f7d2f09"
+  },
+  {
+    "name": "libyaml-devel-0.2.5-16.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/CRB/x86_64/os/Packages/l/libyaml-devel-0.2.5-16.el10.x86_64.rpm",
+    "sha256": "0041e2432bd5959104fd2185415c63814397945e28912d039a6c255d61e9c276"
+  },
+  {
+    "name": "libzstd-1.5.5-9.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/libzstd-1.5.5-9.el10.x86_64.rpm",
+    "sha256": "74c6db2baf7c9f95b345830a9154102efc8ebae05656b33628c4a6f28769e41c"
+  },
+  {
+    "name": "linux-firmware-whence-20260804-23.2.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/linux-firmware-whence-20260804-23.2.el10_2.noarch.rpm",
+    "sha256": "f139cf019d1f979b8f5b1338bbe92454ac6821608785f41266ac5b08adfb5304"
+  },
+  {
+    "name": "lksctp-tools-1.0.21-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/lksctp-tools-1.0.21-1.el10.x86_64.rpm",
+    "sha256": "053e496dd47cd6450ebc9795b393e8e042895f9a1a00a1dee7c7c735d107696b"
+  },
+  {
+    "name": "lld-21.1.8-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/lld-21.1.8-1.el10.x86_64.rpm",
+    "sha256": "f7bf6691d17bbc29513e1a45301ecf001ac663a9af4b55924697f0f76289e907"
+  },
+  {
+    "name": "lld-libs-21.1.8-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/lld-libs-21.1.8-1.el10.x86_64.rpm",
+    "sha256": "b192e218fee29e52d0501b19ad7adda613be7ee95495f08b02be4347376ad050"
+  },
+  {
+    "name": "llvm-21.1.8-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/llvm-21.1.8-1.el10.x86_64.rpm",
+    "sha256": "02d755b89d9863b4837b2f83e0a8244c070b59fde96cf0f1518d210c52bdb12e"
+  },
+  {
+    "name": "llvm-filesystem-21.1.8-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/llvm-filesystem-21.1.8-1.el10.x86_64.rpm",
+    "sha256": "7a2a83068661206626cc9a28a8ad7a94f06fdf3a592618b8ccad5920cefc6bc3"
+  },
+  {
+    "name": "llvm-libs-21.1.8-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/llvm-libs-21.1.8-1.el10.x86_64.rpm",
+    "sha256": "a6f0a86b87d8f350defc0aab3e15dec6a17a8fb43eb082eabe535d0ea33a8673"
+  },
+  {
+    "name": "lmdb-libs-0.9.32-4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/lmdb-libs-0.9.32-4.el10.x86_64.rpm",
+    "sha256": "6516be64a9fc9b78178a8ad4ef1ac7cee30c7f9c010db3ca265395c023799f40"
+  },
+  {
+    "name": "low-memory-monitor-2.1-12.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/low-memory-monitor-2.1-12.el10.x86_64.rpm",
+    "sha256": "9a97bb72a30861e4af1f6e9942e1c1feda129de6a6bf277672d479323d046965"
+  },
+  {
+    "name": "lua-libs-5.4.6-7.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/lua-libs-5.4.6-7.el10.x86_64.rpm",
+    "sha256": "9dc8da495a146f1a702497c8080f3f3a5998691a11cc1d2a1a48f8e01435efad"
+  },
+  {
+    "name": "lua-srpm-macros-1-15.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/l/lua-srpm-macros-1-15.el10.noarch.rpm",
+    "sha256": "d15ea743a995520f9e72ec317becfc736dfc3ed01dae1d42b40e565eda5d42fd"
+  },
+  {
+    "name": "lz4-libs-1.9.4-8.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/l/lz4-libs-1.9.4-8.el10.x86_64.rpm",
+    "sha256": "3dcfe33aa7bb3fc4abf11610c6107e01b60a2abf0e570fc1507d57316e7a82ee"
+  },
+  {
+    "name": "m4-1.4.19-11.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/m/m4-1.4.19-11.el10.x86_64.rpm",
+    "sha256": "e8da1b9409a0e693708d9b4af415e6c4e1ed14937ef332e7cc4b2642dddf8901"
   },
   {
     "name": "make-4.4.1-9.el10.x86_64.rpm",
@@ -105,9 +1810,194 @@
     "sha256": "54fc9e376ff398a752785afad8259539a6198d4ac614cea39c39e640a0a4563f"
   },
   {
+    "name": "maven-3.9.9-3.el10_1.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/m/maven-3.9.9-3.el10_1.noarch.rpm",
+    "sha256": "d2f75a0f3e3ad770b0e72ae512ae8163f3d4768d73fc5a454e71b1e228f7ff7b"
+  },
+  {
+    "name": "maven-lib-3.9.9-3.el10_1.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/m/maven-lib-3.9.9-3.el10_1.noarch.rpm",
+    "sha256": "8ebab965f2f744d74b017ba53d58d6b50aaa11e9a3e1dfc156e818f47af533da"
+  },
+  {
+    "name": "maven-openjdk21-3.9.9-3.el10_1.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/m/maven-openjdk21-3.9.9-3.el10_1.noarch.rpm",
+    "sha256": "5fe4a9afdd549ebbfe544e65a6f4a2b3bd3291a11f3331e3966ad432be98c240"
+  },
+  {
+    "name": "maven-resolver-1.9.18-4.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/m/maven-resolver-1.9.18-4.el10.noarch.rpm",
+    "sha256": "904ba6a1e7eaa0972d49ab01a4fc0b9fa0b4cfd97306848192aedc3442e56c36"
+  },
+  {
+    "name": "maven-shared-utils-3.4.2-8.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/m/maven-shared-utils-3.4.2-8.el10.noarch.rpm",
+    "sha256": "11eddf3db591f53967876117b836c4d5918e740b2e8f813f93c819a394dff4cc"
+  },
+  {
+    "name": "maven-wagon-3.5.3-9.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/m/maven-wagon-3.5.3-9.el10.noarch.rpm",
+    "sha256": "ed16b57ba9331d342d6c755adb3162a668698bfd194f19a15e971eee242c98a4"
+  },
+  {
+    "name": "mesa-dri-drivers-25.2.7-4.el10.rocky.0.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/m/mesa-dri-drivers-25.2.7-4.el10.rocky.0.1.x86_64.rpm",
+    "sha256": "c23582542c6cafc8a2a981a81c7e0df676c77d2eba7bc31225e10fb35d909e2a"
+  },
+  {
+    "name": "mesa-filesystem-25.2.7-4.el10.rocky.0.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/m/mesa-filesystem-25.2.7-4.el10.rocky.0.1.x86_64.rpm",
+    "sha256": "3628c4b6c61fd40cab109e66999227f1e619d4cd01cf29ee725c71b3ff90e1ea"
+  },
+  {
+    "name": "mesa-libEGL-25.2.7-4.el10.rocky.0.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/m/mesa-libEGL-25.2.7-4.el10.rocky.0.1.x86_64.rpm",
+    "sha256": "f34f78209bd62e6883eac6eca7586d6445937efb2e6c90d871f449e51d0774ec"
+  },
+  {
+    "name": "mesa-libGL-25.2.7-4.el10.rocky.0.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/m/mesa-libGL-25.2.7-4.el10.rocky.0.1.x86_64.rpm",
+    "sha256": "6450a8a0be7f0928771b0e1f51408dd8c70c23bf5d83e8d6bd3abc77e4098cde"
+  },
+  {
+    "name": "mesa-libgbm-25.2.7-4.el10.rocky.0.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/m/mesa-libgbm-25.2.7-4.el10.rocky.0.1.x86_64.rpm",
+    "sha256": "1c89aaea4616a031254bf907cd1931f9bdb6b4ed51ad7924946e0862c884634d"
+  },
+  {
+    "name": "mkfontscale-1.2.2-8.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/m/mkfontscale-1.2.2-8.el10.x86_64.rpm",
+    "sha256": "396600d983e4c8abd143f738cf0b29aaf805b0988111dc8c26e9aae6731ced8a"
+  },
+  {
+    "name": "mpdecimal-2.5.1-12.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/m/mpdecimal-2.5.1-12.el10.x86_64.rpm",
+    "sha256": "c3439b33060f4cc0cdb30649bcf8c5d057258344d8330c0f96fc1aa7bcfb288f"
+  },
+  {
+    "name": "mpfr-4.2.1-8.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/m/mpfr-4.2.1-8.el10.x86_64.rpm",
+    "sha256": "1de148750d966f0425099f1e1f41083c3fc531cc3c0de261772d5a977f4479d2"
+  },
+  {
+    "name": "mpg123-libs-1.32.9-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/m/mpg123-libs-1.32.9-1.el10.x86_64.rpm",
+    "sha256": "16194e3dffbbe43e43c483b50728d4e0c1361aa66577556b79c21199492f08d8"
+  },
+  {
+    "name": "ncurses-6.4-15.20240127.el10_1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/n/ncurses-6.4-15.20240127.el10_1.x86_64.rpm",
+    "sha256": "2b97394d53c77d67862510f963049c962ba351cc16d1ab517de03cf2dfba347b"
+  },
+  {
+    "name": "ncurses-base-6.4-15.20240127.el10_1.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/n/ncurses-base-6.4-15.20240127.el10_1.noarch.rpm",
+    "sha256": "3aed3e3d082a1fa7e2c2886465f10d0ef51d1fca1e8be839ec36e159b5cba3f7"
+  },
+  {
+    "name": "ncurses-libs-6.4-15.20240127.el10_1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/n/ncurses-libs-6.4-15.20240127.el10_1.x86_64.rpm",
+    "sha256": "7dfdfe83346d07b333423c2fb389aff3eecaa4e0ab5b48cf526e021aacdbb820"
+  },
+  {
+    "name": "netavark-1.17.2-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/n/netavark-1.17.2-1.el10.x86_64.rpm",
+    "sha256": "010eaa085aba3751cf0aeefb17f6d5b5936ae57d54982c9a73c6bf71dc8a385a"
+  },
+  {
+    "name": "nftables-1.1.5-6.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/n/nftables-1.1.5-6.el10_2.x86_64.rpm",
+    "sha256": "c5f478d8ae534be12be5c34404dd2dff7209daac6fe132a0feff3e57c7e8088c"
+  },
+  {
+    "name": "ninja-build-1.11.1-9.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/CRB/x86_64/os/Packages/n/ninja-build-1.11.1-9.el10.x86_64.rpm",
+    "sha256": "1ffe112505efa2a870b6ae60c36f287bc0d0f6698cff0f8fbf69015d04d2f395"
+  },
+  {
+    "name": "npth-1.6-21.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/n/npth-1.6-21.el10.x86_64.rpm",
+    "sha256": "ed85aef36fef9b88047f3b7eefe0eed205e1f1163dd466350c9dee149caa4c1c"
+  },
+  {
+    "name": "nspr-4.39.0-5.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/n/nspr-4.39.0-5.el10_2.x86_64.rpm",
+    "sha256": "c342da4c7847a9a23edccf57ee454d12e673a885312f365356be3b94682ce7a4"
+  },
+  {
+    "name": "nss-3.124.0-5.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/n/nss-3.124.0-5.el10_2.x86_64.rpm",
+    "sha256": "85ab257a715d5a976f2af8b65a46d9bfe92116c8e5b4e9867af4417f490c0774"
+  },
+  {
+    "name": "nss-softokn-3.124.0-5.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/n/nss-softokn-3.124.0-5.el10_2.x86_64.rpm",
+    "sha256": "88ee7bfc73da355d72bfd270f8422f3ac5e3cfcbefcf50e2018615c6c6d0bfbc"
+  },
+  {
+    "name": "nss-softokn-freebl-3.124.0-5.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/n/nss-softokn-freebl-3.124.0-5.el10_2.x86_64.rpm",
+    "sha256": "c0d858da6247d32e2e724ffda940981e76fd9a9107732af4eff9f61fe9dc8bc7"
+  },
+  {
+    "name": "nss-sysinit-3.124.0-5.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/n/nss-sysinit-3.124.0-5.el10_2.x86_64.rpm",
+    "sha256": "4d18fbda69991875c5730bd833aa84a0e3a701a2e91f35410ff8045425008d6b"
+  },
+  {
+    "name": "nss-util-3.124.0-5.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/n/nss-util-3.124.0-5.el10_2.x86_64.rpm",
+    "sha256": "4d9e83a2a62c1ae9c49944252595f1f323e09a22002d54001c25efd03eaff644"
+  },
+  {
+    "name": "ocaml-srpm-macros-10-4.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/o/ocaml-srpm-macros-10-4.el10.noarch.rpm",
+    "sha256": "294178c1384509c626eff7603b32be5ada1e0ff859428aa914cdd4015d031432"
+  },
+  {
+    "name": "oniguruma-6.9.9-7.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/o/oniguruma-6.9.9-7.el10.x86_64.rpm",
+    "sha256": "8eddcc7d911abe787f785843660a32951854c7a1b3c5bc341cf458d4a24302e1"
+  },
+  {
+    "name": "openblas-srpm-macros-2-19.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/o/openblas-srpm-macros-2-19.el10.noarch.rpm",
+    "sha256": "135f6ead32e356e5672fa2b3b2cf9d86480a840b34fa6c3956e9e00a0d15a047"
+  },
+  {
+    "name": "openjpeg2-2.5.2-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/o/openjpeg2-2.5.2-5.el10.x86_64.rpm",
+    "sha256": "abf36318366741997dcab01fa8dc7563809eb81d9c8ba223e56896c55ce9f793"
+  },
+  {
+    "name": "openldap-2.6.10-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/o/openldap-2.6.10-1.el10.x86_64.rpm",
+    "sha256": "adf84116381e8acf4044581ba16ba9221be17c1768db6d32f098d27d19faedee"
+  },
+  {
+    "name": "openssh-9.9p1-28.el10_2.rocky.0.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/o/openssh-9.9p1-28.el10_2.rocky.0.1.x86_64.rpm",
+    "sha256": "10c8a2f8327314f55eb6ec74ee80a018016e0854831b3429159dadf451fa9afd"
+  },
+  {
+    "name": "openssh-clients-9.9p1-28.el10_2.rocky.0.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/o/openssh-clients-9.9p1-28.el10_2.rocky.0.1.x86_64.rpm",
+    "sha256": "4629156e78dc350647ecda12f740a0ee83d885c38ac67b86c00bcab926cb055a"
+  },
+  {
+    "name": "openssh-server-9.9p1-28.el10_2.rocky.0.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/o/openssh-server-9.9p1-28.el10_2.rocky.0.1.x86_64.rpm",
+    "sha256": "94f02d7b3d639738345de4e45940e98af737f62c12fa2103239a48e76098a81f"
+  },
+  {
     "name": "openssl-3.5.8-1.el10_2.x86_64.rpm",
     "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/o/openssl-3.5.8-1.el10_2.x86_64.rpm",
     "sha256": "b29d2f070579c31d5bdc700b89bcd32bc51849e57d4693ca23c8bae9f2d29057"
+  },
+  {
+    "name": "openssl-devel-3.5.8-1.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/o/openssl-devel-3.5.8-1.el10_2.x86_64.rpm",
+    "sha256": "16b78b472186a037844eee9e5baa6e22d196aee1096fe5195c67c5f43252471d"
   },
   {
     "name": "openssl-fips-provider-3.5.8-1.el10_2.x86_64.rpm",
@@ -118,6 +2008,81 @@
     "name": "openssl-libs-3.5.8-1.el10_2.x86_64.rpm",
     "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/o/openssl-libs-3.5.8-1.el10_2.x86_64.rpm",
     "sha256": "88a8e87a2d18ef0f6f0ee50c5c81e0afb8beb7c1f28efa1a63edd09703eb5657"
+  },
+  {
+    "name": "opus-1.4-6.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/o/opus-1.4-6.el10.x86_64.rpm",
+    "sha256": "0275980d6fb3be0439bb5352cb21052fe02b62b91e538002c02d5a870913845b"
+  },
+  {
+    "name": "orc-0.4.39-2.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/o/orc-0.4.39-2.el10.x86_64.rpm",
+    "sha256": "bcbd7aace9d1fa4a199af00412029b9eae953e44503e695c0777b05cdf2f280d"
+  },
+  {
+    "name": "osinfo-db-20250606-2.el10.rocky.20260312.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/o/osinfo-db-20250606-2.el10.rocky.20260312.noarch.rpm",
+    "sha256": "21048a12a97521f9303dcf2df176bb0d70ec6fa02c43cc561707d650e2685f0d"
+  },
+  {
+    "name": "osinfo-db-tools-1.11.0-8.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/o/osinfo-db-tools-1.11.0-8.el10.x86_64.rpm",
+    "sha256": "29f105badd95aec5008b32c7eec90d6c4e9bdba19282aa1b7dbd3fbba077bdf9"
+  },
+  {
+    "name": "p11-kit-0.26.4-1.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/p/p11-kit-0.26.4-1.el10_2.x86_64.rpm",
+    "sha256": "21b9d8b8359a741b9e640d26d69369b61d0e445585dc9359d0a37309f5404f50"
+  },
+  {
+    "name": "p11-kit-trust-0.26.4-1.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/p/p11-kit-trust-0.26.4-1.el10_2.x86_64.rpm",
+    "sha256": "4fde4f3eb92ed069c19c8a17b4458cbba308120be85a874263476e98b554ac69"
+  },
+  {
+    "name": "package-notes-srpm-macros-0.5-13.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/package-notes-srpm-macros-0.5-13.el10.noarch.rpm",
+    "sha256": "cd20b0208f57517adfda39450b514a7c4598beda092da9cf676a6814a4267d81"
+  },
+  {
+    "name": "pam-1.6.1-9.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/p/pam-1.6.1-9.el10_2.1.x86_64.rpm",
+    "sha256": "021383f87b767fd485a26f2fa1bbee3a16d45bb9558419c1914f33fba103d5ab"
+  },
+  {
+    "name": "pam-libs-1.6.1-9.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/p/pam-libs-1.6.1-9.el10_2.1.x86_64.rpm",
+    "sha256": "7df5ac78121efb62d132cb45c557f686b31d65a47a5067157b918b8b78ec6d82"
+  },
+  {
+    "name": "pango-1.54.0-3.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/pango-1.54.0-3.el10.x86_64.rpm",
+    "sha256": "762110b6f8cfa90f431b08154399dc3f81a62f92837bd59c8a2b849286f24200"
+  },
+  {
+    "name": "passt-0^20251210.gd04c480-6.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/passt-0^20251210.gd04c480-6.el10_2.x86_64.rpm",
+    "sha256": "af8e77c09787f685cb5eea7540468922d0eec29b8bb522d25dcb3cc92098bf99"
+  },
+  {
+    "name": "passt-selinux-0^20251210.gd04c480-6.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/passt-selinux-0^20251210.gd04c480-6.el10_2.noarch.rpm",
+    "sha256": "b9a72478c0a244b7c1dd1987ca558f524b0607ab652ef34dab4e1c1ec6101ae6"
+  },
+  {
+    "name": "patch-2.7.6-26.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/patch-2.7.6-26.el10.x86_64.rpm",
+    "sha256": "763a926abab2c95f91ca2bdda3ed8b738647d161fd5255b6d0de968112c8f1b3"
+  },
+  {
+    "name": "pcre2-10.44-1.el10.3.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/p/pcre2-10.44-1.el10.3.x86_64.rpm",
+    "sha256": "f8836debb4909bab6b1e73cf2eb92d46844408b99629e42773cc5cc5ba97e3ef"
+  },
+  {
+    "name": "pcre2-syntax-10.44-1.el10.3.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/p/pcre2-syntax-10.44-1.el10.3.noarch.rpm",
+    "sha256": "6d677d1cee7fe4ac121485bd6c1ecd331beffa2b2385a2de000ced637ea22e36"
   },
   {
     "name": "perl-AutoLoader-5.74-515.el10_2.noarch.rpm",
@@ -188,6 +2153,21 @@
     "name": "perl-File-Basename-2.86-515.el10_2.noarch.rpm",
     "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-File-Basename-2.86-515.el10_2.noarch.rpm",
     "sha256": "b54a07c6f65acee83febed25391896a29c47bc069ef408090bd57a630e09e726"
+  },
+  {
+    "name": "perl-File-Compare-1.100.800-515.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-File-Compare-1.100.800-515.el10_2.noarch.rpm",
+    "sha256": "518bb8ae5122ca24765a38f6bd791d6bd3f286f66a08bbb2ae328fd67f5863fa"
+  },
+  {
+    "name": "perl-File-Copy-2.41-515.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-File-Copy-2.41-515.el10_2.noarch.rpm",
+    "sha256": "8576334069206162effa1d371ddef1cbc52c2eba4ff444c93147fa2c9b1de9d7"
+  },
+  {
+    "name": "perl-File-Find-1.44-515.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-File-Find-1.44-515.el10_2.noarch.rpm",
+    "sha256": "634ce4186128090ada4f403568fc4edaa83460fd20fa9db7b8d056b7041c6e4d"
   },
   {
     "name": "perl-File-Path-2.18-512.el10.noarch.rpm",
@@ -350,6 +2330,11 @@
     "sha256": "4f1abe1d3c1ed4dad1b7777d97466c6ae6e362ff0a12db886c37a7fb4496f292"
   },
   {
+    "name": "perl-Thread-Queue-3.14-511.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Thread-Queue-3.14-511.el10.noarch.rpm",
+    "sha256": "c874d1ccb877843b631fac34582b52c1808176da5274badeca7c3a1cca267bc5"
+  },
+  {
     "name": "perl-Time-Local-1.350-511.el10.noarch.rpm",
     "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-Time-Local-1.350-511.el10.noarch.rpm",
     "sha256": "ce9f31d3463442a98c08f50680df3ad4f14b4ce3a9331450435ec7db3b20023f"
@@ -425,13 +2410,658 @@
     "sha256": "3f09e0bb3f9a45f4f92654a9b5aa2bd9df0881fb481aaa238e853c52be5bdff3"
   },
   {
+    "name": "perl-srpm-macros-1-57.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-srpm-macros-1-57.el10.noarch.rpm",
+    "sha256": "0fcf0452b91032428063dc5e753db12478f940c7d4ae5f9e38ecbfcc0ef32a66"
+  },
+  {
+    "name": "perl-threads-2.40-511.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-threads-2.40-511.el10.x86_64.rpm",
+    "sha256": "a06355ff70b4b3c57d2d9b22b7e2a239686c04d78d95a1dc9d8d2f873bdf4069"
+  },
+  {
+    "name": "perl-threads-shared-1.69-511.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-threads-shared-1.69-511.el10.x86_64.rpm",
+    "sha256": "21af42671be5625023e4f7991a2a54bed87aa11511d2281e9aea1c135f66324a"
+  },
+  {
     "name": "perl-vars-1.05-515.el10_2.noarch.rpm",
     "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/perl-vars-1.05-515.el10_2.noarch.rpm",
     "sha256": "cfd5d2203b2358330071c93af053054f1e2a6bce266027cc9dc6af05b76b0242"
   },
   {
+    "name": "pipewire-1.4.11-1.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/pipewire-1.4.11-1.el10_2.1.x86_64.rpm",
+    "sha256": "b11240a95ca16809eee3118a4514548336a7f0c1a52a635d76a0d37d2ae4b872"
+  },
+  {
+    "name": "pipewire-alsa-1.4.11-1.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/pipewire-alsa-1.4.11-1.el10_2.1.x86_64.rpm",
+    "sha256": "a27b37fdb4dc0f5ddc1992f35cd321d1012dfec88b6c5cecc375928d26a9b431"
+  },
+  {
+    "name": "pipewire-jack-audio-connection-kit-1.4.11-1.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/pipewire-jack-audio-connection-kit-1.4.11-1.el10_2.1.x86_64.rpm",
+    "sha256": "022a60edc86f0764c1256ceb638dcfe564b66bb8ad809b262bf1e45a17317384"
+  },
+  {
+    "name": "pipewire-jack-audio-connection-kit-libs-1.4.11-1.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/pipewire-jack-audio-connection-kit-libs-1.4.11-1.el10_2.1.x86_64.rpm",
+    "sha256": "c313f2d692d53d8630c604b451536ffb594401874d21c0ec0692d9b0b68a38a0"
+  },
+  {
+    "name": "pipewire-libs-1.4.11-1.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/pipewire-libs-1.4.11-1.el10_2.1.x86_64.rpm",
+    "sha256": "b29c752efef32dce0fe329cfbd47aa39bd14ae9448de29f3a2cab685e1f5d6b0"
+  },
+  {
+    "name": "pipewire-plugin-libcamera-1.4.11-1.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/pipewire-plugin-libcamera-1.4.11-1.el10_2.1.x86_64.rpm",
+    "sha256": "db8acc8ea92f48d2c720b570d91242e70058e536c6e9591e5ba51023d56c1bae"
+  },
+  {
+    "name": "pipewire-pulseaudio-1.4.11-1.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/pipewire-pulseaudio-1.4.11-1.el10_2.1.x86_64.rpm",
+    "sha256": "47e394f544e5a12f03c3575902f72a7ad70c1b692fb698bbf5480e83a3b6ea7b"
+  },
+  {
+    "name": "pixman-0.43.4-2.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/pixman-0.43.4-2.el10.x86_64.rpm",
+    "sha256": "6007a7578cab13b204a142d38fd429e4961d7c841594b1f2f3439d0bd62d118d"
+  },
+  {
+    "name": "pkgconf-2.1.0-3.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/p/pkgconf-2.1.0-3.el10.x86_64.rpm",
+    "sha256": "1a7cdd1e6431169e959fc1b8a7d8789df4321f5dd5e67e2e61546e690bb4391b"
+  },
+  {
+    "name": "pkgconf-m4-2.1.0-3.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/p/pkgconf-m4-2.1.0-3.el10.noarch.rpm",
+    "sha256": "8fe51ce526aba6a51d5dc497f99e5f27258278a3337525d3578c1a4205299ab4"
+  },
+  {
+    "name": "pkgconf-pkg-config-2.1.0-3.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/p/pkgconf-pkg-config-2.1.0-3.el10.x86_64.rpm",
+    "sha256": "1ccce9b5e134cc6b594f2ce9b67b26480688bcef15af5a2540fc7c7e83c3d637"
+  },
+  {
+    "name": "plexus-cipher-2.0-12.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/plexus-cipher-2.0-12.el10.noarch.rpm",
+    "sha256": "7102fe41c479690d543e069312616868efbe1a1f8aa9ec8079dfc42fe49fc500"
+  },
+  {
+    "name": "plexus-classworlds-2.8.0-4.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/plexus-classworlds-2.8.0-4.el10.noarch.rpm",
+    "sha256": "291733ad258f8b3bc49fbe41daf694d6940f6b02f90c6137e043c5dece169659"
+  },
+  {
+    "name": "plexus-containers-component-annotations-2.2.0-4.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/plexus-containers-component-annotations-2.2.0-4.el10.noarch.rpm",
+    "sha256": "ee70661ebe7f27da8048bc7832e566dfd5219c17735e7e3f0b04e378b62ef2e7"
+  },
+  {
+    "name": "plexus-interpolation-1.27-4.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/plexus-interpolation-1.27-4.el10.noarch.rpm",
+    "sha256": "c09933c1a2fa5a439bc6a47d96430508aed210e0f4270864715dac6f2d752821"
+  },
+  {
+    "name": "plexus-sec-dispatcher-2.0-14.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/plexus-sec-dispatcher-2.0-14.el10.noarch.rpm",
+    "sha256": "46213f7c3e1a4d78793c8d7aa2459cac2e7e913ff11c5c4dc19b39f429d90370"
+  },
+  {
+    "name": "plexus-utils-3.5.1-9.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/plexus-utils-3.5.1-9.el10_2.noarch.rpm",
+    "sha256": "fa709eeedd422e5f53c93c8ec20f4aba5d39caccd81473f43666a4e1c6a47959"
+  },
+  {
+    "name": "podman-5.8.2-9.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/podman-5.8.2-9.el10_2.x86_64.rpm",
+    "sha256": "bc191f10001488a359876643e77785af7cf435c4cce06bf692c48fe96d0fbb03"
+  },
+  {
+    "name": "podman-sequoia-0.4.0~pqc.3-1.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/podman-sequoia-0.4.0~pqc.3-1.el10_2.x86_64.rpm",
+    "sha256": "b767638eee326762552d3957627b3a17a41c636d14a0afadd8b674298db517df"
+  },
+  {
+    "name": "policycoreutils-3.10-2.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/p/policycoreutils-3.10-2.el10_2.x86_64.rpm",
+    "sha256": "9c5c9b5634bd37a34dad540fdda04dde19bcf8b2dc82946ce9caab33d28a4e34"
+  },
+  {
+    "name": "policycoreutils-python-utils-3.10-2.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/policycoreutils-python-utils-3.10-2.el10_2.noarch.rpm",
+    "sha256": "5ef60e0c7b7cc2bd56965f6f39ad51449379488038bf64fea46dfb4a8f71c523"
+  },
+  {
+    "name": "polkit-125-4.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/p/polkit-125-4.el10_2.1.x86_64.rpm",
+    "sha256": "47ebf248e8f70d57f2104c8f5fcec61de0da057d0dcdb7c645ba2d389f3cee72"
+  },
+  {
+    "name": "polkit-libs-125-4.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/p/polkit-libs-125-4.el10_2.1.x86_64.rpm",
+    "sha256": "3f78850e23b82996cc3e09133981e6e3c65b03400bd9209746dc9726da7d07c0"
+  },
+  {
+    "name": "polkit-pkla-compat-0.1-30.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/p/polkit-pkla-compat-0.1-30.el10.x86_64.rpm",
+    "sha256": "b46d8198e7d802747f46d2c1b7076de59484ae6b9f8ea6d3c0a41424d7648404"
+  },
+  {
+    "name": "poppler-24.02.0-7.el10_2.2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/poppler-24.02.0-7.el10_2.2.x86_64.rpm",
+    "sha256": "98f30de9463fc9a162437484bbdf43d39f039adb23d0b6a7208b8877cebafb76"
+  },
+  {
+    "name": "poppler-data-0.4.11-9.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/poppler-data-0.4.11-9.el10.noarch.rpm",
+    "sha256": "45f03e7d9c238decda923b0649ab6d8cd5692dbf974c01bea4a3e0eea10ab105"
+  },
+  {
+    "name": "poppler-glib-24.02.0-7.el10_2.2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/poppler-glib-24.02.0-7.el10_2.2.x86_64.rpm",
+    "sha256": "749c3f10011c21ef5284f6871b08e02942d50ba4a4512bd889748a5ce052fd6c"
+  },
+  {
+    "name": "popt-1.19-8.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/p/popt-1.19-8.el10.x86_64.rpm",
+    "sha256": "69a6cca1e60efcf933a94ae0929923df787e3ddd23e464b17845df9684392d4d"
+  },
+  {
+    "name": "protobuf-c-1.5.0-6.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/p/protobuf-c-1.5.0-6.el10.x86_64.rpm",
+    "sha256": "d3c84b45ac22e6050491f65b432b84d9ae57ac3c45f23a7484da14837c629248"
+  },
+  {
+    "name": "publicsuffix-list-20240107-5.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/publicsuffix-list-20240107-5.el10.noarch.rpm",
+    "sha256": "d00126a971bdaf96d101fa0114756e848a67c50b9d1705ce5eafe7a6498c9057"
+  },
+  {
+    "name": "publicsuffix-list-dafsa-20240107-5.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/p/publicsuffix-list-dafsa-20240107-5.el10.noarch.rpm",
+    "sha256": "dbaaede562da89fc0a3aa82e824534a068daf07582a855f64a72042756fd1f7d"
+  },
+  {
+    "name": "pulseaudio-libs-17.0-6.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/pulseaudio-libs-17.0-6.el10.x86_64.rpm",
+    "sha256": "41b396fb9b3b6827ae807b7f855eb0a56e531d61f2ef9cf8391db26b70a285f4"
+  },
+  {
+    "name": "pyproject-srpm-macros-1.18.5-1.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/pyproject-srpm-macros-1.18.5-1.el10.noarch.rpm",
+    "sha256": "5ad34793f285fc8021606d312b94b63cdfea345d8628203ee2c77ac011ff27f4"
+  },
+  {
+    "name": "python-srpm-macros-3.12-11.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/python-srpm-macros-3.12-11.el10.noarch.rpm",
+    "sha256": "e0b30a5cf4494663d1c1a072e74d8fdbdcfdf6fa7746ba73554bbd5dc2d32581"
+  },
+  {
+    "name": "python-unversioned-command-3.12.14-1.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/python-unversioned-command-3.12.14-1.el10_2.noarch.rpm",
+    "sha256": "46ac190dbd8e45fda8be5ed726278950f41638d2ae6caaa9cbbb867adbb9bf24"
+  },
+  {
+    "name": "python3-3.12.14-1.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/p/python3-3.12.14-1.el10_2.x86_64.rpm",
+    "sha256": "decc565367b280816e242ca62b06bed338b0080a45033771c05f9f9542beba52"
+  },
+  {
+    "name": "python3-audit-4.0.3-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/python3-audit-4.0.3-5.el10.x86_64.rpm",
+    "sha256": "b7b5d02ea61aae3f548fa556247bbeae4e6ec106692c7fd77594a8e92dd332b1"
+  },
+  {
+    "name": "python3-devel-3.12.14-1.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/python3-devel-3.12.14-1.el10_2.x86_64.rpm",
+    "sha256": "567bbedfd411f262266c8f5bb3a7e20df9cf6ebd05c6f26ebd098277e1dbe603"
+  },
+  {
+    "name": "python3-distro-1.9.0-5.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/python3-distro-1.9.0-5.el10.noarch.rpm",
+    "sha256": "161764324a44856f84dbd8ff53de0ae000640b366ed6e34c48e028ee5964849e"
+  },
+  {
+    "name": "python3-libs-3.12.14-1.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/p/python3-libs-3.12.14-1.el10_2.x86_64.rpm",
+    "sha256": "f849e641fd867cd913247349f41d60c08c435f1aca6ae117fcf17762dfe5cd2a"
+  },
+  {
+    "name": "python3-libselinux-3.10-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/python3-libselinux-3.10-1.el10.x86_64.rpm",
+    "sha256": "e77c56c3471c4363b8dd1de98e6fa11dcb3fb93e7479271c562ea232750ce6a6"
+  },
+  {
+    "name": "python3-libsemanage-3.10-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/python3-libsemanage-3.10-1.el10.x86_64.rpm",
+    "sha256": "46a88e6c08627639e605744a85ae67f45ee14cd30875914ae0962f463b4b73b5"
+  },
+  {
+    "name": "python3-libxml2-2.12.5-10.el10_2.4.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/p/python3-libxml2-2.12.5-10.el10_2.4.x86_64.rpm",
+    "sha256": "101eb9c0b4e686cc034576633271512cf98695c4e627a65b0c8d3616c9bbe5de"
+  },
+  {
+    "name": "python3-pip-23.3.2-11.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/python3-pip-23.3.2-11.el10_2.noarch.rpm",
+    "sha256": "1ff35973d1cca1f84564e14e2d1d72d8639b687168e344314730e334c9b62a63"
+  },
+  {
+    "name": "python3-pip-wheel-23.3.2-11.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/p/python3-pip-wheel-23.3.2-11.el10_2.noarch.rpm",
+    "sha256": "06f5244a80ece623b579fb17455a878d9a6be5a93176ded5eb76aee0c73b971b"
+  },
+  {
+    "name": "python3-policycoreutils-3.10-2.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/p/python3-policycoreutils-3.10-2.el10_2.noarch.rpm",
+    "sha256": "854745757cde26906ec02b06062329f3a79400ba574819ad47cc9dee0e8a00c9"
+  },
+  {
+    "name": "python3-setools-4.6.0-3.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/p/python3-setools-4.6.0-3.el10.x86_64.rpm",
+    "sha256": "90f4c2a9a6afc1c03752ad4650c73dbb758242159dc5ca958261a7891dd9d47b"
+  },
+  {
+    "name": "qt6-srpm-macros-6.10.1-1.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/q/qt6-srpm-macros-6.10.1-1.el10.noarch.rpm",
+    "sha256": "d153fb0a4b5241585ec2f7d7ab29c7d86dbf6fe29c3a2800d9b024336602547c"
+  },
+  {
+    "name": "readline-8.2-11.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/r/readline-8.2-11.el10.x86_64.rpm",
+    "sha256": "a6c0132cb9db217fd611046841b0bfa0623878761987c3b73d6be8c652448877"
+  },
+  {
+    "name": "redhat-mono-vf-fonts-4.1.0-1.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/r/redhat-mono-vf-fonts-4.1.0-1.el10.noarch.rpm",
+    "sha256": "1abdf7d3fce1432d9a0e8cdce1ce6725040419c15d753605cb9a941495ef0a9c"
+  },
+  {
+    "name": "redhat-rpm-config-295-1.el10.rocky.0.2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/r/redhat-rpm-config-295-1.el10.rocky.0.2.noarch.rpm",
+    "sha256": "9d43b695c70ed2c5a9d7918cd2b827a63f045f76245d6932e98d08e97ae0bdee"
+  },
+  {
+    "name": "redhat-text-vf-fonts-4.1.0-1.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/r/redhat-text-vf-fonts-4.1.0-1.el10.noarch.rpm",
+    "sha256": "abafb8ab24f2b0f5c2872096e747673bce50a5df73decfba1b72db400060a46a"
+  },
+  {
+    "name": "rocky-gpg-keys-10.2-1.2.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/r/rocky-gpg-keys-10.2-1.2.el10.noarch.rpm",
+    "sha256": "772f3b15eb2499c29a2eac8629833794a0e924ddb36f976257ce7d03305d256a"
+  },
+  {
+    "name": "rocky-release-10.2-1.2.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/r/rocky-release-10.2-1.2.el10.noarch.rpm",
+    "sha256": "0166825fab38a71ca03fa1aba731d94bc6d4501a81e89ad255507b0f15746661"
+  },
+  {
+    "name": "rocky-repos-10.2-1.2.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/r/rocky-repos-10.2-1.2.el10.noarch.rpm",
+    "sha256": "21777378bbf5c2547d2992ffbe1c394717eeafc7ce39176b99f46bef17422faf"
+  },
+  {
+    "name": "rpm-4.19.1.1-23.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/r/rpm-4.19.1.1-23.el10.x86_64.rpm",
+    "sha256": "4006fa906fd9a438a6d3636d2033fa9a106fa024d8076c87e735dc0ccc48fcc6"
+  },
+  {
+    "name": "rpm-libs-4.19.1.1-23.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/r/rpm-libs-4.19.1.1-23.el10.x86_64.rpm",
+    "sha256": "0418c204051902a28fe0300c4ed47dfc90236036c3eab05afa115b0903caee69"
+  },
+  {
+    "name": "rpm-plugin-audit-4.19.1.1-23.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/r/rpm-plugin-audit-4.19.1.1-23.el10.x86_64.rpm",
+    "sha256": "6060c022f426ce5bcaa65d444f0dc10669dc117ec9d936c4e6e61465cfedc389"
+  },
+  {
+    "name": "rpm-plugin-selinux-4.19.1.1-23.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/r/rpm-plugin-selinux-4.19.1.1-23.el10.x86_64.rpm",
+    "sha256": "4320dc726cc7f2d979c1af557569d2b00dadaf401aa96a1d633ca3a7eca49327"
+  },
+  {
+    "name": "rpm-sequoia-1.10.1.1-2.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/r/rpm-sequoia-1.10.1.1-2.el10.x86_64.rpm",
+    "sha256": "7b80a047f8cab98f720ef3cdda4bc6483fee6720b61f6cba5def18ceab9a354e"
+  },
+  {
+    "name": "rsvg-pixbuf-loader-2.57.1-9.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/r/rsvg-pixbuf-loader-2.57.1-9.el10.x86_64.rpm",
+    "sha256": "ad0bbc7f18ec4ad37b08de43a8735eb15cc8a7a7fd0c685befa51f3a0e0bca66"
+  },
+  {
+    "name": "rsync-3.5.0-3.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/r/rsync-3.5.0-3.el10_2.x86_64.rpm",
+    "sha256": "62887dd8b987f86fd5dc8237a936b1f6a8e95146b07e334a0ae0133fb2087a8d"
+  },
+  {
+    "name": "rtkit-0.11-68.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/r/rtkit-0.11-68.el10.x86_64.rpm",
+    "sha256": "af106d762d8a54955a4a5ad233558a54317751bd3174a3cf77b42a5ab8a286ec"
+  },
+  {
+    "name": "ruby-3.3.12-15.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/r/ruby-3.3.12-15.el10_2.x86_64.rpm",
+    "sha256": "aa46f0103444590332b82677b780389478df3a68d7c715893d8dd69dc0989afe"
+  },
+  {
+    "name": "ruby-default-gems-3.3.12-15.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/r/ruby-default-gems-3.3.12-15.el10_2.noarch.rpm",
+    "sha256": "7ad6205f10dcd503a5ddfe71f06dee6ec651587f0aecbff214a7e71e89dfceb0"
+  },
+  {
+    "name": "ruby-devel-3.3.12-15.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/r/ruby-devel-3.3.12-15.el10_2.x86_64.rpm",
+    "sha256": "19aa584d231b98bb67888302f0cb49b8a5a66d9b47e069226ec2a1f1987c2da1"
+  },
+  {
+    "name": "ruby-libs-3.3.12-15.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/r/ruby-libs-3.3.12-15.el10_2.x86_64.rpm",
+    "sha256": "b543c270f238b3fc945882209b3d3dd0d9d0c4df06e8ddac016bbdd0f937aa41"
+  },
+  {
+    "name": "rubygem-bigdecimal-3.1.5-15.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/r/rubygem-bigdecimal-3.1.5-15.el10_2.x86_64.rpm",
+    "sha256": "9cade72eda25dd95fc6feaed04734e4161e40151840e6b9a794524ecd7ce3c91"
+  },
+  {
+    "name": "rubygem-bundler-2.5.22-15.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/r/rubygem-bundler-2.5.22-15.el10_2.noarch.rpm",
+    "sha256": "ee5099b578e79d4276be103ae43378910654281f55274a9033c7b7aae2d4ab57"
+  },
+  {
+    "name": "rubygem-io-console-0.7.1-15.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/r/rubygem-io-console-0.7.1-15.el10_2.x86_64.rpm",
+    "sha256": "4f3fb283f0628d1255d3b375440b728e93d2fb0e15359b898a6549abfeb76a5f"
+  },
+  {
+    "name": "rubygem-json-2.7.2-15.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/r/rubygem-json-2.7.2-15.el10_2.x86_64.rpm",
+    "sha256": "4ad757711018461f3b4c11446d9ad37973f04234afc26733a2c0ad760f0626b5"
+  },
+  {
+    "name": "rubygem-psych-5.1.2-15.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/r/rubygem-psych-5.1.2-15.el10_2.x86_64.rpm",
+    "sha256": "a9cfa13f0f39ac0820ea6d99a11c27d0eeb1cdb3a4d5a563859d1dba35a667e1"
+  },
+  {
+    "name": "rubygem-rdoc-6.6.3.1-15.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/r/rubygem-rdoc-6.6.3.1-15.el10_2.noarch.rpm",
+    "sha256": "cd4000b1d4f7f6bcd8870ed285b0f35c6c589814b48215e3da8dd981f6df287a"
+  },
+  {
+    "name": "rubygems-3.5.22-15.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/r/rubygems-3.5.22-15.el10_2.noarch.rpm",
+    "sha256": "1fc08321fc3b514c3ca5a713c1f1c146a3d5271f12f3b4e749268970ea6020be"
+  },
+  {
+    "name": "rust-toolset-srpm-macros-1.92.0-2.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/r/rust-toolset-srpm-macros-1.92.0-2.el10_2.noarch.rpm",
+    "sha256": "6fabeb2babae30c2538190cfd6279a7c9167e42fdcc6bffca27788127ce7b87b"
+  },
+  {
+    "name": "sed-4.9-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/s/sed-4.9-5.el10.x86_64.rpm",
+    "sha256": "79c5d8273708898836f6b4b2d37d9e39f8fed08ace90ea29913059ad6c56483b"
+  },
+  {
+    "name": "selinux-policy-42.1.18-4.el10_2.3.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/s/selinux-policy-42.1.18-4.el10_2.3.noarch.rpm",
+    "sha256": "b45b1940dfa10c6b653f00988722c425deb2194121b89741b91b6e9037b9bb67"
+  },
+  {
+    "name": "selinux-policy-targeted-42.1.18-4.el10_2.3.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/s/selinux-policy-targeted-42.1.18-4.el10_2.3.noarch.rpm",
+    "sha256": "884d740eef01164419ecaef92cb65435707bbd358b8573c3e915fdaac69a0389"
+  },
+  {
+    "name": "setup-2.14.5-7.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/s/setup-2.14.5-7.el10.noarch.rpm",
+    "sha256": "104b593e8ce800496c72398e1a779f01ec6dbdbdf36c45c602ab50419acdb04f"
+  },
+  {
+    "name": "shadow-utils-4.15.0-11.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/s/shadow-utils-4.15.0-11.el10.x86_64.rpm",
+    "sha256": "ee4181c480f3e404fcac7875e6512f275f8fa8be71257d31a21f1b2a46261c5c"
+  },
+  {
+    "name": "shadow-utils-subid-4.15.0-11.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/s/shadow-utils-subid-4.15.0-11.el10.x86_64.rpm",
+    "sha256": "26cf12fca06d5d227080e2fcb0604443488d44740b65dceb85da96729723141b"
+  },
+  {
+    "name": "shared-mime-info-2.3-8.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/s/shared-mime-info-2.3-8.el10.x86_64.rpm",
+    "sha256": "3c5a21553c5807914af08df647103d547eb65a40aa2a22a194deb95176bdf0be"
+  },
+  {
+    "name": "sisu-0.3.5-14.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/s/sisu-0.3.5-14.el10.noarch.rpm",
+    "sha256": "30fa831ed5c155de63e50c83733a60e6212ac81872aa4010248580e7b2bc1c79"
+  },
+  {
+    "name": "skopeo-1.22.2-5.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/s/skopeo-1.22.2-5.el10_2.x86_64.rpm",
+    "sha256": "ad95fb8a84d65fa2e0ffade7d2720656b4f273f949ef3ef3ea83c91239693df1"
+  },
+  {
+    "name": "slf4j-1.7.32-13.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/s/slf4j-1.7.32-13.el10.noarch.rpm",
+    "sha256": "55c43bce8ee6a2975fa038a56234cd71354631e063ff6205321a8d5c66c151a0"
+  },
+  {
+    "name": "sound-theme-freedesktop-0.8-23.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/s/sound-theme-freedesktop-0.8-23.el10.noarch.rpm",
+    "sha256": "f6034c027d90f42235a4ea3562ca7c73c3b6fb2987eb6b5f806e5a33b3e324a9"
+  },
+  {
+    "name": "spirv-tools-libs-2025.4-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/s/spirv-tools-libs-2025.4-1.el10.x86_64.rpm",
+    "sha256": "899e058fb8f63a265f6d9f495e4e70b1865b3f127392622bdbc0cb0b12161532"
+  },
+  {
+    "name": "sqlite-3.46.1-6.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/s/sqlite-3.46.1-6.el10_2.x86_64.rpm",
+    "sha256": "0e785f56187f6fa887627a15fed5a07becbfe4a79461305f5db2a67c5207c7b5"
+  },
+  {
+    "name": "sqlite-devel-3.46.1-6.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/s/sqlite-devel-3.46.1-6.el10_2.x86_64.rpm",
+    "sha256": "e2b7cdeba917cf41b25ec525ae5ad0ee7d6ead598f4641d29e03ac748604285d"
+  },
+  {
+    "name": "sqlite-libs-3.46.1-6.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/s/sqlite-libs-3.46.1-6.el10_2.x86_64.rpm",
+    "sha256": "2d8deab138a8e2f73f982459915e4a6aeaace9b02239bc91a33a6c811defa5a8"
+  },
+  {
+    "name": "sudo-1.9.17-10.p2.el10_2.7.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/s/sudo-1.9.17-10.p2.el10_2.7.x86_64.rpm",
+    "sha256": "13595d5f8dfad96e3fd4633492c34f80ea54cce9d0ed9949dfbcbec3b9fbbb26"
+  },
+  {
+    "name": "sudo-python-plugin-1.9.17-10.p2.el10_2.7.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/s/sudo-python-plugin-1.9.17-10.p2.el10_2.7.x86_64.rpm",
+    "sha256": "ab6db6623d07c9a2dd34bfe5b3494914992e632033b06ededa608a17f42069da"
+  },
+  {
+    "name": "systemd-257-23.el10_2.2.rocky.0.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/s/systemd-257-23.el10_2.2.rocky.0.1.x86_64.rpm",
+    "sha256": "648d89c455ae0536a3886f0f70f4da9e119c0aba3b18cc48e5d7e9a1e0163f75"
+  },
+  {
+    "name": "systemd-libs-257-23.el10_2.2.rocky.0.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/s/systemd-libs-257-23.el10_2.2.rocky.0.1.x86_64.rpm",
+    "sha256": "66e8e224f4c373341756382455498a9020ed67505f251b85c745eca6e0d9efdc"
+  },
+  {
+    "name": "systemd-pam-257-23.el10_2.2.rocky.0.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/s/systemd-pam-257-23.el10_2.2.rocky.0.1.x86_64.rpm",
+    "sha256": "93d85e945acd122be92eae9415bacc099755913aee3df11df06b6019332f71b2"
+  },
+  {
+    "name": "systemd-udev-257-23.el10_2.2.rocky.0.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/s/systemd-udev-257-23.el10_2.2.rocky.0.1.x86_64.rpm",
+    "sha256": "4254c4094ffce4328083834529b8a84498f95b7018523fabb73d0d2b43f167dd"
+  },
+  {
     "name": "tar-1.35-13.el10_2.x86_64.rpm",
     "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/t/tar-1.35-13.el10_2.x86_64.rpm",
     "sha256": "b6d8a274b1214338f2e858c945db5a136666514e762509cd7978fc32b2929535"
+  },
+  {
+    "name": "time-1.9-25.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/t/time-1.9-25.el10.x86_64.rpm",
+    "sha256": "ef24c84b063d2a11391181861adcab38a97fa29466f0b4c3329d93226074597d"
+  },
+  {
+    "name": "tpm2-tss-4.1.3-6.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/t/tpm2-tss-4.1.3-6.el10.x86_64.rpm",
+    "sha256": "999d3707a87606ba95580710082e86536ecd1356fe9dff435f8959265dc9060c"
+  },
+  {
+    "name": "tracker-3.7.3-4.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/t/tracker-3.7.3-4.el10.x86_64.rpm",
+    "sha256": "460c290deba51e138e03871940a7de8431e02c87cdc4682f5ba9dedd2391fc0d"
+  },
+  {
+    "name": "tracker-miners-3.7.4-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/t/tracker-miners-3.7.4-1.el10.x86_64.rpm",
+    "sha256": "e6c55f500c1959da3d508184bc16a1c1e2664e375365c7af7c2795204a6d7b97"
+  },
+  {
+    "name": "tree-2.1.0-8.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/t/tree-2.1.0-8.el10.x86_64.rpm",
+    "sha256": "0e369a1fa65ec95993653c63564510e333ab7b767633536518b1642231582c1e"
+  },
+  {
+    "name": "ttmkfdir-3.0.9-72.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/t/ttmkfdir-3.0.9-72.el10.x86_64.rpm",
+    "sha256": "f8f2510719a40246c80d40d3ad0b8b724aed0e59b67484414dac3def5a98ac59"
+  },
+  {
+    "name": "tzdata-2026c-1.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/t/tzdata-2026c-1.el10_2.noarch.rpm",
+    "sha256": "281c4aa30704993bd7a5ef8a5e681753076182f2a704c90c5ee1c93e5ad955ef"
+  },
+  {
+    "name": "tzdata-java-2026c-1.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/t/tzdata-java-2026c-1.el10_2.noarch.rpm",
+    "sha256": "4fe23877a824ccea7f6d6b4ee3082cfe33af888ef9a9e7c93ed0f85cc25e4f96"
+  },
+  {
+    "name": "unzip-6.0-69.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/u/unzip-6.0-69.el10.x86_64.rpm",
+    "sha256": "3d37353b10c3feaf64238e61ee9abebe31afbf4c5ff91a4134128429a238d174"
+  },
+  {
+    "name": "upower-1.90.10-2.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/u/upower-1.90.10-2.el10.x86_64.rpm",
+    "sha256": "4580dfa43ee3d67ead4d7eacec7a194463b955aa05c60e531ef0ae3e47edeb77"
+  },
+  {
+    "name": "upower-libs-1.90.10-2.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/u/upower-libs-1.90.10-2.el10.x86_64.rpm",
+    "sha256": "3017bcf76b1567c8dde03ac1c5228808c3d5ea57e0394fb11601bcef6e6a3057"
+  },
+  {
+    "name": "util-linux-2.40.2-18.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/u/util-linux-2.40.2-18.el10.x86_64.rpm",
+    "sha256": "fd6382723b827f19bdbf3b05f83bac05c81b9be659a17db0dbd43d02d74efca0"
+  },
+  {
+    "name": "util-linux-core-2.40.2-18.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/u/util-linux-core-2.40.2-18.el10.x86_64.rpm",
+    "sha256": "1b893cb8dd2f49325d7e27e94c672052eb0ae8c4fac418814d8d13edfd469a24"
+  },
+  {
+    "name": "vim-filesystem-9.1.083-9.el10_2.22.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/v/vim-filesystem-9.1.083-9.el10_2.22.noarch.rpm",
+    "sha256": "b85a4ca4cc9fa43c29ad4ce3669491bd67b4a8247e42a279635ab7402093c83a"
+  },
+  {
+    "name": "webrtc-audio-processing-1.3-5.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/w/webrtc-audio-processing-1.3-5.el10.x86_64.rpm",
+    "sha256": "e1cf7a35b602c37b178ba681d5ae2f202aa1010ea626cf24126a2a4782ea0263"
+  },
+  {
+    "name": "wget-1.24.5-8.el10_2.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/w/wget-1.24.5-8.el10_2.x86_64.rpm",
+    "sha256": "c0ddaf610f8a97a38abaf2833333441c579d29079ac0d4f5c4c4a5da270aebe2"
+  },
+  {
+    "name": "which-2.21-44.el10_0.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/w/which-2.21-44.el10_0.x86_64.rpm",
+    "sha256": "da4530943dd7ee06afdb2c452448fe4ee31934a466017a232ab75dec2305fecc"
+  },
+  {
+    "name": "wireplumber-0.5.10-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/w/wireplumber-0.5.10-1.el10.x86_64.rpm",
+    "sha256": "eb5f720aeb438074b979dac125b297f22b51b5634ceae7d45ade25aa872b6191"
+  },
+  {
+    "name": "wireplumber-libs-0.5.10-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/w/wireplumber-libs-0.5.10-1.el10.x86_64.rpm",
+    "sha256": "c1cc769a0212de68c77f5a3d8c3caf6e426299fe74a12f1f71269a22d8c38117"
+  },
+  {
+    "name": "xdg-desktop-portal-1.20.0-2.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/x/xdg-desktop-portal-1.20.0-2.el10.x86_64.rpm",
+    "sha256": "0708b7568c9841e8399a4fc1d9b8ecc68edffba4e7aa8bfffb1808a244c09621"
+  },
+  {
+    "name": "xdg-desktop-portal-gtk-1.15.3-1.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/x/xdg-desktop-portal-gtk-1.15.3-1.el10.x86_64.rpm",
+    "sha256": "8a5d5189f03eecae8dff5cfbeb5c27ce5d55e854b4ab62aa2eb19d382d09a8ac"
+  },
+  {
+    "name": "xkeyboard-config-2.41-3.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/x/xkeyboard-config-2.41-3.el10.noarch.rpm",
+    "sha256": "65daa857ab1589c8b000460bda8994c85e57702ff8da14a46a1acbc0d8aafb61"
+  },
+  {
+    "name": "xml-common-0.6.3-65.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/x/xml-common-0.6.3-65.el10.noarch.rpm",
+    "sha256": "84beeb330ecf7bcde63e7e8f8489d06b5b19a9c4541811b6bc3d6c252deeebd9"
+  },
+  {
+    "name": "xorg-x11-fonts-Type1-7.5-40.el10.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/x/xorg-x11-fonts-Type1-7.5-40.el10.noarch.rpm",
+    "sha256": "0bfbd2930845d55b1dbc437baf409078559ce574bfd5796c6b75a2182c387ec1"
+  },
+  {
+    "name": "xprop-1.2.7-3.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/x/xprop-1.2.7-3.el10.x86_64.rpm",
+    "sha256": "a03e312c5048f74d34816ccd98907dde4652b770593889401e4ab64a5281127e"
+  },
+  {
+    "name": "xz-5.6.2-4.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/x/xz-5.6.2-4.el10_2.1.x86_64.rpm",
+    "sha256": "1b60376a972ce09f418c0cc859103b47b1da66be1bd0363df7bbc096b6f97c37"
+  },
+  {
+    "name": "xz-libs-5.6.2-4.el10_2.1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/x/xz-libs-5.6.2-4.el10_2.1.x86_64.rpm",
+    "sha256": "944ffc0ff663b2391598b8c7880603db386c19a84459814228335fb0010b5b75"
+  },
+  {
+    "name": "zip-3.0-45.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/z/zip-3.0-45.el10.x86_64.rpm",
+    "sha256": "fa48711e2d0c6d88223d10fc3cfe2e35729a66f04f3565e2b0115ccffbec2d27"
+  },
+  {
+    "name": "zlib-ng-compat-2.2.3-3.el10_1.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/z/zlib-ng-compat-2.2.3-3.el10_1.x86_64.rpm",
+    "sha256": "34a7fccdfa7750f1da6800ddf0dd1a884f7a9597ca22e1193c3053ae6d16eef4"
+  },
+  {
+    "name": "zstd-1.5.5-9.el10.x86_64.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/z/zstd-1.5.5-9.el10.x86_64.rpm",
+    "sha256": "64033d20aad1e2892249cd42d5348fd5fd676a5aa0894a8f823f64c7944d73a9"
   }
 ]

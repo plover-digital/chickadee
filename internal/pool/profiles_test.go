@@ -361,3 +361,166 @@ func TestScopeQuotaDoesNotBlockAnotherCustomer(t *testing.T) {
 		t.Fatal(e)
 	}
 }
+
+func TestCredentialFreeWarmGuestTransfersAcrossScopes(t *testing.T) {
+	c, _, boots, running, start := profileFixture(t)
+	label := "chickadee"
+	warm := c.Profiles[label]
+	warm.Warm = 1
+	beta := warm
+	beta.Warm = 0
+	c.Profiles = nil
+	c.Limits = config.Limits{Max: 1, CPUs: 4, MemoryMiB: 8192}
+	c.Scopes = map[string]config.Scope{
+		"operator": {GitHubURL: "https://github.com/operator", InstallationID: 11, RunnerGroupID: 2, Profiles: map[string]config.Profile{label: warm}},
+		"beta":     {GitHubURL: "https://github.com/beta/repo", InstallationID: 22, RunnerGroupID: 1, Profiles: map[string]config.Profile{label: beta}},
+	}
+	jit := map[string]chan string{}
+	backends := map[string]Backend{}
+	for _, p := range c.ProfileConfigs() {
+		jit[p.Key()] = make(chan string, 2)
+		backends[p.Key()] = &profileBackend{profile: label, jit: jit[p.Key()]}
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	demand := make(chan Demand)
+	readyGate := make(chan struct{})
+	var firstBoot sync.Once
+	baseStart := start
+	start = func(ctx context.Context, cfg config.Config, slot int, id string) (machine, error) {
+		m, err := baseStart(ctx, cfg, slot, id)
+		firstBoot.Do(func() { <-readyGate })
+		return m, err
+	}
+	done := make(chan error, 1)
+	go func() { done <- runProfiles(ctx, c, backends, demand, start) }()
+	first := awaitBoot(t, boots)
+	if first.c.InstallationID != 11 {
+		t.Fatal("warm boot was not credential-free operator capacity")
+	}
+	betaKey := config.ScopeKey("https://github.com/beta/repo", label)
+	operatorKey := config.ScopeKey("https://github.com/operator", label)
+	demand <- Demand{betaKey, 1}
+	close(readyGate)
+	awaitRunning(t, running)
+	select {
+	case <-jit[betaKey]:
+	default:
+		t.Fatal("warm boot backend issued customer credentials")
+	}
+	select {
+	case <-jit[operatorKey]:
+		t.Fatal("operator credentials issued")
+	default:
+	}
+	select {
+	case <-boots:
+		t.Fatal("compatible warm guest replaced instead of borrowed")
+	default:
+	}
+	records, e := host.Records(c.StateDir)
+	if e != nil || len(records) != 1 {
+		t.Fatalf("journal: %v %v", records, e)
+	}
+	if records[0].ID != first.id || records[0].GitHubURL != "https://github.com/beta/repo" || records[0].InstallationID != 22 || records[0].RunnerGroupID != 1 {
+		t.Fatal("durable intent retained boot scope")
+	}
+	demand <- Demand{operatorKey, 1}
+	select {
+	case <-jit[operatorKey]:
+		t.Fatal("credentialed guest transferred to another customer")
+	case <-boots:
+		t.Fatal("global capacity exceeded")
+	case <-time.After(1100 * time.Millisecond):
+	}
+	demand <- Demand{betaKey, 0}
+	close(first.m.job)
+	replacement := awaitBoot(t, boots)
+	if replacement.id == first.id {
+		t.Fatal("spent guest reused")
+	}
+	if _, e := os.Stat(first.m.dir); !os.IsNotExist(e) {
+		t.Fatal("fresh replacement booted before old disk cleanup")
+	}
+	awaitRunning(t, running)
+	select {
+	case <-jit[operatorKey]:
+	default:
+		t.Fatal("replacement used wrong customer backend")
+	}
+	demand <- Demand{operatorKey, 0}
+	close(replacement.m.job)
+	replenished := awaitBoot(t, boots)
+	if replenished.id == replacement.id || replenished.c.InstallationID != 11 {
+		t.Fatal("shared warm pool was not replenished fresh")
+	}
+	cancel()
+	if e := <-done; !errors.Is(e, context.Canceled) {
+		t.Fatal(e)
+	}
+}
+
+func TestWarmGuestCompatibilityRequiresExactPhysicalProfile(t *testing.T) {
+	base := config.Config{ImageDir: "/immutable/rocky/r1", Machine: "q35", CPUs: 4, MemoryMiB: 8192, DiskGiB: 48}
+	alias := base
+	alias.GitHubURL = "https://github.com/another/repo"
+	alias.ScaleSet = "chickadee-medium-rocky-102"
+	alias.InstallationID = 22
+	if !compatibleGuest(base, alias) {
+		t.Fatal("scope and label prevented compatible alias sharing")
+	}
+	tests := map[string]func(*config.Config){
+		"image":   func(c *config.Config) { c.ImageDir = "/immutable/ubuntu/r1" },
+		"machine": func(c *config.Config) { c.Machine = "microvm" },
+		"cpu":     func(c *config.Config) { c.CPUs = 2 },
+		"memory":  func(c *config.Config) { c.MemoryMiB = 4096 },
+		"disk":    func(c *config.Config) { c.DiskGiB = 16 },
+	}
+	for name, change := range tests {
+		t.Run(name, func(t *testing.T) {
+			other := base
+			change(&other)
+			if compatibleGuest(base, other) {
+				t.Fatal("incompatible guest borrowed")
+			}
+		})
+	}
+}
+
+func TestDefaultWarmGuestServesCompatibleExplicitLabel(t *testing.T) {
+	c, backends, boots, running, start := profileFixture(t)
+	defaultProfile := c.Profiles["chickadee"]
+	defaultProfile.Warm = 1
+	c.Profiles["chickadee"] = defaultProfile
+	alias := "chickadee-medium-rocky-102"
+	explicit := defaultProfile
+	explicit.Warm = 0
+	c.Profiles[alias] = explicit
+	aliasJIT := make(chan string, 2)
+	backends[alias] = &profileBackend{profile: alias, jit: aliasJIT}
+	c.Limits = config.Limits{Max: 1, CPUs: 4, MemoryMiB: 8192}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	demand := make(chan Demand, 4)
+	done := make(chan error, 1)
+	go func() { done <- runProfiles(ctx, c, backends, demand, start) }()
+	warm := awaitBoot(t, boots)
+	demand <- Demand{alias, 1}
+	awaitRunning(t, running)
+	select {
+	case name := <-aliasJIT:
+		if name != alias+"-"+warm.id {
+			t.Fatal("explicit queue did not reuse default warm guest")
+		}
+	default:
+		t.Fatal("explicit queue backend not selected")
+	}
+	records, e := host.Records(c.StateDir)
+	if e != nil || len(records) != 1 || records[0].Name != alias+"-"+warm.id {
+		t.Fatal("durable journal did not record explicit label")
+	}
+	cancel()
+	if e := <-done; !errors.Is(e, context.Canceled) {
+		t.Fatal(e)
+	}
+}

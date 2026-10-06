@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// UsageDay counts completed, credentialed VM reservation intervals, including startup and
+// UsageDay counts completed, credentialed VM reservation intervals, including runner connection and
 // cleanup. It is neither job execution time nor a billing measurement.
 type UsageDay struct {
 	Date      string  `json:"date"`

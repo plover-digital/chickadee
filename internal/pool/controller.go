@@ -31,8 +31,18 @@ type entry struct {
 	reservedAt time.Time
 	state      VM
 	slot       int
-	assign     chan string
+	assign     chan assignment
 	retire     chan struct{}
+}
+
+// Assignment binds credentials to a scope only after a credential-free VM is reserved.
+type assignment struct {
+	Name    string
+	Backend Backend
+}
+
+func compatibleGuest(a, b config.Config) bool {
+	return a.ImageDir == b.ImageDir && a.Machine == b.Machine && a.CPUs == b.CPUs && a.MemoryMiB == b.MemoryMiB && a.DiskGiB == b.DiskGiB
 }
 
 type machine interface {
@@ -330,16 +340,41 @@ func runProfilesWithDrain(ctx context.Context, c config.Config, backends map[str
 			}
 			return
 		}
+		scopeCounts := func(p config.Config) (total, spent int) {
+			for _, v := range entries {
+				if config.ScopeKey(configs[v.profile].GitHubURL, "") == config.ScopeKey(p.GitHubURL, "") {
+					total++
+					if v.state.State == Spent {
+						spent++
+					}
+				}
+			}
+			return
+		}
+		// Older unmet demand gets first choice of shared credential-free capacity.
+		reservationOrder := append([]string(nil), waiting...)
+		seenReservation := map[string]bool{}
+		for _, name := range reservationOrder {
+			seenReservation[name] = true
+		}
 		for _, name := range names {
+			if !seenReservation[name] {
+				reservationOrder = append(reservationOrder, name)
+			}
+		}
+		for _, name := range reservationOrder {
 			p := configs[name]
 			_, active, _ := counts(name)
 			for _, v := range entries {
-				if active >= requested[name] {
+				_, scopeSpent := scopeCounts(p)
+				if active >= requested[name] || active >= p.Max || scopeSpent >= p.ScopeLimit() {
 					break
 				}
-				if v.profile != name || v.state.State != Ready {
+				if v.state.State != Ready || !compatibleGuest(configs[v.profile], p) {
 					continue
 				}
+				// Rebinding is allowed only while no credentials have ever been issued.
+				v.profile = name
 				if e := v.state.Reserve(); e != nil {
 					return e
 				}
@@ -351,21 +386,10 @@ func runProfilesWithDrain(ctx context.Context, c config.Config, backends map[str
 					return e
 				}
 				v.reservedAt = time.Now().UTC()
-				v.assign <- runnerName
+				v.assign <- assignment{Name: runnerName, Backend: backends[name]}
 				active++
 				slog.Info("VM reserved for one job", "vm", v.state.ID, "profile", p.ScaleSet)
 			}
-		}
-		scopeCounts := func(p config.Config) (total, spent int) {
-			for _, v := range entries {
-				if config.ScopeKey(configs[v.profile].GitHubURL, "") == config.ScopeKey(p.GitHubURL, "") {
-					total++
-					if v.state.State == Spent {
-						spent++
-					}
-				}
-			}
-			return
 		}
 		// Keep waiting order stable across new messages and tick events.
 		needs := func(name string) bool {
@@ -414,10 +438,10 @@ func runProfilesWithDrain(ctx context.Context, c config.Config, backends map[str
 			for entries[id] != nil {
 				id = host.NewID()
 			}
-			v := &entry{profile: name, state: VM{ID: id, State: Booting}, slot: slot, assign: make(chan string, 1), retire: make(chan struct{})}
+			v := &entry{profile: name, state: VM{ID: id, State: Booting}, slot: slot, assign: make(chan assignment, 1), retire: make(chan struct{})}
 			entries[id] = v
 			wg.Add(1)
-			go func() { defer wg.Done(); worker(runCtx, configs[name], backends[name], v, events, start) }()
+			go func() { defer wg.Done(); worker(runCtx, configs[name], v, events, start) }()
 		}
 		// Shrink canceled/excess warm capacity, retaining resources until done.
 		for _, name := range names {
@@ -457,6 +481,10 @@ func runProfilesWithDrain(ctx context.Context, c config.Config, backends map[str
 							break
 						}
 						if v.profile == other && (v.state.State == Ready || v.state.State == Booting) {
+							// A compatible in-flight boot will satisfy this demand once READY.
+							if v.state.State == Booting && compatibleGuest(configs[other], p) {
+								continue
+							}
 							retire(v)
 							spare--
 						}
@@ -487,7 +515,7 @@ func runProfilesWithDrain(ctx context.Context, c config.Config, backends map[str
 		}
 	}
 }
-func worker(ctx context.Context, c config.Config, b Backend, v *entry, events chan<- Event, start starter) {
+func worker(ctx context.Context, c config.Config, v *entry, events chan<- Event, start starter) {
 	bootStarted := time.Now()
 	vm, e := start(ctx, c, v.slot, v.state.ID)
 	report := func(kind string, e error) {
@@ -506,12 +534,12 @@ func worker(ctx context.Context, c config.Config, b Backend, v *entry, events ch
 			e = nil
 		case <-vm.Exited():
 			e = fmt.Errorf("warm VM exited")
-		case name := <-v.assign:
+		case assigned := <-v.assign:
 			// Credential intent was committed by the actor before this call.
 			jitCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 			var jit string
 			jitStarted := time.Now()
-			jit, e = b.JIT(jitCtx, name)
+			jit, e = assigned.Backend.JIT(jitCtx, assigned.Name)
 			cancel()
 			if e == nil {
 				slog.Info("JIT configuration generated", "vm", v.state.ID, "duration_ms", time.Since(jitStarted).Milliseconds())

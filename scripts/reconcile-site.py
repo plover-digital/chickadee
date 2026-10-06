@@ -53,7 +53,7 @@ def install_config(candidate,path,quarantine):
                     if destination.exists():raise RuntimeError('quarantine record already exists')
                     os.rename(file,destination)
         backup=path.with_name(path.name+'.before-managed-update');backup.write_bytes(path.read_bytes());backup.chmod(0o600)
-        old=path.stat();stage.chown(old.st_uid,old.st_gid);stage.chmod(old.st_mode&0o777)
+        old=path.stat()
         # stage is on /tmp: copy to the target filesystem before atomic replace.
         fd,name=tempfile.mkstemp(prefix='.config-',dir=path.parent)
         with os.fdopen(fd,'w') as f:f.write(encoded);f.flush();os.fsync(f.fileno())
@@ -174,10 +174,16 @@ def main():
             enabled=list(scope['profiles']);status='active'
             if set(entry.get('queues') or ['chickadee'])-set(enabled):message='Additional queue requests are awaiting operator approval.'
         if entry.get('id'):updates.append({'id':entry['id'],'status':status,'enabled_queues':enabled,'message':message})
+        elif status=='active':updates.append({'id':'','status':status,'enabled_queues':enabled,'message':message,'_import':dict(entry,queues=request['queues'],enabled_queues=enabled,status='active',scope=('organization' if entry['account']['type']=='Organization' else 'repository'))})
     if candidate!=original:install_config(candidate,path,quarantine)
     if site_available:
         for update in updates:
-            entry=next(e for e in entries if e.get('id')==update['id'])
+            seed=update.pop('_import',None)
+            if seed is not None:
+                imported=admin('import-enrollment',seed)
+                update['id']=imported['id']
+                entry=seed
+            else:entry=next(e for e in entries if e.get('id')==update['id'])
             url='https://github.com/'+(entry['account']['login'] if entry['account']['type']=='Organization' else entry['repository']['full_name'])
             usage_path=pathlib.Path(candidate['state_dir'])/'usage.json'
             records=json.loads(usage_path.read_text()) if usage_path.exists() else []

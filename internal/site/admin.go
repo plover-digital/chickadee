@@ -11,6 +11,7 @@ import (
 // this handler on the public HTTP server or reverse proxy.
 func (s *Server) AdminHandler() http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("POST /import-enrollment", s.importEnrollment)
 	mux.HandleFunc("GET /enrollments", func(w http.ResponseWriter, r *http.Request) {
 		s.mu.Lock()
 		defer s.mu.Unlock()

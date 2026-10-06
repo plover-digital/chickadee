@@ -1,0 +1,19 @@
+# Native Rocky 10.2 baseline. Dependencies are resolved once against official
+# BaseOS/AppStream/CRB, then every RPM URL and SHA256 is committed in
+# rocky-102-rpms.json. Image builds use offline GPG-checked installation.
+# Java 17 is absent from Rocky 10's official repositories; Java 21 is used.
+unzip zip zstd gzip bzip2 xz jq wget git-lfs sudo
+cmake ninja-build clang llvm lld gcc-c++ gcc-gfortran
+autoconf automake libtool pkgconf-pkg-config
+openssl-devel libicu-devel sqlite-devel libyaml-devel
+python3 python3-pip python3-devel ruby ruby-devel rubygems
+java-21-openjdk-devel maven ant
+podman buildah skopeo
+patch file findutils rsync openssh-clients gnupg2 bind-utils iputils
+tree time which diffutils gettext tar make curl git
+# Source GenericCloud reverse dependencies and enforcing SELinux conditionals.
+container-selinux passt-selinux selinux-policy-targeted
+annobin-plugin-gcc gcc-plugin-annobin crypto-policies-scripts
+cyrus-sasl-gssapi glibc-langpack-en attr
+python3-libxml2 openssh-server python3-policycoreutils
+policycoreutils-python-utils

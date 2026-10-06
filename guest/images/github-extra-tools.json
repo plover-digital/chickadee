@@ -1,0 +1,153 @@
+{
+  "schema": 1,
+  "upstream_commit": "5f7588b285eccc2edbeb1cd79d65ee0b577e4b4a",
+  "upstream_image_version": "20260927.320.1",
+  "tools": [
+    {
+      "name": "dotnet",
+      "version": "8.0.425",
+      "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/8.0.425/dotnet-sdk-8.0.425-linux-x64.tar.gz",
+      "filename": "dotnet-sdk-8.0.425-linux-x64.tar.gz",
+      "hash_algorithm": "sha512",
+      "digest": "934b8060a7190e5909ad1fd0785db542f487b3bbf6cdd14826b02095fdd0d0394298b1634085eff302928fccc33f7c1a7253e9b87df555fc36fce819bcd2e798",
+      "checksum_source": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/8.0/releases.json"
+    },
+    {
+      "name": "dotnet",
+      "version": "8.0.131",
+      "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/8.0.131/dotnet-sdk-8.0.131-linux-x64.tar.gz",
+      "filename": "dotnet-sdk-8.0.131-linux-x64.tar.gz",
+      "hash_algorithm": "sha512",
+      "digest": "a6182d3f136c524485da248156b263012eba70179a0849131b5331548770fc149a42347f7865fdbd4f81057b28fa68c2395ab0e9549f2c8a268310f48a2304eb",
+      "checksum_source": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/8.0/releases.json"
+    },
+    {
+      "name": "dotnet",
+      "version": "8.0.319",
+      "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/8.0.319/dotnet-sdk-8.0.319-linux-x64.tar.gz",
+      "filename": "dotnet-sdk-8.0.319-linux-x64.tar.gz",
+      "hash_algorithm": "sha512",
+      "digest": "38c212b527f36802c896f47bc4f2dfda498511c2d5cc0800d9bddedfad35a10a88c0b5072bb0ab50d05d83be0a571349827a86cc7a7c3dace67d4d96b6f46df0",
+      "checksum_source": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/8.0/releases.json"
+    },
+    {
+      "name": "dotnet",
+      "version": "8.0.206",
+      "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/8.0.206/dotnet-sdk-8.0.206-linux-x64.tar.gz",
+      "filename": "dotnet-sdk-8.0.206-linux-x64.tar.gz",
+      "hash_algorithm": "sha512",
+      "digest": "d03cbb5ea44a6f4957d7c1fa0f7c19e3df2efcbf569b071082e37ac86776af0729540c3bbddc44668ae2eedcfcb4b098883bb560d26418f1583a558d60c99ef5",
+      "checksum_source": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/8.0/releases.json"
+    },
+    {
+      "name": "dotnet",
+      "version": "9.0.318",
+      "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/9.0.318/dotnet-sdk-9.0.318-linux-x64.tar.gz",
+      "filename": "dotnet-sdk-9.0.318-linux-x64.tar.gz",
+      "hash_algorithm": "sha512",
+      "digest": "e8685293a3512178e0de1bb3c1663e31fdf9d761af705094bf833cc1ff6b9a18c543aa4141f0216503c98039c719585a6d32905b0bbb3279e93b7e7616e047c3",
+      "checksum_source": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/9.0/releases.json"
+    },
+    {
+      "name": "dotnet",
+      "version": "9.0.121",
+      "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/9.0.121/dotnet-sdk-9.0.121-linux-x64.tar.gz",
+      "filename": "dotnet-sdk-9.0.121-linux-x64.tar.gz",
+      "hash_algorithm": "sha512",
+      "digest": "d66f2609b509a4eece4ad8efbac49e63cea58e07652f1daded72bbd100d70f6d5d58a9b95b9235e158cb7b1a77995311979ec4ddf2df4c6a3017d4a71f163778",
+      "checksum_source": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/9.0/releases.json"
+    },
+    {
+      "name": "dotnet",
+      "version": "9.0.205",
+      "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/9.0.205/dotnet-sdk-9.0.205-linux-x64.tar.gz",
+      "filename": "dotnet-sdk-9.0.205-linux-x64.tar.gz",
+      "hash_algorithm": "sha512",
+      "digest": "df8e2d95a617051c44a524471137300868d52b523cc41e8f8d31aade968407ae406d5b6e47f484f603be52c0a6e567586f0f9c16ffc25944f3a8f42f88c3c781",
+      "checksum_source": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/9.0/releases.json"
+    },
+    {
+      "name": "dotnet",
+      "version": "10.0.401",
+      "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.401/dotnet-sdk-10.0.401-linux-x64.tar.gz",
+      "filename": "dotnet-sdk-10.0.401-linux-x64.tar.gz",
+      "hash_algorithm": "sha512",
+      "digest": "51c8b999af9e8dd9998c9edc5944e19a90788862068acd38694e098889054ce8c23d4f0c5cccfa16bf187d044562359e5ee69a9f8ad0bbe913ba90311fbce25b",
+      "checksum_source": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/10.0/releases.json"
+    },
+    {
+      "name": "dotnet",
+      "version": "10.0.112",
+      "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.112/dotnet-sdk-10.0.112-linux-x64.tar.gz",
+      "filename": "dotnet-sdk-10.0.112-linux-x64.tar.gz",
+      "hash_algorithm": "sha512",
+      "digest": "1ac949dfd3929855e3a102a5b12f843967a784ad2d911dfcfff6abdf81a2e78bccf25ddc055547de02b36133bf792aaf97fcba8db8aa6b52ac2e018b86935d05",
+      "checksum_source": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/10.0/releases.json"
+    },
+    {
+      "name": "dotnet",
+      "version": "10.0.303",
+      "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.303/dotnet-sdk-10.0.303-linux-x64.tar.gz",
+      "filename": "dotnet-sdk-10.0.303-linux-x64.tar.gz",
+      "hash_algorithm": "sha512",
+      "digest": "538df11ceb9d86bdda061bab6ede3d1f6d46bb9ba087ae905643f3d456afe982949d1b952bceb305a5d22d2d6e69cc0e5100216ffcc709aaa86e867f2d9cdf9a",
+      "checksum_source": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/10.0/releases.json"
+    },
+    {
+      "name": "dotnet",
+      "version": "10.0.204",
+      "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.204/dotnet-sdk-10.0.204-linux-x64.tar.gz",
+      "filename": "dotnet-sdk-10.0.204-linux-x64.tar.gz",
+      "hash_algorithm": "sha512",
+      "digest": "54822b15db93c3ea654aa485397126b19753414db38dbaac902d446673077c567a4d7ee3488b5eb6eef0747e9b557f88dcfdc9cce55784c43930e8e0810f58c4",
+      "checksum_source": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/10.0/releases.json"
+    },
+    {
+      "name": "rust",
+      "version": "1.98.1",
+      "url": "https://static.rust-lang.org/dist/rust-1.98.1-x86_64-unknown-linux-gnu.tar.xz",
+      "filename": "rust-1.98.1-x86_64-unknown-linux-gnu.tar.xz",
+      "hash_algorithm": "sha256",
+      "digest": "5326b36c53de11d148c8f8dab6553a3d1006c2cfd32123683073fad3c302605b",
+      "checksum_source": "https://static.rust-lang.org/dist/rust-1.98.1-x86_64-unknown-linux-gnu.tar.xz.sha256"
+    },
+    {
+      "name": "firefox",
+      "version": "156.0",
+      "url": "https://archive.mozilla.org/pub/firefox/releases/156.0/linux-x86_64/en-US/firefox-156.0.tar.xz",
+      "filename": "firefox-156.0.tar.xz",
+      "hash_algorithm": "sha512",
+      "digest": "0d412c90b4ec2a0b0690790a864a17e32187a32ecb2a616fea49b8b9f193f4225ea220e476cf220fc362d5322bee5e9f515a3b2d52e224c9ac659980942465b9",
+      "checksum_source": "https://archive.mozilla.org/pub/firefox/releases/156.0/SHA512SUMS"
+    },
+    {
+      "name": "rustup",
+      "version": "1.29.1",
+      "url": "https://static.rust-lang.org/rustup/archive/1.29.1/x86_64-unknown-linux-gnu/rustup-init",
+      "filename": "rustup-init-1.29.1",
+      "hash_algorithm": "sha256",
+      "digest": "dda7234360b7f578ca8b0ddcb80145646fa61a67c1720a5abc7051b35c9fcb71",
+      "checksum_source": "https://static.rust-lang.org/rustup/archive/1.29.1/x86_64-unknown-linux-gnu/rustup-init.sha256"
+    },
+    {
+      "name": "chrome",
+      "version": "155.0.8059.39",
+      "upstream_expected_version": "154.0.8037.57",
+      "url": "https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_155.0.8059.39-1_amd64.deb",
+      "filename": "google-chrome-stable_155.0.8059.39-1_amd64.deb",
+      "hash_algorithm": "sha256",
+      "digest": "c58aa0f2cd66179c9f050e062c882d27aa9b9f8c2b7c73fee3498560b5ed0b38",
+      "checksum_source": "https://dl.google.com/linux/chrome/deb/dists/stable/main/binary-amd64/Packages.gz",
+      "version_difference_reason": "Google live apt repository no longer publishes checksum metadata for upstream image Chrome version"
+    },
+    {
+      "name": "geckodriver",
+      "version": "0.37.1",
+      "url": "https://github.com/mozilla/geckodriver/releases/download/v0.37.1/geckodriver-v0.37.1-linux64.tar.gz",
+      "filename": "geckodriver-v0.37.1-linux64.tar.gz",
+      "hash_algorithm": "sha256",
+      "digest": "e815130ea95983e162ae91843b48d3a3ce991735635fce83a647afde21e09f7e",
+      "checksum_source": "https://api.github.com/repos/mozilla/geckodriver/releases/tags/v0.37.1"
+    }
+  ]
+}

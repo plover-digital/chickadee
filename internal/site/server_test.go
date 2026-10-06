@@ -113,7 +113,7 @@ func TestEnrollmentVerifiesRepositoryAndNeverPersistsToken(t *testing.T) {
 		s.ServeHTTP(rec, req)
 		return rec
 	}
-	if post("99", "csrf-value", "https://evil.example").Code != 403 || post("99", "wrong", "https://chickadee.run").Code != 403 || post("100", "csrf-value", "https://chickadee.run").Code != 403 {
+	if post("99", "csrf-value", "null").Code != 403 || post("99", "csrf-value", "https://evil.example").Code != 403 || post("99", "wrong", "https://chickadee.run").Code != 403 || post("100", "csrf-value", "https://chickadee.run").Code != 403 {
 		t.Fatal("unauthorized activation accepted")
 	}
 	if post("99", "csrf-value", "https://chickadee.run").Code != 303 {
@@ -150,6 +150,9 @@ func TestPageHeadersAndInstallTarget(t *testing.T) {
 	s := fixture(t)
 	rec := httptest.NewRecorder()
 	s.ServeHTTP(rec, httptest.NewRequest("GET", "/", nil))
+	if rec.Header().Get("Referrer-Policy") != "same-origin" {
+		t.Fatal("native same-origin forms require a nonopaque Origin policy")
+	}
 	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "Continue with GitHub") || !strings.Contains(rec.Header().Get("Content-Security-Policy"), "frame-ancestors 'none'") {
 		t.Fatal("page/headers missing")
 	}

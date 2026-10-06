@@ -16,6 +16,23 @@ fetch() { curl -fsSL --retry 3 --connect-timeout 15 --max-time 600 --proto '=htt
 printf '%s  %s\n' "$source_sha" build/rocky-downloads/source.qcow2 | sha256sum --check
 [[ -e build/rocky-downloads/runner.tar.gz ]] || fetch "https://github.com/actions/runner/releases/download/v$runner/actions-runner-linux-x64-$runner.tar.gz" build/rocky-downloads/runner.tar.gz
 printf '%s  %s\n' "$runner_sha" build/rocky-downloads/runner.tar.gz | sha256sum --check
+# Reuse only portable Go/Node toolcache archives. Ubuntu Python binaries need
+# Ubuntu's library layout and must not be copied into a Rocky root filesystem.
+python3 - <<'PY'
+import json,pathlib
+lock=json.load(open('guest/images/github-ubuntu-2404.json'))
+portable={key:lock[key] for key in ['upstream_commit','upstream_image_version']}
+portable['tools']=[t for t in lock['tools'] if t['name'] in ['go','node']]
+pathlib.Path('build/rocky-downloads/tool-inputs.json').write_text(json.dumps(portable,indent=2)+'\n')
+PY
+python3 scripts/fetch-image-tools.py build/rocky-downloads/tool-inputs.json build/github-compatible/downloads
+python3 - <<'PY'
+import json,tarfile,pathlib
+lock=json.load(open('build/rocky-downloads/tool-inputs.json'))
+with tarfile.open('build/rocky-downloads/tools.tar','w') as archive:
+ for tool in lock['tools']:
+  archive.add(pathlib.Path('build/github-compatible/downloads')/tool['filename'],arcname=tool['filename'])
+PY
 # Every package input is pinned by URL/hash. No live solver or package update
 # runs during image construction. Cache inputs for upstream retention changes.
 python3 - <<'PY'
@@ -42,7 +59,7 @@ PY
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o build/chickadee-guest ./cmd/chickadee-guest
 export LIBGUESTFS_BACKEND=direct
 if [[ -r /dev/kvm && -w /dev/kvm ]]; then export LIBGUESTFS_BACKEND_SETTINGS=force_kvm; else export LIBGUESTFS_BACKEND_SETTINGS=force_tcg; fi
-qemu-img create -q -f qcow2 build/rocky-base.qcow2 16G
+qemu-img create -q -f qcow2 build/rocky-base.qcow2 48G
 virt-resize --quiet --expand /dev/sda4 build/rocky-downloads/source.qcow2 build/rocky-base.qcow2
 # Root partition identity is stable; no firmware bootloader is used by QEMU.
 guestfish -a build/rocky-base.qcow2 run : set-label /dev/sda4 chickadee
@@ -69,6 +86,10 @@ if getent group 1000 >/dev/null; then groupdel "$(getent group 1000 | cut -d: -f
 groupadd -g 1000 runner
 useradd -u 1000 -g 1000 -m -s /bin/bash runner
 passwd -l runner
+mkdir -p /home/runner/work
+chown runner:runner /home/runner/work
+python3 /tmp/install-rocky-tools.py
+rm -f /tmp/install-rocky-tools.py
 mkdir -p /opt/actions-runner
 tar -xzf /tmp/runner.tar.gz -C /opt/actions-runner
 chown -R runner:runner /opt/actions-runner
@@ -97,6 +118,9 @@ PROVISION
 virt-customize --no-network --memsize 2048 -a build/rocky-base.qcow2 \
  --upload build/rocky-downloads/rpms.tar:/tmp/rpms.tar \
  --upload build/rocky-downloads/runner.tar.gz:/tmp/runner.tar.gz \
+ --upload build/rocky-downloads/tools.tar:/tmp/rocky-tools.tar \
+ --upload build/rocky-downloads/tool-inputs.json:/tmp/rocky-tool-inputs.json \
+ --upload guest/install-rocky-tools.py:/tmp/install-rocky-tools.py \
  --upload build/chickadee-guest:/usr/local/bin/chickadee-guest \
  --upload guest/network.sh:/usr/local/bin/chickadee-network \
  --upload guest/chickadee-network.service:/etc/systemd/system/chickadee-network.service \
@@ -116,7 +140,9 @@ ln -s "vmlinuz-$version" "$out/vmlinuz"
 ln -s "initrd-$version" "$out/initrd"
 mv build/rocky-base.qcow2 "$out/base.qcow2"
 cp guest/images/rocky-102-rpms.json "$out/rpm-inputs.json"
-printf '{"disk_gib":16,"os":"rocky","os_version":"10.2","architecture":"amd64","machine":"q35","minimum_cpu":"x86-64-v3","source_image":"%s","source_sha256":"%s","runner":"%s","kernel":"%s"}\n' "$source_name" "$source_sha" "$runner" "$version" > "$out/manifest.json"
-(cd "$out" && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt rpm-inputs.json > SHA256SUMS)
+cp guest/images/rocky-102-developer-packages.txt "$out/developer-packages.txt"
+cp build/rocky-downloads/tool-inputs.json "$out/tool-inputs.json"
+printf '{"disk_gib":48,"os":"rocky","os_version":"10.2","architecture":"amd64","machine":"q35","minimum_cpu":"x86-64-v3","source_image":"%s","source_sha256":"%s","runner":"%s","kernel":"%s","software_profile":"native-developer-baseline"}\n' "$source_name" "$source_sha" "$runner" "$version" > "$out/manifest.json"
+(cd "$out" && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt rpm-inputs.json tool-inputs.json developer-packages.txt > SHA256SUMS)
 chmod 0444 "$out"/*
 echo 'Rocky 10.2 q35 bundle built; perform READY and real-job validation before deployment.'

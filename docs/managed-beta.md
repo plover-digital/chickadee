@@ -32,6 +32,11 @@ Keep a root-owned mode-0600 policy at `/etc/chickadee/managed-policy.json`, base
 on `examples/service-policy.json`. Approve numeric GitHub user IDs and exact
 additional queues. Approval alone does not enable an unrequested queue.
 New scopes default to one concurrent VM across all their enabled queues.
+Credential-free warm VMs are shared across customers and aliases with exactly
+the same immutable image, machine, CPU, memory and disk. The operator profile
+provides the host warm-capacity hint; customer profiles have warm_pool=0. A
+matching READY guest is bound to the requesting GitHub scope only at reservation.
+Credentials are generated then, and a spent guest is always destroyed.
 Global host limits still apply. The operator's primary scope is preserved.
 
 Put the private site SSH key in `/etc/chickadee/site-ssh.pem` (0600) and pinned

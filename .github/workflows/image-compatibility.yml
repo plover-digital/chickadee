@@ -1,0 +1,106 @@
+name: Image compatibility
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ubuntu:
+    if: github.repository == 'plover-digital/chickadee' && github.ref == 'refs/heads/main'
+    runs-on: chickadee-medium-ubuntu-2404
+    timeout-minutes: 20
+    steps:
+      - name: Verify common tools and toolcache
+        shell: bash
+        run: |
+          set -euo pipefail
+          for tool in git git-lfs unzip tar gzip zstd jq sudo node npm npx python python3 pip3 go gcc g++ clang-18 cmake ninja java mvn ruby php composer docker podman buildah skopeo cargo rustc rustup dotnet firefox google-chrome geckodriver; do
+            command -v "$tool"
+          done
+          test "$RUNNER_TOOL_CACHE" = /opt/hostedtoolcache
+          test "$AGENT_TOOLSDIRECTORY" = /opt/hostedtoolcache
+          for version in 1.24.13 1.25.14 1.26.8; do test -f "$RUNNER_TOOL_CACHE/go/$version/x64.complete"; done
+          for version in 22.23.3 24.21.0; do test -f "$RUNNER_TOOL_CACHE/node/$version/x64.complete"; done
+          for version in 3.10.21 3.11.16 3.12.14 3.13.15 3.14.7; do
+            test -f "$RUNNER_TOOL_CACHE/Python/$version/x64.complete"
+            "$RUNNER_TOOL_CACHE/Python/$version/x64/bin/python3" -c 'import ssl, sqlite3, ctypes, zlib, pip'
+          done
+          node --version
+          npm --version
+          go version
+          rustc --version
+          cargo --version
+          rustup show active-toolchain
+          dotnet --list-sdks
+          firefox --headless --version
+          google-chrome --version
+          geckodriver --version
+          test ! -S /run/host-docker.sock
+          sudo -n true
+      - name: Exercise setup actions from installed cache
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.21.0'
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.14.7'
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.26.8'
+          cache: false
+      - name: Run language and container smoke tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          node -e 'console.log(process.version)'
+          python -c 'import ssl, sqlite3, ctypes, zlib; print("Python dependencies work")'
+          printf 'package main\nimport "fmt"\nfunc main(){fmt.Println("Go works")}\n' > /tmp/chickadee-image-smoke.go
+          go run /tmp/chickadee-image-smoke.go
+          printf 'fn main(){println!("Rust works");}\n' > /tmp/chickadee-image-smoke.rs
+          rustc /tmp/chickadee-image-smoke.rs -o /tmp/chickadee-image-smoke
+          /tmp/chickadee-image-smoke
+          docker version
+          docker compose version
+          docker buildx version
+          docker run --rm hello-world
+  rocky:
+    if: github.repository == 'plover-digital/chickadee' && github.ref == 'refs/heads/main'
+    runs-on: chickadee
+    timeout-minutes: 20
+    steps:
+      - name: Verify native developer tools and enforcing SELinux
+        shell: bash
+        run: |
+          set -euo pipefail
+          . /etc/os-release
+          test "$ID:$VERSION_ID" = rocky:10.2
+          test "$(/usr/sbin/getenforce)" = Enforcing
+          for tool in git git-lfs unzip zip tar gzip zstd jq sudo node npm npx python3 pip3 go gcc g++ clang cmake ninja java mvn ruby podman buildah skopeo; do
+            command -v "$tool"
+          done
+          test "$RUNNER_TOOL_CACHE" = /opt/hostedtoolcache
+          test "$AGENT_TOOLSDIRECTORY" = /opt/hostedtoolcache
+          for version in 1.24.13 1.25.14 1.26.8; do test -f "$RUNNER_TOOL_CACHE/go/$version/x64.complete"; done
+          for version in 22.23.3 24.21.0; do test -f "$RUNNER_TOOL_CACHE/node/$version/x64.complete"; done
+          sudo -n true
+          java -version
+          "$JAVA_HOME/bin/java" -version
+          podman --version
+          python3 -c 'import ssl,sqlite3,ctypes,zlib'
+          python3 -m venv /tmp/chickadee-native-venv
+          /tmp/chickadee-native-venv/bin/python -m pip --version
+          printf 'int main(void){return 0;}\n' >/tmp/chickadee-native.c
+          gcc /tmp/chickadee-native.c -o /tmp/chickadee-native
+          /tmp/chickadee-native
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.0.0
+        with:
+          node-version: '24.21.0'
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.26.8'
+          cache: false
+      - name: Exercise shared verified toolcache on Rocky
+        run: |
+          set -eu
+          node -e 'console.log(process.version)'
+          printf 'package main\nimport "fmt"\nfunc main(){fmt.Println("Go works on Rocky")}\n' >/tmp/chickadee-rocky.go
+          go run /tmp/chickadee-rocky.go

@@ -60,7 +60,14 @@ jobs:
           test "$actual_mib" -ge "$((EXPECT_MEMORY_MIB-EXPECT_MEMORY_MIB/16))"
           test "$actual_mib" -le "$EXPECT_MEMORY_MIB"
           test "$(id -u)" = 1000
-          test ! -e /var/run/docker.sock
+          # A guest-owned Docker daemon is supported. Its socket must reside on
+          # the guest disk, never on a host bind mount.
+          if [ -S /var/run/docker.sock ]; then
+            case "$(findmnt -n -o SOURCE --target /var/run/docker.sock)" in
+              /dev/vda*|/dev/sda*) ;;
+              *) echo 'Docker socket is not on the guest disk'; exit 1 ;;
+            esac
+          fi
           if [ "$ID" = rocky ]; then
             test "$(/usr/sbin/getenforce)" = Enforcing
           fi

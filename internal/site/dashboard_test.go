@@ -11,9 +11,12 @@ import (
 func TestDashboardWorkflowContainsOnlyEnabledQueues(t *testing.T) {
 	s := fixture(t)
 	s.sessions["session"] = session{User: User{7, "tester"}, Token: "fixture", CSRF: "csrf", Expires: time.Now().Add(time.Hour)}
-	s.enrollments = []Enrollment{{ID: "request", User: User{7, "tester"}, Repository: Repository{ID: 99, Name: "tester/repo"}, Status: "active", Queues: []string{"chickadee", "chickadee-medium-ubuntu-2404"}, EnabledQueues: []string{"chickadee"}, DesiredState: "active"}}
-	s.http.Transport = transport(func(*http.Request) (*http.Response, error) {
-		return response(`{"total_count":0,"installations":[]}`), nil
+	s.enrollments = []Enrollment{{ID: "request", User: User{7, "tester"}, InstallationID: 8, Repository: Repository{ID: 99, Name: "tester/repo"}, Status: "active", Queues: []string{"chickadee", "chickadee-medium-ubuntu-2404"}, EnabledQueues: []string{"chickadee"}, DesiredState: "active"}}
+	s.http.Transport = transport(func(r *http.Request) (*http.Response, error) {
+		if strings.HasPrefix(r.URL.Path, "/user/installations/") {
+			return response(`{"total_count":1,"repositories":[{"id":99,"full_name":"tester/repo","permissions":{"admin":true}}]}`), nil
+		}
+		return response(`{"total_count":1,"installations":[{"id":8,"app_id":42,"account":{"id":7,"login":"tester","type":"User"}}]}`), nil
 	})
 	req := httptest.NewRequest("GET", "/dashboard", nil)
 	req.AddCookie(&http.Cookie{Name: "__Host-chickadee-session", Value: "session"})
