@@ -70,12 +70,17 @@ jobs:
           test "$actual_mib" -ge "$((EXPECT_MEMORY_MIB-EXPECT_MEMORY_MIB/16))"
           test "$actual_mib" -le "$EXPECT_MEMORY_MIB"
           test "$(id -u)" = 1000
-          # A guest-owned Docker daemon is supported. Its socket must reside on
-          # the guest disk, never on a host bind mount.
+          # A guest-owned Docker socket may live on the guest disk or /run tmpfs.
+          # Reject file bind mounts and shared filesystem mounts.
           if [ -S /var/run/docker.sock ]; then
-            case "$(findmnt -n -o SOURCE --target /var/run/docker.sock)" in
-              /dev/vda*|/dev/sda*) ;;
-              *) echo 'Docker socket is not on the guest disk'; exit 1 ;;
+            source=$(findmnt -n -o SOURCE --target /var/run/docker.sock)
+            target=$(findmnt -n -o TARGET --target /var/run/docker.sock)
+            filesystem=$(findmnt -n -o FSTYPE --target /var/run/docker.sock)
+            case "$source:$target:$filesystem" in
+              /dev/vda*:/run:ext4|/dev/vda*:/:ext4|/dev/sda*:/:ext4) ;;
+              /dev/vda*:/:xfs|/dev/sda*:/:xfs) ;;
+              tmpfs:/run:tmpfs) ;;
+              *) echo 'Docker socket mount is not a guest-local disk or runtime tmpfs'; exit 1 ;;
             esac
           fi
           if [ "$ID" = rocky ]; then
