@@ -11,7 +11,7 @@ it does not introduce Kubernetes, databases, snapshots or multiple hosts.
 manifest/checksums. Describes OS/version, architecture, runner/bootstrap versions
 and tested capabilities. The controller is independent of the workload's language.
 The initial OS targets are **Ubuntu 24.04**, **Ubuntu 26.04** and
-**Rocky Linux 9.8**, all Linux amd64. Ubuntu 24.04 has an existing builder;
+**Rocky Linux 9.8** and **Rocky Linux 10.2**, all Linux amd64. Ubuntu 24.04 has an existing builder;
 Ubuntu 26.04 and Rocky are new implementation targets and are not yet supported
 by the shipped builder. All must implement
 the same bounded serial/bootstrap and networking contract.
@@ -37,14 +37,14 @@ is required for the first selectable-profile implementation.
 ## OS versions and workflow names
 
 Use `chickadee-{size}-{os}-{version}`. OS version is part of the OS selector,
-with dots removed: `ubuntu-2404`, `ubuntu-2604` and `rocky-98`. The initial
+with dots removed: `ubuntu-2404`, `ubuntu-2604`, `rocky-98` and `rocky-102`. The initial
 catalog has small (2 vCPU / 4 GiB), medium (4 / 8) and large (8 / 16) for each
-OS release: nine selectable profiles. Operators enable only the profiles that fit their
+OS release: twelve selectable profiles. Operators enable only the profiles that fit their
 host; an enabled profile may have a zero warm target and boot on demand.
 
 Examples: `chickadee-small-ubuntu-2404`, `chickadee-medium-rocky-98` and
-`chickadee-large-ubuntu-2404`. Rocky 10.2 would use
-`chickadee-medium-rocky-102` when that release is supported. Store the full
+`chickadee-large-ubuntu-2404`. Rocky 10.2 uses
+`chickadee-medium-rocky-102` in the target catalog. Store the full
 OS version separately in image metadata (`24.04`, `26.04`, `9.8`, `10.2`); resolve
 compact labels through the approved catalog rather than guessing where a dot
 belongs. Reject duplicate selectors for different releases. Do not expose an unversioned or `latest` alias
@@ -60,8 +60,10 @@ release creates a new queue and requires a workflow change.
 [Rocky's support policy](https://docs.rockylinux.org/releases/) supports only the
 latest minor release in each major series. A pinned old queue is reproducible,
 not indefinitely supported: document its retirement and replace it deliberately
-when the next minor release arrives. Rocky 9 is the initial major-series target;
-Rocky 10 has a higher x86-64-v3 CPU requirement and is outside this first slice.
+when the next minor release arrives. Both Rocky 9.8 and 10.2 are initial targets. Rocky 10 requires x86-64-v3;
+preflight must verify host CPU capability and guest CPU exposure before
+admitting any Rocky 10 profile. Reject unsupported hosts rather than silently
+substituting Rocky 9 or a different CPU model.
 
 Rocky's [versioned cloud image artifacts](https://docs.rockylinux.org/10/teams/rel_eng/image/)
 are potential inputs, not proof of microvm compatibility. The Rocky builder
@@ -88,7 +90,8 @@ All image paths below are examples, not artifacts shipped in this repository.
   "images": {
     "ubuntu-2404": {"path": "/var/lib/chickadee-images/ubuntu-2404/20261006"},
     "ubuntu-2604": {"path": "/var/lib/chickadee-images/ubuntu-2604/validated-version"},
-    "rocky-98": {"path": "/var/lib/chickadee-images/rocky-98/validated-version"}
+    "rocky-98": {"path": "/var/lib/chickadee-images/rocky-98/validated-version"},
+    "rocky-102": {"path": "/var/lib/chickadee-images/rocky-102/validated-version"}
   },
   "resource_classes": {
     "small": {"cpus": 2, "memory_mib": 4096},
@@ -104,6 +107,9 @@ All image paths below are examples, not artifacts shipped in this repository.
     },
     "chickadee-medium-rocky-98": {
       "image": "rocky-98", "resources": "medium", "warm_pool": 0, "max_vms": 2
+    },
+    "chickadee-medium-rocky-102": {
+      "image": "rocky-102", "resources": "medium", "warm_pool": 0, "max_vms": 1
     },
     "chickadee-large-ubuntu-2404": {
       "image": "ubuntu-2404", "resources": "large", "warm_pool": 0, "max_vms": 1
