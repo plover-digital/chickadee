@@ -22,6 +22,7 @@ def main():
     total=int(next(line.split()[1] for line in pathlib.Path('/proc/meminfo').read_text().splitlines() if line.startswith('MemTotal:')))//1024
     assert memory+count*512+512 <= total-1024, 'guest budget plus overhead must leave at least 1 GiB for host'
     flags=set(next(line.split(':',1)[1].split() for line in pathlib.Path('/proc/cpuinfo').read_text().splitlines() if line.startswith('flags')))
+    checked=set()
     for p in profiles:
         root=pathlib.Path(p['path'])
         # Root-owned artifacts cannot be changed by the emulator/service account.
@@ -36,6 +37,9 @@ def main():
         if m.get('minimum_cpu')=='x86-64-v3':
             required={'avx','avx2','bmi1','bmi2','f16c','fma','abm','movbe','xsave','cx16','lahf_lm','popcnt','sse4_1','sse4_2','ssse3'}
             assert required <= flags, 'image requires x86-64-v3; QEMU uses -cpu host'
+        if root in checked:
+            continue
+        checked.add(root)
         lines=(root/'SHA256SUMS').read_text().splitlines()
         entries=set()
         for line in lines:
