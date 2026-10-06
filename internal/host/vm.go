@@ -67,7 +67,7 @@ func start(ctx context.Context, c config.Config, slot int, id string, offline bo
 		netdev = "user,id=net,restrict=on"
 	}
 	args := []string{"--fsize=" + strconv.FormatInt(int64(c.DiskGiB+1)<<30, 10) + ":" + strconv.FormatInt(int64(c.DiskGiB+1)<<30, 10), "--", "qemu-system-x86_64",
-		"-name", "chickadee-" + id, "-machine", "microvm,isa-serial=on,auto-kernel-cmdline=on", "-enable-kvm", "-cpu", "host", "-smp", strconv.Itoa(c.CPUs), "-m", strconv.Itoa(c.MemoryMiB),
+		"-name", "chickadee-" + id, "-machine", "microvm,acpi=off,isa-serial=on,auto-kernel-cmdline=on", "-enable-kvm", "-cpu", "host", "-smp", strconv.Itoa(c.CPUs), "-m", strconv.Itoa(c.MemoryMiB),
 		"-object", "rng-random,id=rng,filename=/dev/urandom", "-device", "virtio-rng-device,rng=rng",
 		"-nodefaults", "-no-user-config", "-display", "none", "-monitor", "none", "-no-reboot",
 		"-sandbox", "on,obsolete=deny,elevateprivileges=deny,spawn=deny,resourcecontrol=deny",

@@ -105,3 +105,8 @@ The public appliance diagnostics also exposed a missing DHCP client in the Ubunt
 24.04 builder: libguestfs tried `dhcpcd` after failing to find `dhclient`, leaving
 its interface down. The documented builder dependencies now explicitly include
 `isc-dhcp-client`; provisioning uses the resolver supplied by libguestfs.
+
+Native KVM acceptance found that the QEMU 10 microvm defaults could hang the
+Ubuntu 6.8 kernel during ACPI initialization. Explicit `acpi=off` allowed the same
+immutable kernel/initrd to boot and discover virtio-mmio devices. The launcher
+now pins that machine option instead of relying on changing QEMU defaults.
