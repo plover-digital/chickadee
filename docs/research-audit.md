@@ -110,3 +110,9 @@ Native KVM acceptance found that the QEMU 10 microvm defaults could hang the
 Ubuntu 6.8 kernel during ACPI initialization. Explicit `acpi=off` allowed the same
 immutable kernel/initrd to boot and discover virtio-mmio devices. The launcher
 now pins that machine option instead of relying on changing QEMU defaults.
+
+The corrected public image build completed successfully. Its downloaded checksums
+passed locally, and the real controller boot-check reached READY twice with two
+independently booted KVM microvms, confirming QEMU exit and overlay deletion after
+each. See [validation](validation.md) for the exact scope and remaining real-job
+and production-network acceptance. This is not a completed GitHub job test.

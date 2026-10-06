@@ -16,7 +16,7 @@ secrets, customer information and coordinated security reports private.
 - [x] Example configuration, manual smoke workflow and lifecycle tests.
 - [x] Public architecture, limitations, troubleshooting and verification status.
 - [x] Online build against the pinned scale-set module and retained `go.sum`.
-- [ ] Build the reference image and boot a real KVM microvm to READY.
+- [x] Build the reference image and boot two real KVM microvms to READY, confirming exit and overlay deletion.
 - [ ] Inject fresh JIT, execute a real job, verify destruction and pool replacement.
 - [ ] Verify firewall isolation, concurrency limits, timeout/failure and restart.
 - [ ] Test installation, reboot restoration and uninstall on clean Ubuntu 24.04.

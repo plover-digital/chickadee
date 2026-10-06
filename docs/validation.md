@@ -3,10 +3,26 @@
 The controller and guest compile against the actual pinned scale-set client.
 `go.mod` and `go.sum` retain the verified dependency graph. All package tests pass
 with the race detector. The Unix socket subprocess simulator also passed on the
-underlying host in an uncached run. KVM/TAP are available
-on the underlying host, but image tools and a GitHub App deployment are not yet
-configured. No real GitHub job, real VM boot, firewall mutation or installation
-has been validated. This remains unfinished deployment validation.
+underlying host in an uncached run. The [reference image build](https://github.com/plover-digital/chickadee/actions/runs/37404427019)
+succeeded with verified inputs and output checksums. Its hosted KVM check was
+skipped because the builder lacked KVM access; this was not counted as a boot pass.
+
+The downloaded artifact passed all checksums locally. Two independently booted
+KVM microvms reached READY with the real guest bootstrap, Ubuntu kernel
+`6.8.0-142-generic`, runner image `2.337.0`, and fresh overlays. After each READY,
+the controller confirmed QEMU exit and deleted its VM directory/disk. The second
+boot exercised the same creation path after destruction. This was the
+credential-free `-boot-check` mode with restricted QEMU user networking, not a
+GitHub-connected pool or a real job. No App key was read or JIT delivered.
+
+The initial boot failure exposed QEMU default ACPI behavior; pinning `acpi=off`
+allowed direct-kernel boot. The old image's resolver symlink prevented its network
+service starting; writing a regular resolver after libguestfs customization fixed
+that failure. Native lifecycle tests pass after the launcher change. No host
+TAP/firewall/NAT changes or installation were made during this acceptance.
+
+GitHub App installation, live scale-set/JIT behavior, real jobs, production
+network isolation, and deployment/restart acceptance remain unfinished.
 
 ## Checks available without deployment
 
