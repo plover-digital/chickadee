@@ -78,6 +78,17 @@ must not include request queries, authorization headers or raw upstream bodies.
 
 ## Operator activation
 
+The private request uses GitHub numeric IDs, for example:
+
+```json
+{
+  "installation_id": 123456,
+  "user": {"id": 111},
+  "account": {"id": 111, "type": "User"},
+  "repository": {"id": 222, "full_name": "EXAMPLE-USER/EXAMPLE-REPO"}
+}
+```
+
 Keep request metadata private. `scripts/admit-installation.py --config CONFIG
 --request REQUEST --output CANDIDATE --trusted-workflows` rechecks the GitHub
 installation, repository identity, permissions and selected-repository access.
