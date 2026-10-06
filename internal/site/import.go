@@ -34,6 +34,17 @@ func (s *Server) importEnrollment(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid account type", 400)
 		return
 	}
+	if !validWorkflowAccess(entry.EnabledWorkflowAccess) {
+		http.Error(w, "Invalid workflow access", 400)
+		return
+	}
+	if entry.WorkflowPath != "" && !validWorkflowPath(entry.WorkflowPath) || entry.EnabledWorkflowPath != "" && !validWorkflowPath(entry.EnabledWorkflowPath) {
+		http.Error(w, "Invalid workflow path", 400)
+		return
+	}
+	if entry.EnabledWorkflowPath == "" {
+		entry.EnabledWorkflowPath = entry.WorkflowPath
+	}
 	queues, e := requestedQueues(entry.Queues)
 	if e != nil {
 		http.Error(w, "Invalid requested queues", 400)

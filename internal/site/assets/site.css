@@ -13,3 +13,5 @@
 .header-logout{display:inline-flex;align-items:center}.header-logout button{font-size:.875rem;min-height:44px}.header-login{padding:.4rem .7rem}.repository-setup{border-bottom:1px dashed var(--line);padding:.5rem 0}.repository-setup>summary{font-family:var(--mono);font-size:.875rem;cursor:pointer;min-height:44px;padding:.6rem 0;overflow-wrap:anywhere}.repository-setup summary .note{display:inline;font-family:system-ui,sans-serif;font-size:.8125rem}.repository-setup .repo{border-bottom:0}
 
 .organization-repositories{margin:.75rem 0}.organization-repositories summary{font-family:var(--mono);font-size:.8125rem;cursor:pointer;min-height:44px;padding:.5rem 0}.organization-repositories p{font-size:.875rem;margin:.4rem 0;overflow-wrap:anywhere}
+
+.workflow-path{flex-basis:100%;max-width:100%;margin:.5rem 0 1rem}.workflow-path input{font:inherit;min-height:44px;padding:.6rem;border:1px solid var(--line);background:var(--paper);color:var(--ink);width:100%;min-width:0}.workflow-path .note{font-family:system-ui,sans-serif;font-size:.8125rem}

@@ -21,20 +21,22 @@ func (s *Server) AdminHandler() http.Handler {
 	})
 	mux.HandleFunc("POST /status", func(w http.ResponseWriter, r *http.Request) {
 		var update struct {
-			ID            string     `json:"id"`
-			Status        string     `json:"status"`
-			EnabledQueues []string   `json:"enabled_queues"`
-			Message       string     `json:"message"`
-			Usage         []UsageDay `json:"usage"`
+			ID                    string     `json:"id"`
+			Status                string     `json:"status"`
+			EnabledQueues         []string   `json:"enabled_queues"`
+			Message               string     `json:"message"`
+			Usage                 []UsageDay `json:"usage"`
+			EnabledWorkflowPath   *string    `json:"enabled_workflow_path"`
+			EnabledWorkflowAccess *string    `json:"enabled_workflow_access"`
 		}
 		decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 8192))
 		decoder.DisallowUnknownFields()
-		if decoder.Decode(&update) != nil || decoder.Decode(new(any)) != io.EOF || len(update.Message) > 500 || !validUsage(update.Usage, time.Now()) {
+		if decoder.Decode(&update) != nil || decoder.Decode(new(any)) != io.EOF || len(update.Message) > 500 || update.EnabledWorkflowAccess != nil && !validWorkflowAccess(*update.EnabledWorkflowAccess) || !validUsage(update.Usage, time.Now()) || update.EnabledWorkflowPath != nil && *update.EnabledWorkflowPath != "" && !validWorkflowPath(*update.EnabledWorkflowPath) {
 			http.Error(w, "Invalid update", 400)
 			return
 		}
 		switch update.Status {
-		case "pending", "active", "paused", "disconnected", "permission-required", "error":
+		case "pending", "approved", "active", "paused", "disconnected", "permission-required", "error":
 		default:
 			http.Error(w, "Invalid status", 400)
 			return
@@ -68,7 +70,7 @@ func (s *Server) AdminHandler() http.Handler {
 				}
 				seen[queue] = true
 			}
-			if update.Status == "active" && (!seen["chickadee"] || entry.DesiredState == "paused" || entry.DesiredState == "disconnected") {
+			if update.Status == "active" && !seen["chickadee"] || (update.Status == "active" || update.Status == "approved") && (entry.DesiredState == "paused" || entry.DesiredState == "disconnected") {
 				http.Error(w, "Activation conflicts with requested state", 409)
 				return
 			}
@@ -76,6 +78,12 @@ func (s *Server) AdminHandler() http.Handler {
 			entries[i].Status = update.Status
 			entries[i].EnabledQueues = update.EnabledQueues
 			entries[i].Message = update.Message
+			if update.EnabledWorkflowAccess != nil {
+				entries[i].EnabledWorkflowAccess = *update.EnabledWorkflowAccess
+			}
+			if update.EnabledWorkflowPath != nil {
+				entries[i].EnabledWorkflowPath = *update.EnabledWorkflowPath
+			}
 			if update.Usage != nil {
 				entries[i].Usage = update.Usage
 			}

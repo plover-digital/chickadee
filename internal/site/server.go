@@ -56,9 +56,11 @@ type Repository struct {
 	Permissions map[string]bool `json:"permissions"`
 }
 type Choice struct {
-	Installation   Installation
-	Repository     Repository
-	SelectedQueues []string
+	Installation          Installation
+	Repository            Repository
+	SelectedQueues        []string
+	WorkflowPath          string
+	EnabledWorkflowAccess string
 }
 
 func (c Choice) HasQueue(queue string) bool {
@@ -71,20 +73,23 @@ func (c Choice) HasQueue(queue string) bool {
 }
 
 type Enrollment struct {
-	ID             string     `json:"id"`
-	User           User       `json:"user"`
-	InstallationID int64      `json:"installation_id"`
-	Account        Account    `json:"account"`
-	Repository     Repository `json:"repository"`
-	Scope          string     `json:"scope"`
-	Status         string     `json:"status"`
-	Queues         []string   `json:"queues,omitempty"`
-	EnabledQueues  []string   `json:"enabled_queues,omitempty"`
-	DesiredState   string     `json:"desired_state,omitempty"`
-	Message        string     `json:"message,omitempty"`
-	Updated        time.Time  `json:"updated_at,omitempty"`
-	Created        time.Time  `json:"created_at"`
-	Usage          []UsageDay `json:"usage,omitempty"`
+	ID                    string     `json:"id"`
+	User                  User       `json:"user"`
+	InstallationID        int64      `json:"installation_id"`
+	Account               Account    `json:"account"`
+	Repository            Repository `json:"repository"`
+	Scope                 string     `json:"scope"`
+	Status                string     `json:"status"`
+	Queues                []string   `json:"queues,omitempty"`
+	EnabledQueues         []string   `json:"enabled_queues,omitempty"`
+	DesiredState          string     `json:"desired_state,omitempty"`
+	Message               string     `json:"message,omitempty"`
+	Updated               time.Time  `json:"updated_at,omitempty"`
+	Created               time.Time  `json:"created_at"`
+	Usage                 []UsageDay `json:"usage,omitempty"`
+	WorkflowPath          string     `json:"workflow_path,omitempty"`
+	EnabledWorkflowPath   string     `json:"enabled_workflow_path,omitempty"`
+	EnabledWorkflowAccess string     `json:"enabled_workflow_access,omitempty"`
 }
 type oauthState struct {
 	Cookie, Verifier string
@@ -388,6 +393,8 @@ func (s *Server) dashboard(w http.ResponseWriter, r *http.Request) {
 		for _, entry := range s.enrollments {
 			if entry.User.ID == v.User.ID && entry.InstallationID == p.Choices[i].Installation.ID && entry.Repository.ID == p.Choices[i].Repository.ID {
 				p.Choices[i].SelectedQueues = append([]string(nil), entry.Queues...)
+				p.Choices[i].WorkflowPath = entry.WorkflowPath
+				p.Choices[i].EnabledWorkflowAccess = entry.EnabledWorkflowAccess
 				break
 			}
 		}
@@ -406,6 +413,8 @@ func (s *Server) dashboard(w http.ResponseWriter, r *http.Request) {
 			if !authorized {
 				entry.Usage = nil
 				entry.EnabledQueues = nil
+				entry.EnabledWorkflowAccess = ""
+				entry.EnabledWorkflowPath = ""
 				entry.Status = "permission-required"
 				entry.Message = "Current GitHub administration access could not be verified. Restore access or sign in again to view usage and manage queues."
 			}
@@ -497,6 +506,20 @@ func (s *Server) enroll(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Repository not authorized", 403)
 		return
 	}
+	workflowPath := strings.TrimSpace(r.FormValue("workflow_path"))
+	repositoryAccess := false
+	s.mu.Lock()
+	for _, entry := range s.enrollments {
+		if entry.User.ID == v.User.ID && entry.InstallationID == iid && entry.Repository.ID == rid && entry.EnabledWorkflowAccess == "repository" {
+			repositoryAccess = true
+			break
+		}
+	}
+	s.mu.Unlock()
+	if choice.Installation.Account.Type == "Organization" && !repositoryAccess && !validWorkflowPath(workflowPath) || workflowPath != "" && !validWorkflowPath(workflowPath) {
+		http.Error(w, "Enter an exact main-branch workflow path, such as .github/workflows/build.yml.", 400)
+		return
+	}
 	permissions := choice.Installation.Permissions
 	if choice.Installation.Account.Type == "User" && permissions["administration"] != "write" || choice.Installation.Account.Type == "Organization" && permissions["organization_self_hosted_runners"] != "write" {
 		http.Error(w, "App runner-management permission needs approval", 403)
@@ -508,6 +531,7 @@ func (s *Server) enroll(w http.ResponseWriter, r *http.Request) {
 		if entry.InstallationID == iid && entry.Repository.ID == rid && entry.User.ID == v.User.ID {
 			entries := append([]Enrollment(nil), s.enrollments...)
 			entries[i].Queues = queues
+			entries[i].WorkflowPath = workflowPath
 			entries[i].Updated = time.Now().UTC()
 			if e = s.saveLocked(entries); e != nil {
 				http.Error(w, "Request could not be saved", 500)
@@ -526,7 +550,7 @@ func (s *Server) enroll(w http.ResponseWriter, r *http.Request) {
 	if choice.Installation.Account.Type == "Organization" {
 		scope = "organization"
 	}
-	entries := append(append([]Enrollment(nil), s.enrollments...), Enrollment{ID: random(), User: v.User, InstallationID: iid, Account: choice.Installation.Account, Repository: choice.Repository, Scope: scope, Status: "pending", Queues: queues, DesiredState: "active", Created: time.Now().UTC()})
+	entries := append(append([]Enrollment(nil), s.enrollments...), Enrollment{ID: random(), User: v.User, InstallationID: iid, Account: choice.Installation.Account, Repository: choice.Repository, Scope: scope, Status: "pending", Queues: queues, WorkflowPath: workflowPath, DesiredState: "active", Created: time.Now().UTC()})
 	if e = s.saveLocked(entries); e != nil {
 		http.Error(w, "Request could not be saved", 500)
 		return
