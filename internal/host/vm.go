@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"os"
 	"os/exec"
@@ -159,6 +160,7 @@ func (v *VM) Cleanup() error {
 }
 func (v *VM) Exited() <-chan struct{} { return v.exited }
 func (v *VM) Run(jit string, timeout time.Duration, logPath string) error {
+	deliveryStarted := time.Now()
 	_ = v.Conn.SetDeadline(time.Now().Add(15 * time.Second))
 	if e := protocol.Write(v.Conn, protocol.Frame{V: 1, Type: "CONFIG", JIT: jit}); e != nil {
 		return fmt.Errorf("configuration delivery failed")
@@ -167,11 +169,14 @@ func (v *VM) Run(jit string, timeout time.Duration, logPath string) error {
 	if e != nil || f.Type != "ACK" {
 		return fmt.Errorf("configuration acknowledgement failed")
 	}
+	slog.Info("Guest acknowledged configuration", "vm", v.ID, "duration_ms", time.Since(deliveryStarted).Milliseconds())
 	_ = v.Conn.SetDeadline(time.Now().Add(timeout))
 	f, e = v.Reader.Read()
 	if e != nil || f.Type != "RUNNING" {
 		return fmt.Errorf("runner start status missing")
 	}
+	// RUNNING confirms local listener launch, not GitHub connection or job assignment.
+	slog.Info("Guest runner listener launched", "vm", v.ID, "duration_ms", time.Since(deliveryStarted).Milliseconds())
 	log, e := os.OpenFile(logPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 	if e != nil {
 		return e

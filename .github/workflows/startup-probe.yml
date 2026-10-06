@@ -1,0 +1,19 @@
+name: Runner startup probe
+on:
+  workflow_dispatch:
+permissions: {}
+jobs:
+  chickadee:
+    if: github.repository == 'plover-digital/chickadee' && github.ref == 'refs/heads/main'
+    runs-on: chickadee
+    timeout-minutes: 5
+    steps:
+      - name: First command
+        run: date --utc '+first_command=%Y-%m-%dT%H:%M:%S.%NZ'
+  hosted:
+    if: github.repository == 'plover-digital/chickadee' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: First command
+        run: date --utc '+first_command=%Y-%m-%dT%H:%M:%S.%NZ'

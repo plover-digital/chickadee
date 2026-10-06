@@ -151,7 +151,11 @@ func runOwned(ctx context.Context, c config.Config, b Backend, desired <-chan in
 			if !ok {
 				return fmt.Errorf("demand stream closed")
 			}
-			requested = min(c.Max, max(0, n))
+			nextRequested := min(c.Max, max(0, n))
+			if nextRequested != requested {
+				slog.Info("Runner demand changed", "requested", nextRequested)
+			}
+			requested = nextRequested
 		case ev := <-events:
 			v := entries[ev.ID]
 			if v == nil {
@@ -259,6 +263,7 @@ func runOwned(ctx context.Context, c config.Config, b Backend, desired <-chan in
 	}
 }
 func worker(ctx context.Context, c config.Config, b Backend, v *entry, events chan<- Event, start starter) {
+	bootStarted := time.Now()
 	vm, e := start(ctx, c, v.slot, v.state.ID)
 	report := func(kind string, e error) {
 		select {
@@ -267,6 +272,7 @@ func worker(ctx context.Context, c config.Config, b Backend, v *entry, events ch
 		}
 	}
 	if e == nil {
+		slog.Info("VM boot completed", "vm", v.state.ID, "duration_ms", time.Since(bootStarted).Milliseconds())
 		report("ready", nil)
 		select {
 		case <-ctx.Done():
@@ -279,9 +285,11 @@ func worker(ctx context.Context, c config.Config, b Backend, v *entry, events ch
 			// Credential intent was committed by the actor before this call.
 			jitCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 			var jit string
+			jitStarted := time.Now()
 			jit, e = b.JIT(jitCtx, name)
 			cancel()
 			if e == nil {
+				slog.Info("JIT configuration generated", "vm", v.state.ID, "duration_ms", time.Since(jitStarted).Milliseconds())
 				stop := context.AfterFunc(ctx, func() { _ = vm.Stop() })
 				e = vm.Run(jit, time.Duration(c.JobSeconds)*time.Second, filepath.Join(c.StateDir, "logs", v.state.ID+".jsonl"))
 				stop()
