@@ -139,7 +139,7 @@ func (r Record) valid() bool {
 }
 func (v Inventory) valid() bool {
 	b := v.Budget
-	if !v.Identity.Valid() || b.MaxVMs < 1 || b.MaxVMs > 2 || b.MaxCPUs < 1 || b.MaxCPUs > 256 || b.MaxMemoryMiB < 512 || b.MaxMemoryMiB > 1<<20 || v.Used.VMs < 0 || v.Used.VMs > b.MaxVMs || v.Used.CPUs < 0 || v.Used.CPUs > b.MaxCPUs || v.Used.MemoryMiB < 0 || v.Used.MemoryMiB > b.MaxMemoryMiB || len(v.Profiles) == 0 || len(v.Profiles) > 32 || len(v.Records) > 1024 {
+	if !v.Identity.Valid() || b.MaxVMs < 1 || b.MaxVMs > 32 || b.MaxCPUs < 1 || b.MaxCPUs > 256 || b.MaxMemoryMiB < 512 || b.MaxMemoryMiB > 1<<20 || v.Used.VMs < 0 || v.Used.VMs > b.MaxVMs || v.Used.CPUs < 0 || v.Used.CPUs > b.MaxCPUs || v.Used.MemoryMiB < 0 || v.Used.MemoryMiB > b.MaxMemoryMiB || len(v.Profiles) == 0 || len(v.Profiles) > 32 || len(v.Records) > 1024 {
 		return false
 	}
 	seen := map[string]bool{}
