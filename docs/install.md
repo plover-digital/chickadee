@@ -12,7 +12,7 @@ Install build and runtime dependencies on the intended Ubuntu machine:
 
 ```sh
 sudo apt-get update
-sudo apt-get install -y qemu-system-x86 qemu-utils libguestfs-tools nftables \
+sudo apt-get install -y qemu-system-x86 qemu-utils libguestfs-tools isc-dhcp-client nftables \
   iproute2 util-linux python3 curl gpgv ubuntu-keyring xz-utils build-essential linux-image-generic
 ```
 

@@ -100,3 +100,8 @@ Provisioning then exposed the rootfs's unresolved systemd-resolved stub during
 offline customization. The provisioning script now uses the appliance's SLIRP
 DNS proxy before apt and restores production DNS configuration before finishing.
 APT index updates fail on any error instead of silently accepting partial indexes.
+
+The public appliance diagnostics also exposed a missing DHCP client in the Ubuntu
+24.04 builder: libguestfs tried `dhcpcd` after failing to find `dhclient`, leaving
+its interface down. The documented builder dependencies now explicitly include
+`isc-dhcp-client`; provisioning uses the resolver supplied by libguestfs.

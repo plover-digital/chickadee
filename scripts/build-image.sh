@@ -86,7 +86,7 @@ printf 'chickadee\n' > /etc/hostname
 chmod 0755 /usr/local/bin/chickadee-guest /usr/local/bin/chickadee-network
 dpkg-query -W > /image-packages.txt
 PROVISION
-virt-customize --verbose -a build/base.qcow2 \
+virt-customize -a build/base.qcow2 \
   --upload build/downloads/runner.tar.gz:/tmp/runner.tar.gz \
   --upload build/chickadee-guest:/usr/local/bin/chickadee-guest \
   --upload guest/network.sh:/usr/local/bin/chickadee-network \
