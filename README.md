@@ -75,3 +75,7 @@ with its stock kernel and enforcing SELinux. New image support requires actual
 boot/job validation; see the validation log. Rocky 9.8 and Ubuntu 26.04 builders
 remain tracked work. The [provider comparison](docs/runner-platform-research.md)
 and [design rationale](docs/selection-design.md) explain the model.
+
+An optional [GitHub App onboarding site](docs/onboarding-site.md) provides
+sign-in, selected-repository installation and approved-beta activation requests.
+It is separate from the runner controller; self-hosting does not require it.

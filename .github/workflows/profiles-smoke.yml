@@ -55,7 +55,9 @@ jobs:
           test "$VERSION_ID" = "$EXPECT_VERSION"
           test "$(nproc)" = "$EXPECT_CPUS"
           actual_mib=$(awk '/MemTotal:/ { print int($2/1024) }' /proc/meminfo)
-          test "$actual_mib" -ge "$((EXPECT_MEMORY_MIB-256))"
+          # MemTotal excludes firmware/kernel reservations; Rocky's 8 GiB
+          # guest reports 7934 MiB, 258 MiB below its QEMU allocation.
+          test "$actual_mib" -ge "$((EXPECT_MEMORY_MIB-EXPECT_MEMORY_MIB/16))"
           test "$actual_mib" -le "$EXPECT_MEMORY_MIB"
           test "$(id -u)" = 1000
           test ! -e /var/run/docker.sock

@@ -30,7 +30,9 @@ That fits one medium plus one small or two small guests; two medium guests must
 queue. Emulator/controller allowances add 1.5 GiB at maximum concurrency.
 Preflight leaves at least 1 GiB of physical RAM for the host, with swap disabled
 for the service. vCPUs share physical host CPUs; this is not dedicated-core
-allocation. Reserve more host RAM where other services need it.
+allocation. RAM is the QEMU allocation; guest MemTotal excludes firmware and
+kernel reservations (the Rocky medium guest reports 7934 MiB of 8192 MiB
+allocated). Reserve more host RAM where other services need it.
 
 Only the default has a warm target of one; other profiles boot on demand. Do not
 reserve a warm guest for every label on a small host. Older unsatisfied demand
