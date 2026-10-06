@@ -1,0 +1,11 @@
+[Unit]
+Description=Chickadee static guest network
+Before=chickadee-bootstrap.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/chickadee-network
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,41 @@
+# Open development roadmap
+
+The same public implementation should be usable by someone operating their own
+host and by an operator charging for managed hosting. The MIT license permits
+both. A paid service can provide operations, capacity, support and reliability;
+self-host deployment must remain independent of a vendor API, account, database
+or control plane. Keep implementation and design discussion public, while keeping
+secrets, customer information and coordinated security reports private.
+
+## First deployable release
+
+- [x] Go pool controller, direct QEMU management and bounded serial bootstrap.
+- [x] Irreversible credential state and durable registration intent.
+- [x] Image-build recipe with signed/pinned inputs and versioned kernel/initrd.
+- [x] Reference Ubuntu installation, explicit NAT/TAP setup, systemd and uninstall.
+- [x] Example configuration, manual smoke workflow and lifecycle tests.
+- [x] Public architecture, limitations, troubleshooting and verification status.
+- [x] Online build against the pinned scale-set module and retained `go.sum`.
+- [ ] Build the reference image and boot a real KVM microvm to READY.
+- [ ] Inject fresh JIT, execute a real job, verify destruction and pool replacement.
+- [ ] Verify firewall isolation, concurrency limits, timeout/failure and restart.
+- [ ] Test installation, reboot restoration and uninstall on clean Ubuntu 24.04.
+- [x] Publish the source at `plover-digital/chickadee` with build/deployment instructions.
+- [ ] Complete verified real-host release acceptance and tag the first deployable release.
+
+Mark acceptance evidence in [validation](validation.md). Recipe/source completion
+is distinct from deployed behavior. Share scrubbed results and reproducible steps;
+keep private host inventories and customer data out of the source repository.
+
+## Possible managed service, after the prototype
+
+The current trust model fits one trusted operator's dedicated host. A first paid
+pilot could operate dedicated customer hosts using this public code. It must not
+silently turn this prototype into a shared hostile multi-tenant service.
+
+Before charging for a reliability/isolation promise, publish the proposed service
+boundaries, threat model, data retention, capacity limits and operational testing.
+Billing, tenant authentication, stronger VM sandboxing, fleet scheduling, upgrades,
+incident response and service-level guarantees are separate future work. They do
+not belong in the first one-host vertical slice. Shared caches, dashboards,
+multiple images, snapshot cloning, multi-host scheduling and HA remain deferred.

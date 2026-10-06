@@ -1,0 +1,36 @@
+name: Chickadee smoke
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  first:
+    runs-on: chickadee
+    timeout-minutes: 5
+    outputs:
+      runner: ${{ steps.identity.outputs.runner }}
+    steps:
+      - name: Run one real job
+        id: identity
+        env:
+          RUNNER_IDENTITY: ${{ runner.name }}
+        run: |
+          set -eu
+          uname -a
+          test "$(id -u)" = 1000
+          test ! -S /var/run/docker.sock
+          printf 'runner=%s\n' "$RUNNER_IDENTITY" >> "$GITHUB_OUTPUT"
+          printf 'job ran on %s\n' "$RUNNER_IDENTITY"
+  second:
+    needs: first
+    runs-on: chickadee
+    timeout-minutes: 5
+    steps:
+      - name: Confirm a different runner for the next job
+        env:
+          PREVIOUS_RUNNER: ${{ needs.first.outputs.runner }}
+          CURRENT_RUNNER: ${{ runner.name }}
+        run: |
+          set -eu
+          test "$PREVIOUS_RUNNER" != "$CURRENT_RUNNER"
+          printf 'fresh runner: %s\n' "$CURRENT_RUNNER"

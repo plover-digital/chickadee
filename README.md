@@ -1,0 +1,58 @@
+# chickadee
+
+A small, self-hosted GitHub Actions runner pool for one Linux host. Each job gets an
+independently booted QEMU `microvm` with KVM, an Ubuntu 24.04 filesystem, and a fresh
+qcow2 overlay. Warm guests have no GitHub credentials and no runner registration.
+
+**Prototype under development.** The controller and guest compile against the
+pinned dependencies, and lifecycle tests pass. Real GitHub API behavior, image
+build, KVM boot, firewall, and real-job smoke test still require host validation. Do not treat the
+current checkout as a proven deployment. See [validation status](docs/validation.md).
+
+Build with Go 1.26.3 on Linux amd64:
+
+```sh
+make build test
+make image
+```
+
+Install on a dedicated Ubuntu 24.04 amd64 host by following
+[installation](docs/install.md), including GitHub App setup. Installation only
+copies files; applying networking and starting the service are explicit steps.
+No repository publication or network changes are performed by building or testing.
+
+The host uses the official [actions/scaleset Go client](https://github.com/actions/scaleset/tree/v0.4.0)
+for GitHub App authentication, demand polling, acquisition, and JIT configuration.
+The controller uses no Kubernetes, database, webhook receiver, Docker daemon,
+snapshot, or VM suspension. Storage, serial sockets, logs, and the ownership
+journal are local. One controller and one dedicated scale set own the installation.
+
+```mermaid
+flowchart LR
+  GH[GitHub scale set] -->|demand statistics| C[Go controller]
+  C -->|HELLO / READY| W[Warm microvm: no credentials]
+  C -->|fresh one-runner JIT over serial| R[Reserved microvm]
+  R -->|outbound NAT| GH
+  R -->|one job, diagnostics, DONE| C
+  C --> D[Kill QEMU, wait, delete overlay]
+  D --> W
+```
+
+GitHub chooses a matching job for an idle runner. VM creation does not bind a
+particular workflow job. A JIT runner handles at most one job; a workflow with
+several jobs uses several guests. Once credential generation begins, even an
+ambiguous failure destroys that VM. Guest messages never authorize reuse.
+
+See [architecture and trust model](docs/architecture.md),
+[troubleshooting](docs/troubleshooting.md), and the manual
+[two-job smoke workflow](examples/smoke.yml). The smoke workflow lives outside
+`.github/workflows` until you deliberately install it in a target repository.
+
+Development is open and commercially usable under [MIT](LICENSE). See
+[contributing](CONTRIBUTING.md), the [public roadmap](docs/roadmap.md), and
+[security status](SECURITY.md). Self-hosting has no dependency on a hosted service;
+a future managed offering can operate the same public components.
+
+For the smallest automatic loop, install once and opt into the
+[push-to-build-and-test workflow](docs/push-to-test.md). Each trusted push then
+requests a fresh job VM through GitHub's scale-set queue.

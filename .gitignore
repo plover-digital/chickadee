@@ -1,0 +1,11 @@
+/bin/
+/build/
+/images/
+/runtime/
+*.qcow2
+*.raw
+*.img
+*.pem
+*.key
+.env
+config.json

@@ -1,0 +1,15 @@
+[Unit]
+Description=Chickadee one-job runner bootstrap
+After=chickadee-network.service
+Requires=chickadee-network.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/chickadee-guest
+Restart=no
+StandardOutput=null
+StandardError=null
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

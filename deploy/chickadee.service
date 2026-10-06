@@ -1,0 +1,45 @@
+[Unit]
+Description=Chickadee ephemeral GitHub Actions microVM runners
+Wants=network-online.target
+After=network-online.target chickadee-network.service
+Requires=chickadee-network.service
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+User=chickadee
+Group=chickadee
+SupplementaryGroups=kvm
+ExecStartPre=/usr/local/lib/chickadee/preflight.sh
+ExecStart=/usr/local/bin/chickadee -config /etc/chickadee/config.json
+Restart=on-failure
+RestartSec=10
+KillMode=control-group
+TimeoutStopSec=180
+UMask=0077
+StateDirectory=chickadee
+StateDirectoryMode=0700
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+CapabilityBoundingSet=
+DevicePolicy=closed
+DeviceAllow=/dev/urandom r
+DeviceAllow=/dev/kvm rw
+DeviceAllow=/dev/net/tun rw
+ReadOnlyPaths=/var/lib/chickadee-image
+ReadWritePaths=/var/lib/chickadee
+# Defaults for example config; installer generates a drop-in from configured limits.
+MemoryMax=6G
+CPUQuota=400%
+TasksMax=256
+LimitNOFILE=1024
+
+[Install]
+WantedBy=multi-user.target

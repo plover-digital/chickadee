@@ -1,0 +1,14 @@
+[Unit]
+Description=Chickadee isolated TAP networking
+After=network-online.target
+Wants=network-online.target
+Before=chickadee.service
+ConditionPathExists=/etc/chickadee/network-owned
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/chickadee/network.sh restore
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
