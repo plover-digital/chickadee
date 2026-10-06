@@ -90,3 +90,8 @@ This affects the trusted image-building appliance only; job VM networking remain
 explicit routed TAP/NAT.
 [Backend probe](https://github.com/libguestfs/libguestfs/blob/master/lib/launch.c),
 [SLIRP fallback](https://github.com/libguestfs/libguestfs/blob/master/lib/launch-direct.c).
+
+The third build reached guest provisioning, confirming both appliance fixes.
+It exposed that virt-customize's `--run` path invoked `/bin/sh`, ignoring our Bash
+shebang and rejecting `pipefail`. Provisioning now uploads the script and explicitly
+invokes Bash via `--run-command`, then removes the script from the image.

@@ -14,7 +14,7 @@ url="https://cloud-images.ubuntu.com/releases/noble/release-$release"
 mkdir -p build/downloads images
 [[ ! -e images/base.qcow2 ]] || { echo 'images/base.qcow2 already exists; use a clean build directory.' >&2; exit 1; }
 for file in SHA256SUMS SHA256SUMS.gpg "$root_tar"; do
-  curl --fail --location --proto '=https' --tlsv1.2 "$url/$file" -o "build/downloads/$file"
+  curl --silent --show-error --fail --retry 3 --connect-timeout 15 --max-time 600 --location --proto '=https' --tlsv1.2 "$url/$file" -o "build/downloads/$file"
 done
 gpgv --keyring /usr/share/keyrings/ubuntu-cloudimage-keyring.gpg build/downloads/SHA256SUMS.gpg build/downloads/SHA256SUMS
 python3 - "$root_tar" <<'PY'
@@ -26,7 +26,7 @@ assert len(checks)==1, 'missing or ambiguous signed checksum'
 with (directory/name).open('rb') as f: digest=hashlib.file_digest(f,'sha256').hexdigest()
 assert digest==checks[0], 'Ubuntu root checksum mismatch'
 PY
-curl --fail --location --proto '=https' --tlsv1.2 "https://github.com/actions/runner/releases/download/v$runner/actions-runner-linux-x64-$runner.tar.gz" -o build/downloads/runner.tar.gz
+curl --silent --show-error --fail --retry 3 --connect-timeout 15 --max-time 600 --location --proto '=https' --tlsv1.2 "https://github.com/actions/runner/releases/download/v$runner/actions-runner-linux-x64-$runner.tar.gz" -o build/downloads/runner.tar.gz
 printf '%s  %s\n' "$runner_sha" build/downloads/runner.tar.gz | sha256sum --check
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o build/chickadee-guest ./cmd/chickadee-guest
 xz --decompress --stdout "build/downloads/$root_tar" > build/root.tar
@@ -85,7 +85,9 @@ virt-customize -a build/base.qcow2 \
   --upload guest/network.sh:/usr/local/bin/chickadee-network \
   --upload guest/chickadee-network.service:/etc/systemd/system/chickadee-network.service \
   --upload guest/chickadee-bootstrap.service:/etc/systemd/system/chickadee-bootstrap.service \
-  --run build/provision.sh
+  --upload build/provision.sh:/tmp/chickadee-provision.sh \
+  --run-command 'bash /tmp/chickadee-provision.sh' \
+  --delete /tmp/chickadee-provision.sh
 # Inspect the sole installed kernel, then retain versioned artifacts plus fixed names for QEMU.
 guestfish --ro -a build/base.qcow2 -m /dev/sda download /image-packages.txt images/packages.txt
 kernel=$(guestfish --ro -a build/base.qcow2 -m /dev/sda glob-expand '/boot/vmlinuz-*')
