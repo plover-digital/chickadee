@@ -47,14 +47,10 @@ func bootstrap() error {
 		return e
 	}
 	r := protocol.NewReader(s)
-	f, e := r.Read()
-	if e != nil || f.Type != "HELLO" {
-		return fmt.Errorf("handshake rejected")
-	}
 	if e = protocol.Write(s, protocol.Frame{V: 1, Type: "READY"}); e != nil {
 		return e
 	}
-	f, e = r.Read()
+	f, e := r.Read()
 	if e != nil || f.Type != "CONFIG" {
 		return fmt.Errorf("configuration rejected")
 	}

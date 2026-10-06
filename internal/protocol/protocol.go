@@ -45,7 +45,7 @@ func Validate(f Frame) error {
 		return errors.New("unsupported protocol version")
 	}
 	switch f.Type {
-	case "HELLO", "READY", "ACK", "RUNNING":
+	case "READY", "ACK", "RUNNING":
 		if f.JIT != "" || f.Data != "" || f.Code != 0 {
 			return errors.New("unexpected fields")
 		}

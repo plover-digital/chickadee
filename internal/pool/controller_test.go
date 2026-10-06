@@ -57,12 +57,8 @@ func TestQEMUHelper(t *testing.T) {
 	}
 	defer c.Close()
 	r := protocol.NewReader(c)
-	f, e := r.Read()
-	if e != nil || f.Type != "HELLO" {
-		os.Exit(5)
-	}
 	_ = protocol.Write(c, protocol.Frame{V: 1, Type: "READY"})
-	f, e = r.Read()
+	f, e := r.Read()
 	if e != nil || f.Type != "CONFIG" {
 		os.Exit(6)
 	}

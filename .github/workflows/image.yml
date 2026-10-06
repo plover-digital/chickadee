@@ -22,6 +22,21 @@ jobs:
             python3 curl gpgv ubuntu-keyring xz-utils build-essential
       - name: Build credential-free runner image
         run: make image
+      - name: Check real KVM boot where available
+        run: |
+          if [ ! -r /dev/kvm ] || [ ! -w /dev/kvm ]; then
+            echo 'KVM not available on this builder; perform the boot check on the deployment host.'
+            exit 0
+          fi
+          make build
+          python3 - <<'PY'
+          import json, os
+          c = json.load(open('examples/config.json'))
+          c['image_dir'] = os.path.abspath('images')
+          c['state_dir'] = '/tmp/ck-bootcheck'
+          json.dump(c, open('build/bootcheck.json', 'w'))
+          PY
+          bin/chickadee -boot-check -config build/bootcheck.json
       - name: Archive versioned image artifacts
         run: tar -czf build/chickadee-image.tar.gz -C images .
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

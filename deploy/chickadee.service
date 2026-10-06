@@ -37,6 +37,7 @@ ReadOnlyPaths=/var/lib/chickadee-image
 ReadWritePaths=/var/lib/chickadee
 # Defaults for example config; installer generates a drop-in from configured limits.
 MemoryMax=6G
+MemorySwapMax=0
 CPUQuota=400%
 TasksMax=256
 LimitNOFILE=1024

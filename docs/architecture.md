@@ -10,7 +10,7 @@ capability; the separately reviewed root network setup creates the TAPs and NAT.
 
 1. Create `vms/<random-id>/disk.qcow2` against the immutable base. Start QEMU
    microvm with a versioned host kernel and initrd, fixed vCPU/RAM and the TAP slot.
-2. Connect the private Unix serial socket, send `HELLO`, and await `READY` within
+2. Connect the private Unix serial socket and await `READY` within
    the boot timeout. The root bootstrap has disabled terminal echo and canonical
    input, and owns `/dev/ttyS0`. No getty or kernel console writes to this channel.
    The guest waits indefinitely without GitHub credentials.
@@ -37,7 +37,7 @@ most one matching job and is never reused. There is no snapshot or suspend path.
 
 ## Serial protocol
 
-Every newline-delimited JSON frame has `v: 1` and a fixed `type`. HELLO, READY,
+Every newline-delimited JSON frame has `v: 1` and a fixed `type`. READY,
 ACK and RUNNING carry no fields; CONFIG carries a nonempty base64 `jit`; LOG carries
 base64 `data`; DONE carries an exit `code`. Unknown versions, types, fields, trailing
 JSON, oversized frames and invalid payloads are rejected without logging raw input.
@@ -46,8 +46,9 @@ saved diagnostics to 8 MiB including framing. ACK has a 15-second deadline; the
 subsequent runner/status stream has a fixed total job deadline, never reset by
 messages. Host pool state validates ordering independently of the decoder.
 
-HELLO solves connection timing: QEMU's wait=off UART can boot before the controller
-connects; bootstrap waits for the host probe and sends READY once. There is no
+QEMU's serial socket uses `wait=on`: the host connects before the guest boots.
+Bootstrap disables terminal echo, sends READY once, and waits for configuration.
+This avoids losing initial bytes during UART/TTY initialization. There is no
 unbounded console parsing or repeating READY stream in the warm pool. Guest status
 is advisory and cannot mark a spent VM reusable. Runner exit code is an infrastructure
 signal; inspect GitHub for the authoritative workflow job result.
@@ -62,9 +63,12 @@ Abrupt crashes, timeouts and a full guest disk can prevent guest log export.
 ## Restart and cleanup
 
 A filesystem lock prevents concurrent controllers using the same state directory.
-Systemd kills the service cgroup; QEMU also has a parent-death SIGKILL. Before
+Systemd kills the service cgroup; QEMU also has a parent-death SIGKILL. Linux
+parent-death signaling follows the creating OS thread; the systemd cgroup remains
+the primary shutdown boundary. Before
 starting the pool, recovery scans `/proc` for QEMU executables using the owned
-overlay directory and uses pidfds to avoid killing a reused PID. It confirms exit
+overlay directory and uses pidfds to avoid killing a reused PID. It polls the pidfd to confirm that
+all process threads have exited
 before deleting old VM directories. If exit cannot be confirmed, it retains disks
 and fails closed. Other VM managers' processes are not intentionally matched.
 
@@ -88,7 +92,7 @@ ownership by forcibly resetting another listener.
 
 Guest vCPUs and memory are fixed QEMU arguments. Each overlay's virtual size equals
 the built filesystem size; a per-QEMU file-size rlimit caps its physical file at
-that size plus 1 GiB for metadata. The generated systemd drop-in caps aggregate
+that size plus 1 GiB for metadata. The service disables swap. The generated systemd drop-in caps aggregate
 CPU time, memory (including QEMU overhead) and process/task count. These are bounds
 for this service, not a reservation against other host workloads. CPU limits do
 not account for all host kernel networking work caused by guests. A dedicated
@@ -121,3 +125,9 @@ secure erase or offline filesystem forensic recovery are included. Auto-update i
 disabled; rebuild with reviewed new runner/kernel/Ubuntu pins. GitHub may stop
 assigning jobs if the runner is outdated; follow its
 [runner update policy](https://docs.github.com/en/actions/reference/runners/self-hosted-runners#runner-software-updates-on-self-hosted-runners).
+
+QEMU and the controller currently share a host UID. They do not share host files
+with the guest, but a successful escape into QEMU could read the App key or other
+VM state. Seccomp does not provide a per-VM filesystem boundary. Stronger UID,
+namespace and MAC isolation, plus per-VM host resource control, must precede a
+managed-service security claim. See the [Exa primary-source audit](research-audit.md).

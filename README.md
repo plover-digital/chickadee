@@ -30,7 +30,7 @@ journal are local. One controller and one dedicated scale set own the installati
 ```mermaid
 flowchart LR
   GH[GitHub scale set] -->|demand statistics| C[Go controller]
-  C -->|HELLO / READY| W[Warm microvm: no credentials]
+  C -->|READY over serial| W[Warm microvm: no credentials]
   C -->|fresh one-runner JIT over serial| R[Reserved microvm]
   R -->|outbound NAT| GH
   R -->|one job, diagnostics, DONE| C
@@ -56,3 +56,7 @@ a future managed offering can operate the same public components.
 For the smallest automatic loop, install once and opt into the
 [push-to-build-and-test workflow](docs/push-to-test.md). Each trusted push then
 requests a fresh job VM through GitHub's scale-set queue.
+
+The [Exa primary-source audit](docs/research-audit.md) tracks design guidance and
+remaining security gaps. The [plover-digital organization profile](docs/plover-digital.md)
+documents our pilot without including credentials or private host details.

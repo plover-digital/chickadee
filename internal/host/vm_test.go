@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -70,5 +71,30 @@ func TestJournalIntentSurvivesWithoutPIDOrRunnerID(t *testing.T) {
 	}
 	if e = Save(dir, r); e == nil {
 		t.Fatal("intent overwritten")
+	}
+}
+
+func TestPIDFDWaitsForRealProcessExit(t *testing.T) {
+	cmd := exec.Command("sleep", "30")
+	if e := cmd.Start(); e != nil {
+		t.Fatal(e)
+	}
+	defer func() { _ = cmd.Process.Kill(); _ = cmd.Wait() }()
+	fd, _, errno := syscall.Syscall(434, uintptr(cmd.Process.Pid), 0, 0)
+	if errno == syscall.EPERM || errno == syscall.ENOSYS {
+		t.Skipf("pidfd unavailable: %v", errno)
+	}
+	if errno != 0 {
+		t.Fatal(errno)
+	}
+	defer syscall.Close(int(fd))
+	if waitPIDFD(int(fd), 20*time.Millisecond) == nil {
+		t.Fatal("reported a live process exited")
+	}
+	if e := cmd.Process.Kill(); e != nil {
+		t.Fatal(e)
+	}
+	if e := waitPIDFD(int(fd), time.Second); e != nil {
+		t.Fatal(e)
 	}
 }

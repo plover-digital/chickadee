@@ -37,7 +37,16 @@ func NewID() string {
 	}
 	return hex.EncodeToString(b[:])
 }
-func Start(ctx context.Context, c config.Config, slot int, id string) (v *VM, err error) {
+func Start(ctx context.Context, c config.Config, slot int, id string) (*VM, error) {
+	return start(ctx, c, slot, id, false)
+}
+
+// StartBootCheck exercises the same boot/serial/disk path with guest networking blocked.
+// It cannot deliver GitHub credentials or require host TAP/firewall changes.
+func StartBootCheck(ctx context.Context, c config.Config, slot int, id string) (*VM, error) {
+	return start(ctx, c, slot, id, true)
+}
+func start(ctx context.Context, c config.Config, slot int, id string, offline bool) (v *VM, err error) {
 	v = &VM{ID: id, Slot: slot, Dir: filepath.Join(c.StateDir, "vms", id), exited: make(chan struct{})}
 	if err = os.MkdirAll(v.Dir, 0700); err != nil {
 		return v, err
@@ -49,6 +58,10 @@ func Start(ctx context.Context, c config.Config, slot int, id string) (v *VM, er
 		return v, fmt.Errorf("overlay creation failed")
 	}
 	sock := filepath.Join(v.Dir, "serial.sock")
+	netdev := fmt.Sprintf("tap,id=net,ifname=ck%02d,script=no,downscript=no", slot)
+	if offline {
+		netdev = "user,id=net,restrict=on"
+	}
 	args := []string{"--fsize=" + strconv.FormatInt(int64(c.DiskGiB+1)<<30, 10) + ":" + strconv.FormatInt(int64(c.DiskGiB+1)<<30, 10), "--", "qemu-system-x86_64",
 		"-name", "chickadee-" + id, "-machine", "microvm,isa-serial=on,auto-kernel-cmdline=on", "-enable-kvm", "-cpu", "host", "-smp", strconv.Itoa(c.CPUs), "-m", strconv.Itoa(c.MemoryMiB),
 		"-object", "rng-random,id=rng,filename=/dev/urandom", "-device", "virtio-rng-device,rng=rng",
@@ -57,8 +70,8 @@ func Start(ctx context.Context, c config.Config, slot int, id string) (v *VM, er
 		"-kernel", filepath.Join(c.ImageDir, "vmlinuz"), "-initrd", filepath.Join(c.ImageDir, "initrd"),
 		"-append", fmt.Sprintf("root=LABEL=chickadee rw console=tty0 quiet panic=1 reboot=t net.ifnames=0 ck.slot=%d", slot),
 		"-drive", "if=none,id=root,format=qcow2,file=" + disk, "-device", "virtio-blk-device,drive=root",
-		"-netdev", fmt.Sprintf("tap,id=net,ifname=ck%02d,script=no,downscript=no", slot), "-device", "virtio-net-device,netdev=net",
-		"-chardev", "socket,id=bootstrap,path=" + sock + ",server=on,wait=off", "-serial", "chardev:bootstrap"}
+		"-netdev", netdev, "-device", "virtio-net-device,netdev=net",
+		"-chardev", "socket,id=bootstrap,path=" + sock + ",server=on,wait=on", "-serial", "chardev:bootstrap"}
 	v.cmd = exec.Command("prlimit", args...)
 	v.cmd.SysProcAttr = &syscall.SysProcAttr{Pdeathsig: syscall.SIGKILL}
 	// Never forward untrusted guest console or QEMU arguments to journald.
@@ -100,9 +113,6 @@ func Start(ctx context.Context, c config.Config, slot int, id string) (v *VM, er
 	}
 	_ = v.Conn.SetDeadline(deadline)
 	v.Reader = protocol.NewReader(v.Conn)
-	if e := protocol.Write(v.Conn, protocol.Frame{V: 1, Type: "HELLO"}); e != nil {
-		return v, fmt.Errorf("serial handshake failed")
-	}
 	f, e := v.Reader.Read()
 	if e != nil || f.Type != "READY" {
 		return v, fmt.Errorf("guest did not send READY")

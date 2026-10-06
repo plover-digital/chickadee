@@ -35,7 +35,8 @@ silently turn this prototype into a shared hostile multi-tenant service.
 
 Before charging for a reliability/isolation promise, publish the proposed service
 boundaries, threat model, data retention, capacity limits and operational testing.
-Billing, tenant authentication, stronger VM sandboxing, fleet scheduling, upgrades,
+Billing, tenant authentication, separate App-key/QEMU identities, per-VM filesystem/process isolation and
+resource cgroups, stronger VM sandboxing, fleet scheduling, upgrades,
 incident response and service-level guarantees are separate future work. They do
 not belong in the first one-host vertical slice. Shared caches, dashboards,
 multiple images, snapshot cloning, multi-host scheduling and HA remain deferred.

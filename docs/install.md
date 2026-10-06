@@ -169,3 +169,25 @@ or deployment secret and does not change your host. Review the commit and succes
 workflow before using its artifact; extract it into `images/`, verify `SHA256SUMS`,
 and retain its provenance. This is a development artifact, not a signed release
 or proof of a real-job deployment. Building locally remains the reference path.
+
+## Check boot and destruction before configuring GitHub
+
+On a KVM-capable host, use a separate scratch state directory to verify two real
+independent boots reach READY and each QEMU/disk is destroyed. This mode does not
+contact GitHub, read the App key, send JIT, create TAPs or change the host firewall.
+Guest networking is blocked by QEMU's restricted user network. It does not prove
+production NAT or real job execution.
+
+```sh
+mkdir -p build
+python3 - <<'PY'
+import json, os
+c = json.load(open('examples/config.json'))
+c['image_dir'] = os.path.abspath('images')
+c['state_dir'] = '/tmp/ck-bootcheck'
+json.dump(c, open('build/bootcheck.json', 'w'))
+PY
+bin/chickadee -boot-check -config build/bootcheck.json
+```
+
+If boot fails, inspect private QEMU diagnostics in the scratch `logs/` directory.
