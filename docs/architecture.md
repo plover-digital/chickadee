@@ -1,9 +1,12 @@
 # Architecture and trust model
 
-The controller owns one dedicated GitHub runner scale set and one local image
-profile. A single event loop owns pool state. One worker per VM owns its process,
+One controller owns a single host’s runner catalog and authorized GitHub
+organization/repository scopes. Each scope and label has its own GitHub runner
+scale set. One event loop owns the shared VM pool and host resource budgets.
+One worker per VM owns its process,
 serial socket and disk. QEMU runs as an unprivileged service user, with KVM and
-an existing TAP interface. Hypervisor subprocesses receive a minimal PATH/locale environment rather than
+an existing TAP interface. Hypervisor subprocesses receive a minimal PATH/locale
+environment rather than
 inheriting controller credentials. The controller needs no network administration
 capability; the separately reviewed root network setup creates the TAPs and NAT.
 
@@ -23,7 +26,9 @@ capability; the separately reviewed root network setup creates the TAPs and NAT.
    containing its unique runner name. Ask GitHub for fresh JIT configuration.
    Do not persist or log the JIT string. Even failure before delivery retires the VM.
 5. Send `CONFIG`, await `ACK`, then `RUNNING`. Bootstrap invokes `Runner.Listener
-   run --jitconfig ...` as UID/GID 1000, without sudo or host mounts. Scale-set JIT
+   run --jitconfig ...` as UID/GID 1000, without host mounts. Developer images
+   allow passwordless sudo **inside that disposable guest**; this grants no host
+   sudo access. Scale-set JIT
    registrations are ephemeral, so the listener exits after at most one job.
 6. Preserve bounded runner diagnostics as private serial LOG chunks; accept DONE
    or retire on timeout, EOF, malformed messages or VM exit. Kill QEMU, wait for
@@ -74,8 +79,9 @@ all process threads have exited
 before deleting old VM directories. If exit cannot be confirmed, it retains disks
 and fails closed. Other VM managers' processes are not intentionally matched.
 
-Registration intents bind to the GitHub URL, runner group and scale-set name;
-changing these settings fails closed before old state is discarded. Intents are
+Registration intents bind to the GitHub URL, installation, runner group and
+scale-set name. Recovery uses that recorded identity, including removed scopes;
+incomplete or conflicting identities fail closed before old state is discarded. Intents are
 fsynced **before** a JIT API request, so a lost response
 can be reconciled by runner name without having its ID. Only registrations in the
 configured scale set are removed. Removal errors retain the intent and are retried.
@@ -113,19 +119,29 @@ DNS misuse or traffic abuse. Existing firewall chains can still block valid traf
 
 ## Intended trust and limitations
 
-The operator, host kernel, QEMU, signed Ubuntu inputs, runner release and controller
-are trusted. Guests and serial messages are treated as untrusted. VM isolation
+The operator, host kernel, QEMU, signed Ubuntu/Rocky package inputs, verified
+tool archives, runner release and controller are trusted. Guests and serial messages are treated as untrusted. VM isolation
 reduces cross-job persistence; it does not make this prototype a hardened hostile
 multitenant service. QEMU/KVM escapes, side channels, disk snapshots/backups,
 privileged host users and storage exhaustion remain relevant. Use it for trusted
 repositories and reviewed workflows. Publishing this source repository does not
 mean its runners should accept arbitrary public pull requests.
 
-The image has Git, curl and build-essential for Go race tests, but no Docker or
-preinstalled Go/language toolchain bundles. Container
-jobs, Docker actions, service containers and sudo-dependent workflows are unsupported.
-No shared caches, multi-host coordination, multiple profiles, dashboard, HA,
-secure erase or offline filesystem forensic recovery are included. Auto-update is
+Image capabilities depend on the selected immutable revision. Ubuntu developer
+images include verified language tool caches, passwordless guest sudo and a
+**guest-local** Docker daemon, Compose and Buildx. Docker jobs/actions/service
+containers use that guest’s socket; no host socket is shared. Rocky 10.2 provides
+a native developer baseline and Podman, with Docker-engine/Compose/Buildx and
+other tool inventory gaps. These are not complete GitHub-hosted image replicas;
+see the [image compatibility audit](image-compatibility.md) and
+[Ubuntu 26.04 notes](ubuntu-2604.md).
+
+The optional website supplies GitHub App login, approved-beta queue selection
+and bounded usage graphs. One host can serve several scopes and image/resource
+profiles. Shared customer caches, multi-host coordination, HA, secure erase and
+offline filesystem forensic recovery remain unimplemented. See the
+[multi-host proposal](multi-host.md) before adding another worker to the same
+queues. Auto-update is
 disabled; rebuild with reviewed new runner/kernel/Ubuntu pins. GitHub may stop
 assigning jobs if the runner is outdated; follow its
 [runner update policy](https://docs.github.com/en/actions/reference/runners/self-hosted-runners#runner-software-updates-on-self-hosted-runners).
@@ -142,6 +158,15 @@ A catalog resolves image identity, machine type and resource class before worker
 creation. `chickadee` is a normal default profile; explicit size/OS-version labels
 have independent scale sets. One actor tracks all VMs and TAP slots under shared
 VM/vCPU/RAM limits. Retiring guests hold capacity until cleanup succeeds.
-Credential-free warm guests can be retired to admit demand on another queue;
-credentialed guests are never reused or evicted for that reason. See
+A credential-free READY guest can serve another scope/label with the exact
+same image and resource profile; reservation gives it fresh scope-specific JIT
+configuration. Incompatible warm guests can be retired to admit another queue.
+Credentialed guests are never reused or evicted for that reason. See
 [profiles](profiles.md) for queue fairness, budgets and recovery.
+
+
+Scope additions, removals and queue selections can use acknowledged `SIGHUP`
+reload without restarting running job VMs. Image/resource definitions and global
+host limits still require a controlled restart. The optional managed bridge
+verifies GitHub access and applies approved selections; installing the App alone
+does not grant compute. See [managed beta](managed-beta.md).

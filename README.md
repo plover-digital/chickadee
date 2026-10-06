@@ -26,10 +26,12 @@ No repository publication or network changes are performed by building or testin
 
 The host uses the official [actions/scaleset Go client](https://github.com/actions/scaleset/tree/v0.4.0)
 for GitHub App authentication, demand polling, acquisition, and JIT configuration.
-The controller uses no Kubernetes, database, webhook receiver, Docker daemon,
-snapshot, or VM suspension. Storage, serial sockets, logs, and the ownership
-journal are local. One controller owns all profiles, with a scale set per workflow
-label and shared host resource limits. Legacy single-profile config still works.
+The host controller uses no Kubernetes, database, webhook receiver, host Docker
+daemon, snapshot or VM suspension. Storage, serial sockets, logs, and the ownership
+journal are local. One controller owns all profiles/scopes, with a scale set
+per GitHub scope and workflow label and shared host resource limits. Ubuntu
+developer guests include their own Docker daemon; no host Docker socket is
+shared. Legacy single-profile config still works.
 
 ```mermaid
 flowchart LR
@@ -57,7 +59,7 @@ repository after its pool is installed.
 Development is open and commercially usable under [MIT](LICENSE). See
 [contributing](CONTRIBUTING.md), the [public roadmap](docs/roadmap.md), and
 [security status](SECURITY.md). Self-hosting has no dependency on a hosted service;
-a future managed offering can operate the same public components.
+the approved hosted beta operates the same public components.
 
 For the smallest automatic loop, install once and opt into the
 [push-to-build-and-test workflow](docs/push-to-test.md). Each trusted push then
@@ -77,5 +79,8 @@ Rocky 9.8 remains tracked work. The [provider comparison](docs/runner-platform-r
 and [design rationale](docs/selection-design.md) explain the model.
 
 An optional [GitHub App onboarding site](docs/onboarding-site.md) provides
-sign-in, selected-repository installation and approved-beta activation requests.
+sign-in, selected-repository installation, approved-beta opt-in queue activation
+and usage graphs. Supported queue updates do not restart running job VMs.
 It is separate from the runner controller; self-hosting does not require it.
+Multi-host scheduling is planned, not implemented; see the
+[multi-host proposal](docs/multi-host.md).

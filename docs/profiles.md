@@ -22,8 +22,9 @@ manifest. GitHub selects any matching job; queue demand is not job affinity.
 
 ## Budgets and warm capacity
 
-Each profile has its own scale set, assigned-demand stream, maximum and warm
-target. All use one state lock, one actor, shared TAP slots and aggregate VM,
+Each scope/label has its own scale set, assigned-demand stream, maximum and
+warm target. Compatible credential-free READY guests can be reserved across
+scopes using the same image/resources; JIT remains scoped to the reservation. All use one state lock, one actor, shared TAP slots and aggregate VM,
 vCPU and guest RAM limits. Booting, ready, spent and retiring guests all count
 until exit and disk cleanup. Per-profile maxima do not reserve capacity.
 
@@ -60,7 +61,7 @@ kernels; Ubuntu 24.04 retains QEMU microvm. All boot directly with a versioned
 kernel/initrd and use private serial control, KVM, fresh qcow2 overlays and
 one-job cleanup. A comparative microvm investigation is deferred. Image revision paths are immutable;
 never replace a base with overlays still in existence. There are no workflow
-image URLs, guest access to host writable paths, snapshots or hot reload.
+image URLs, guest access to host writable paths, snapshots or hot image reload.
 
 Install with `sudo scripts/install.sh config.json` after admitting all bundles.
 For upgrades, wait for jobs to finish, stop the service, keep the private journal,
@@ -71,8 +72,9 @@ shared. Do not clear the journal to resolve scope errors.
 
 On restart, the controller reaps owned QEMU processes before disk deletion and
 recovers journaled registrations even if their profile was removed or renamed.
-Historical scale sets are looked up for cleanup and are not recreated. Changing
-GitHub scope/group still fails closed. Removed scale-set definitions themselves
+Historical scale sets are looked up for cleanup and are not recreated. Recovery
+fails closed if the recorded registration identity cannot be safely resolved.
+Removed scale-set definitions themselves
 are not automatically deleted; the operator can retire them after registrations
 and journal grace periods are reconciled.
 
@@ -84,3 +86,10 @@ cleanup-before-TAP-reuse and removed-profile recovery. Actual image support
 requires a real READY boot and one-job/cleanup/replacement validation. See the
 release validation log for deployed evidence; catalog support alone is not proof
 that every OS release has a validated image builder.
+
+
+Scope/queue admission supports acknowledged `SIGHUP` reload; image/resource and
+host-limit changes follow the controlled restart procedure above. The optional
+[managed bridge](managed-beta.md) applies supported opt-in queues automatically
+for approved accounts. This is still one host, not a fleet scheduler. See the
+[multi-host proposal](multi-host.md) for the second-host design.
