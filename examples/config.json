@@ -1,0 +1,17 @@
+{
+  "github_url": "https://github.com/YOUR-ORG/YOUR-REPO",
+  "app_client_id": "YOUR-APP-CLIENT-ID",
+  "app_installation_id": 123456,
+  "app_key_file": "/etc/chickadee/app.pem",
+  "scale_set": "chickadee",
+  "runner_group_id": 1,
+  "warm_pool": 1,
+  "max_vms": 2,
+  "cpus": 2,
+  "memory_mib": 2048,
+  "disk_gib": 16,
+  "boot_timeout_seconds": 120,
+  "job_timeout_seconds": 3600,
+  "state_dir": "/var/lib/chickadee",
+  "image_dir": "/var/lib/chickadee-image"
+}
