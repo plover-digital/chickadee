@@ -160,3 +160,12 @@ set through GitHub administration after checking it has no active runners,
 revoke/uninstall the App as appropriate, and deliberately delete retained local
 artifacts after confirming no owned QEMU processes remain. Do not delete state
 before runner reconciliation; the ownership journal is required for cleanup.
+
+## Optional public image-build workflow
+
+The manual `Build runner image` workflow runs the same `make image` recipe on
+GitHub-hosted Ubuntu 24.04 and saves a short-lived artifact. It needs no App key
+or deployment secret and does not change your host. Review the commit and successful
+workflow before using its artifact; extract it into `images/`, verify `SHA256SUMS`,
+and retain its provenance. This is a development artifact, not a signed release
+or proof of a real-job deployment. Building locally remains the reference path.
