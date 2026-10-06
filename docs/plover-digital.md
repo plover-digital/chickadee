@@ -8,7 +8,9 @@ of Git. The generic example remains usable by any organization or repository.
 
 ## Organization-side prerequisites
 
-1. Create/install an organization-owned GitHub App with **Organization permissions:
+1. Run `python3 scripts/setup-app.py --org plover-digital --name chickadee-plover-digital`
+   and approve App creation/installation in your administrator browser. Alternatively,
+   create/install an organization-owned GitHub App with **Organization permissions:
    Self-hosted runners read/write**. Record its client ID and installation ID, and
    store its private key locally as described in the install guide. No PAT is
    substituted into the guest or controller.

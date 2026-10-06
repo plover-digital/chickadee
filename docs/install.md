@@ -73,6 +73,33 @@ image set, stop the controller, reconcile state, and replace the whole set.
 
 ## GitHub App
 
+For organization scope, the optional local helper prefills the minimum App
+permissions and saves the generated key directly outside the checkout:
+
+```sh
+python3 scripts/setup-app.py --org YOUR_ORG
+```
+
+Open the printed localhost URL in a browser signed in as an organization
+administrator, click **Create GitHub App**, then follow the installation link.
+The helper detects the installation and writes `app.pem` (0600) and `app.json`
+inside `~/.config/chickadee` (0700). It does not request a PAT, OAuth user access,
+webhooks, or repository contents permissions. IDs and key path are collected
+locally; never paste the key into chat or GitHub. App setup uses GitHub's official
+[manifest flow](https://docs.github.com/en/apps/sharing-github-apps/registering-a-github-app-from-a-manifest).
+The App is private to its owner; the source repository remains public.
+
+If the browser is on another machine, forward the local port to the build host
+first, for example `ssh -L 18734:127.0.0.1:18734 YOUR_HOST`, then open the printed
+URL in your local browser. The helper binds only to 127.0.0.1 and exits after
+verified installation or 30 minutes. If interrupted after creating the App, keep
+the generated files and install that same App through GitHub's App settings;
+do not create a duplicate just to recover its installation ID. A failed setup
+may retain the key and initial metadata for recovery. It never overwrites existing
+credentials. The IDs are private local configuration, not inputs to commit.
+
+For manual setup or repository scope, follow these steps instead:
+
 Create and install an organization-owned GitHub App for the intended scope.
 Disable webhooks; chickadee polls. Repository scope needs Administration read/write
 and Metadata read-only. Organization scope needs Self-hosted runners read/write;
