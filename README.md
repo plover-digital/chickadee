@@ -47,8 +47,9 @@ ambiguous failure destroys that VM. Guest messages never authorize reuse.
 
 See [architecture and trust model](docs/architecture.md),
 [troubleshooting](docs/troubleshooting.md), and the manual
-[two-job smoke workflow](examples/smoke.yml). The smoke workflow lives outside
-`.github/workflows` until you deliberately install it in a target repository.
+[two-job smoke workflow](examples/smoke.yml). A manual smoke workflow is installed for the plover-digital pilot; it runs only
+on deliberate dispatch. The portable example can be copied into another target
+repository after its pool is installed.
 
 Development is open and commercially usable under [MIT](LICENSE). See
 [contributing](CONTRIBUTING.md), the [public roadmap](docs/roadmap.md), and

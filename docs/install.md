@@ -150,6 +150,17 @@ a **host networking change**. The command creates 32 persistent TAP slots, route
 forwarding. Check for address-space collisions. Use an actual public egress
 interface in place of `YOUR_WAN_INTERFACE`:
 
+Check the generated filtering/NAT rules before applying them:
+
+```sh
+sudo ./scripts/network.sh plan YOUR_WAN_INTERFACE
+```
+
+`plan` runs nftables' kernel validation and prints the exact rules used by `apply`.
+It does not create TAPs, change forwarding, or install firewall rules. It cannot
+prove that an existing firewall will permit guest forwarding; review that
+integration separately.
+
 ```sh
 sudo /usr/local/lib/chickadee/network.sh apply YOUR_WAN_INTERFACE
 sudo systemctl enable --now chickadee-network.service

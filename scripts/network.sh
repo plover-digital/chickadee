@@ -3,20 +3,9 @@
 set -euo pipefail
 [[ $EUID == 0 ]] || { echo 'Run as root.' >&2; exit 1; }
 action=${1:-}
-case "$action" in
-apply)
-  wan=${2:?Usage: network.sh apply WAN_INTERFACE}
-  [[ $wan =~ ^[a-zA-Z0-9_.:-]+$ && $wan != ck* ]]
-  ip link show "$wan" >/dev/null
-  [[ ! -e /etc/chickadee/network-owned ]] || { echo 'Network already configured.' >&2; exit 1; }
-  # Refuse collisions before applying anything.
-  if nft list table inet chickadee >/dev/null 2>&1 || nft list table ip chickadee_nat >/dev/null 2>&1; then echo 'Owned table name collision.' >&2; exit 1; fi
-  for slot in $(seq 1 32); do printf -v tap 'ck%02d' "$slot"; if ip link show "$tap" >/dev/null 2>&1; then echo "Interface collision: $tap" >&2; exit 1; fi; done
-  old_forward=$(sysctl -n net.ipv4.ip_forward)
-  mkdir -p /etc/chickadee
-  rules=$(mktemp)
-  trap 'rm -f "$rules"' EXIT
-  cat > "$rules" <<RULES
+render_rules() {
+  local wan=$1 slot tap
+  cat <<RULES
 table inet chickadee {
  chain input { type filter hook input priority -10; policy accept; iifname "ck*" drop; }
  chain forward { type filter hook forward priority -10; policy accept;
@@ -28,9 +17,9 @@ table inet chickadee {
 RULES
   for slot in $(seq 1 32); do
     printf -v tap 'ck%02d' "$slot"
-    printf '  iifname "%s" ip saddr != 10.203.%s.2 drop\n' "$tap" "$slot" >> "$rules"
+    printf '  iifname "%s" ip saddr != 10.203.%s.2 drop\n' "$tap" "$slot"
   done
-  cat >> "$rules" <<RULES
+  cat <<RULES
   iifname "ck*" oifname "$wan" accept
   iifname "ck*" drop
   oifname "ck*" ct state established,related accept
@@ -43,6 +32,32 @@ table ip chickadee_nat {
  }
 }
 RULES
+}
+case "$action" in
+plan)
+  wan=${2:?Usage: network.sh plan WAN_INTERFACE}
+  [[ $wan =~ ^[a-zA-Z0-9_.:-]+$ && $wan != ck* ]]
+  ip link show "$wan" >/dev/null
+  rules=$(mktemp)
+  trap 'rm -f "$rules"' EXIT
+  render_rules "$wan" > "$rules"
+  nft --check --file "$rules"
+  cat "$rules"
+  echo 'Plan checked; no interfaces, forwarding settings, or firewall rules changed.' >&2
+  ;;
+apply)
+  wan=${2:?Usage: network.sh apply WAN_INTERFACE}
+  [[ $wan =~ ^[a-zA-Z0-9_.:-]+$ && $wan != ck* ]]
+  ip link show "$wan" >/dev/null
+  [[ ! -e /etc/chickadee/network-owned ]] || { echo 'Network already configured.' >&2; exit 1; }
+  # Refuse collisions before applying anything.
+  if nft list table inet chickadee >/dev/null 2>&1 || nft list table ip chickadee_nat >/dev/null 2>&1; then echo 'Owned table name collision.' >&2; exit 1; fi
+  for slot in $(seq 1 32); do printf -v tap 'ck%02d' "$slot"; if ip link show "$tap" >/dev/null 2>&1; then echo "Interface collision: $tap" >&2; exit 1; fi; done
+  old_forward=$(sysctl -n net.ipv4.ip_forward)
+  mkdir -p /etc/chickadee
+  rules=$(mktemp)
+  trap 'rm -f "$rules"' EXIT
+  render_rules "$wan" > "$rules"
   nft --check --file "$rules"
   # Install filtering BEFORE making TAPs usable. Keep a marker for partial failures.
   printf '%s\n' "$old_forward" > /etc/chickadee/network-owned
@@ -82,5 +97,5 @@ remove)
   sysctl -w "net.ipv4.ip_forward=$old_forward"
   rm -f /etc/sysctl.d/90-chickadee.conf /etc/chickadee/network-owned /etc/chickadee/network.nft
   ;;
-*) echo 'Usage: network.sh apply WAN_INTERFACE | restore | remove' >&2; exit 1;;
+*) echo 'Usage: network.sh plan WAN_INTERFACE | apply WAN_INTERFACE | restore | remove' >&2; exit 1;;
 esac
