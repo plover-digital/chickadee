@@ -2,7 +2,7 @@
 """Download verified inputs on the builder, or install them in an offline guest.
 
 Use --download DIR outside the guest, then --install DIR inside its mounted
-Ubuntu 24.04 root. The install command is not intended for the deployment host.
+Ubuntu root selected by the lock. The install command is not for the host.
 """
 import argparse
 import hashlib
@@ -50,7 +50,11 @@ def main():
             finally:
                 temporary.unlink(missing_ok=True)
         return
-    subprocess.run(['bash', '-c', '. /etc/os-release; test "$ID:$VERSION_ID" = ubuntu:24.04'], check=True)
+    expected_version = lock.get('os_version', '24.04')
+    if expected_version not in ('24.04', '26.04'):
+        raise ValueError('unsupported Ubuntu version in tool lock')
+    subprocess.run(['bash', '-c', '. /etc/os-release; test "$ID:$VERSION_ID" = "ubuntu:$1"',
+                    'chickadee-extra-tools', expected_version], check=True)
     # Check every input before changing the image, including archives already cached.
     for tool in lock['tools']:
         verify(args.install / tool['filename'], tool)
@@ -90,7 +94,7 @@ def main():
             shutil.rmtree(staging)
         elif tool['name'] == 'rustup':
             archive.chmod(0o755)
-            environment = dict(__import__('os').environ, CARGO_HOME='/opt/cargo', RUSTUP_HOME='/opt/rustup')
+            environment = dict(__import__('os').environ, HOME='/root', CARGO_HOME='/opt/cargo', RUSTUP_HOME='/opt/rustup')
             subprocess.run([str(archive), '-y', '--no-modify-path', '--default-toolchain', 'none'], env=environment, check=True)
             subprocess.run(['/opt/cargo/bin/rustup', 'toolchain', 'link', 'chickadee', '/opt/rust'], env=environment, check=True)
             subprocess.run(['/opt/cargo/bin/rustup', 'default', 'chickadee'], env=environment, check=True)
@@ -117,7 +121,8 @@ def main():
         symlink('/usr/local/bin/dotnet', '/usr/share/dotnet/dotnet')
         subprocess.run(['/usr/local/bin/dotnet', '--list-sdks'], check=True)
     for command in [['/usr/local/bin/rustc', '--version'], ['/usr/local/bin/cargo', '--version'], ['/usr/local/bin/firefox', '--headless', '--version'], ['/usr/bin/google-chrome', '--version'], ['/usr/local/bin/geckodriver', '--version']]:
-        subprocess.run(command, check=True)
+        environment = dict(__import__('os').environ, HOME='/root', CARGO_HOME='/opt/cargo', RUSTUP_HOME='/opt/rustup')
+        subprocess.run(command, env=environment, check=True)
     env = pathlib.Path('/etc/chickadee/runner.env')
     with env.open('a') as f:
         f.write('DOTNET_ROOT=/usr/share/dotnet\nDOTNET_MULTILEVEL_LOOKUP=0\nDOTNET_NOLOGO=1\nDOTNET_CLI_TELEMETRY_OPTOUT=1\nCARGO_HOME=/opt/cargo\nRUSTUP_HOME=/opt/rustup\nGECKOWEBDRIVER=/usr/local/share/gecko_driver\n')

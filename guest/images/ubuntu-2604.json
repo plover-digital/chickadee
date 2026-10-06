@@ -1,0 +1,17 @@
+{
+  "os_version": "26.04",
+  "release": "20260927",
+  "snapshot": "20260930T000000Z",
+  "root_filename": "ubuntu-26.04-server-cloudimg-amd64-root.tar.xz",
+  "root_sha256": "ccd08a7a76cdc69034dd2682b4913bdd051cb71ad87d0b66689015aa068e61c8",
+  "signing_fingerprint": "D2EB44626FDDC30B513D5BB71A5D6C4C7DB87C81",
+  "runner_version": "2.337.0",
+  "runner_sha256": "70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613",
+  "upstream_commit": "5f7588b285eccc2edbeb1cd79d65ee0b577e4b4a",
+  "upstream_image_version": "20260927.149.1",
+  "minimal_packages": [
+    "linux-image-generic", "initramfs-tools", "ca-certificates", "git", "curl",
+    "build-essential", "iproute2", "libicu78", "libssl3t64", "zlib1g",
+    "libkrb5-3", "liblttng-ust1t64", "unzip", "zip", "zstd", "sudo", "jq", "python3"
+  ]
+}
