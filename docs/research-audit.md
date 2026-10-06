@@ -95,3 +95,8 @@ The third build reached guest provisioning, confirming both appliance fixes.
 It exposed that virt-customize's `--run` path invoked `/bin/sh`, ignoring our Bash
 shebang and rejecting `pipefail`. Provisioning now uploads the script and explicitly
 invokes Bash via `--run-command`, then removes the script from the image.
+
+Provisioning then exposed the rootfs's unresolved systemd-resolved stub during
+offline customization. The provisioning script now uses the appliance's SLIRP
+DNS proxy before apt and restores production DNS configuration before finishing.
+APT index updates fail on any error instead of silently accepting partial indexes.

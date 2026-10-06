@@ -44,9 +44,13 @@ cat > build/provision.sh <<PROVISION
 #!/bin/bash
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
+# The image's systemd-resolved stub is not running during offline customization.
+# SLIRP's appliance DNS proxy forwards through the builder's real resolver.
+rm -f /etc/resolv.conf
+printf 'nameserver 169.254.2.3\n' > /etc/resolv.conf
 rm -f /etc/apt/sources.list /etc/apt/sources.list.d/*
 printf '%s\n' 'deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/$snapshot noble main universe' 'deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/$snapshot noble-updates main universe' 'deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/$snapshot noble-security main universe' > /etc/apt/sources.list
-apt-get update
+apt-get -o Acquire::Retries=3 -o APT::Update::Error-Mode=any update
 apt-get install -y --no-install-recommends linux-image-generic initramfs-tools ca-certificates git curl build-essential iproute2 libicu74 libssl3t64 zlib1g libkrb5-3 liblttng-ust1t64
 # The imported root tar has no VM partition table or bootloader requirement.
 e2label /dev/sda chickadee
