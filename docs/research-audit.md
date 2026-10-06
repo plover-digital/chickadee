@@ -123,3 +123,11 @@ the pinned client. Two further KVM boots under the installed unprivileged system
 sandbox passed after correcting preserved image-directory permissions. The
 non-mutating network plan also passed kernel validation. Real JIT/job execution
 and packet-level network isolation remain pending; see [validation](validation.md).
+
+The real two-job smoke and automatic main-push build/test runs now passed, including
+process/disk retirement, preserved private diagnostics, and unregistered warm
+replacement. Idle warm-VM failure and abrupt controller-crash recovery were also
+checked. The deployed group allowlist is restricted to the pilot repository and
+reviewed main refs; repository selection was explicitly reverified after policy
+updates. Remaining packet-isolation and full deployment acceptance are tracked
+in [validation](validation.md), rather than inferred from successful jobs.

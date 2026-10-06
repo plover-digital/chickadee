@@ -37,11 +37,35 @@ adaptation; it is not a clean Ubuntu installer/reboot acceptance result.
 
 The network `plan` command passed the kernel's nftables validation, and unchanged
 firewall, interface, and forwarding state was confirmed. That check establishes
-rule syntax, not packet isolation or existing-firewall compatibility. The pilot
-service remains stopped pending explicit approval for host networking.
+rule syntax, not packet isolation or existing-firewall compatibility.
 
-Fresh JIT delivery, real jobs, production network isolation, and full
-installation/restart/reboot acceptance remain unfinished.
+After explicit network authorization, the reviewed pilot network setup was
+applied and the service enabled. A real warm guest reached READY while GitHub
+reported zero registered runners. The [two-job smoke run](https://github.com/plover-digital/chickadee/actions/runs/37409748909)
+succeeded on distinct ephemeral runner names. Both old QEMU processes and VM
+directories/disks were independently confirmed absent; private bounded runner
+diagnostics were preserved and a new unregistered warm guest reached READY.
+This completes the required real boot → JIT → one job → destroy → replenish slice.
+
+The [commit-triggered build/test run](https://github.com/plover-digital/chickadee/actions/runs/37412135298)
+built both binaries and passed all Go race tests and Python setup tests inside a
+fresh VM. An earlier run exposed an unsafe-directory test fixture that assumed a
+permissive umask; the fixture now establishes the tested mode explicitly. The
+pilot's main-only self-hosted workflow is guarded to skip fork repositories;
+the separate hosted CI remains available to forks and contributor pull requests.
+
+Kernel cgroup files confirmed the pilot's configured CPU quota, aggregate memory,
+zero swap, and task limits. One warm guest was deliberately killed while idle;
+its disk was removed and an independent warm replacement became READY. The idle
+controller was then abruptly killed: systemd restarted it, old owned process/disk
+state was cleaned up, the message session recovered, and a new credential-free
+unregistered warm guest became READY. No unrelated host service was stopped.
+
+These are pilot acceptance results. Packet-level host/private/peer isolation,
+credentialed-job interruption and timeout/fault drills, clean Ubuntu installation,
+host reboot restoration, and uninstall acceptance remain unfinished. The shared
+host UID and lack of per-VM filesystem/process isolation still limit this to
+trusted reviewed workloads.
 
 ## Checks available without deployment
 

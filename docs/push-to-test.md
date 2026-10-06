@@ -39,3 +39,8 @@ A managed service could hide the one-time host bootstrap from customers while
 exposing the same scale-set label. Billing and customer-host management are future
 work; the job execution path and self-hosted deployment remain public and usable
 without a commercial service.
+
+The plover-digital pilot has now exercised this loop successfully in a real
+ephemeral VM. Its installed workflow is limited to trusted main pushes and the
+pilot repository; forks retain hosted CI until they deliberately configure their
+own pool and install the portable example. See [acceptance evidence](validation.md).

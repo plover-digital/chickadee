@@ -4,12 +4,13 @@ A small, self-hosted GitHub Actions runner pool for one Linux host. Each job get
 independently booted QEMU `microvm` with KVM, an Ubuntu 24.04 filesystem, and a fresh
 qcow2 overlay. Warm guests have no GitHub credentials and no runner registration.
 
-**Prototype under development.** The controller and guest compile against the
-pinned dependencies, and lifecycle tests pass. The reference image builds and
-two independent real KVM boots reached READY, with confirmed process exit and
-overlay deletion. GitHub App/JIT behavior, firewall isolation, and the real-job
-smoke test still require deployment validation. Do not treat the current checkout
-as a proven deployment. See [validation status](docs/validation.md).
+**Working one-host prototype.** The real vertical slice has passed: preboot to
+READY, fresh serial JIT, two real GitHub jobs on distinct runners, confirmed
+process exit and disk deletion, and credential-free warm replacement. A trusted
+main-branch push also built both binaries and passed the full test suite inside
+an ephemeral VM. Warm-VM failure and idle controller-crash recovery were checked.
+Clean Ubuntu install/reboot/uninstall and fuller adversarial network/restart
+acceptance still remain. See [validation status](docs/validation.md).
 
 Build with Go 1.26.3 on Linux amd64:
 
