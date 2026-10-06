@@ -44,10 +44,13 @@ cat > build/provision.sh <<PROVISION
 #!/bin/bash
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
-# The image's systemd-resolved stub is not running during offline customization.
-# SLIRP's appliance DNS proxy forwards through the builder's real resolver.
-rm -f /etc/resolv.conf
-printf 'nameserver 169.254.2.3\n' > /etc/resolv.conf
+# libguestfs supplies the appliance resolver while running this command.
+# Use libc DNS directly; systemd-resolved is not running in the guest chroot.
+sed -i 's/^hosts:.*/hosts: files dns/' /etc/nsswitch.conf
+cat /etc/resolv.conf
+ip -4 address show
+ip -4 route show
+getent ahostsv4 snapshot.ubuntu.com
 rm -f /etc/apt/sources.list /etc/apt/sources.list.d/*
 printf '%s\n' 'deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/$snapshot noble main universe' 'deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/$snapshot noble-updates main universe' 'deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/$snapshot noble-security main universe' > /etc/apt/sources.list
 apt-get -o Acquire::Retries=3 -o APT::Update::Error-Mode=any update
@@ -83,7 +86,7 @@ printf 'chickadee\n' > /etc/hostname
 chmod 0755 /usr/local/bin/chickadee-guest /usr/local/bin/chickadee-network
 dpkg-query -W > /image-packages.txt
 PROVISION
-virt-customize -a build/base.qcow2 \
+virt-customize --verbose -a build/base.qcow2 \
   --upload build/downloads/runner.tar.gz:/tmp/runner.tar.gz \
   --upload build/chickadee-guest:/usr/local/bin/chickadee-guest \
   --upload guest/network.sh:/usr/local/bin/chickadee-network \
