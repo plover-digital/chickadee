@@ -429,10 +429,10 @@ func (s *Server) postSession(w http.ResponseWriter, r *http.Request) (string, se
 	return sid, v, true
 }
 
-var extraQueues = []string{"chickadee-small-rocky-102", "chickadee-medium-rocky-102", "chickadee-small-ubuntu-2404", "chickadee-medium-ubuntu-2404"}
+var extraQueues = []string{"chickadee-small-rocky-102", "chickadee-medium-rocky-102", "chickadee-small-ubuntu-2404", "chickadee-medium-ubuntu-2404", "chickadee-small-ubuntu-2604", "chickadee-medium-ubuntu-2604"}
 
 func requestedQueues(values []string) ([]string, error) {
-	if len(values) > 5 {
+	if len(values) > len(extraQueues)+1 {
 		return nil, errors.New("too many queues")
 	}
 	queues := []string{"chickadee"}
