@@ -1,0 +1,89 @@
+[
+  {
+    "run_id": 37474629802,
+    "commit": "e09d04d3a513b4eeff2c3b218524afb7cf1ae0b6",
+    "created_at": "2026-10-06T13:55:08Z",
+    "jobs": {
+      "chickadee": {
+        "created_to_job_started_seconds": 7.0,
+        "created_to_first_step_seconds": 8.0,
+        "job_execution_seconds": 3.0,
+        "first_command_at": "2026-10-06T13:55:16.721696772Z",
+        "created_to_first_command_seconds": 8.722
+      },
+      "hosted": {
+        "created_to_job_started_seconds": 5.0,
+        "created_to_first_step_seconds": 6.0,
+        "job_execution_seconds": 3.0,
+        "first_command_at": "2026-10-06T13:55:14.512000979Z",
+        "created_to_first_command_seconds": 6.512
+      }
+    },
+    "controller": {
+      "created_to_reservation_seconds": 4.213,
+      "reservation_to_job_started_seconds": 2.787,
+      "created_to_demand_observed_seconds": 4.143,
+      "jit_generation_ms": 324,
+      "serial_ack_ms": 147,
+      "listener_launch_ms": 150
+    }
+  },
+  {
+    "run_id": 37474665814,
+    "commit": "e09d04d3a513b4eeff2c3b218524afb7cf1ae0b6",
+    "created_at": "2026-10-06T13:55:23Z",
+    "jobs": {
+      "hosted": {
+        "created_to_job_started_seconds": 5.0,
+        "created_to_first_step_seconds": 6.0,
+        "job_execution_seconds": 3.0,
+        "first_command_at": "2026-10-06T13:55:29.780368294Z",
+        "created_to_first_command_seconds": 6.78
+      },
+      "chickadee": {
+        "created_to_job_started_seconds": 8.0,
+        "created_to_first_step_seconds": 9.0,
+        "job_execution_seconds": 3.0,
+        "first_command_at": "2026-10-06T13:55:32.330787770Z",
+        "created_to_first_command_seconds": 9.331
+      }
+    },
+    "controller": {
+      "created_to_reservation_seconds": 4.643,
+      "reservation_to_job_started_seconds": 3.357,
+      "created_to_demand_observed_seconds": 4.576,
+      "jit_generation_ms": 459,
+      "serial_ack_ms": 126,
+      "listener_launch_ms": 132
+    }
+  },
+  {
+    "run_id": 37474707665,
+    "commit": "e09d04d3a513b4eeff2c3b218524afb7cf1ae0b6",
+    "created_at": "2026-10-06T13:55:42Z",
+    "jobs": {
+      "chickadee": {
+        "created_to_job_started_seconds": 7.0,
+        "created_to_first_step_seconds": 8.0,
+        "job_execution_seconds": 3.0,
+        "first_command_at": "2026-10-06T13:55:50.091257883Z",
+        "created_to_first_command_seconds": 8.091
+      },
+      "hosted": {
+        "created_to_job_started_seconds": 5.0,
+        "created_to_first_step_seconds": 6.0,
+        "job_execution_seconds": 4.0,
+        "first_command_at": "2026-10-06T13:55:48.315854756Z",
+        "created_to_first_command_seconds": 6.316
+      }
+    },
+    "controller": {
+      "created_to_reservation_seconds": 3.024,
+      "reservation_to_job_started_seconds": 3.976,
+      "created_to_demand_observed_seconds": 2.957,
+      "jit_generation_ms": 723,
+      "serial_ack_ms": 128,
+      "listener_launch_ms": 130
+    }
+  }
+]
