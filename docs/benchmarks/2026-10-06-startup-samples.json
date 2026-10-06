@@ -25,7 +25,8 @@
       "created_to_demand_observed_seconds": 4.143,
       "jit_generation_ms": 324,
       "serial_ack_ms": 147,
-      "listener_launch_ms": 150
+      "listener_launch_ms": 150,
+      "demand_to_reservation_seconds": 0.07
     }
   },
   {
@@ -54,7 +55,8 @@
       "created_to_demand_observed_seconds": 4.576,
       "jit_generation_ms": 459,
       "serial_ack_ms": 126,
-      "listener_launch_ms": 132
+      "listener_launch_ms": 132,
+      "demand_to_reservation_seconds": 0.067
     }
   },
   {
@@ -83,7 +85,8 @@
       "created_to_demand_observed_seconds": 2.957,
       "jit_generation_ms": 723,
       "serial_ack_ms": 128,
-      "listener_launch_ms": 130
+      "listener_launch_ms": 130,
+      "demand_to_reservation_seconds": 0.067
     }
   }
 ]
