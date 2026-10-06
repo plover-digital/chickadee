@@ -110,7 +110,7 @@ func helperPATH(t *testing.T, dir string) {
 	t.Setenv("CHICKADEE_TEST_BIN", exe)
 	t.Setenv("CHICKADEE_TRACE", dir)
 	t.Setenv("PATH", bin+":"+os.Getenv("PATH"))
-	for name, script := range map[string]string{"qemu-img": "#!/bin/sh\ntouch \"$9\"\n", "qemu-system-x86_64": "#!/bin/sh\nexec \"$CHICKADEE_TEST_BIN\" -test.run=TestQEMUHelper -- \"$@\"\n"} {
+	for name, script := range map[string]string{"qemu-img": "#!/bin/sh\ntouch \"$9\"\n", "qemu-system-x86_64": "#!/bin/sh\nexport CHICKADEE_HELPER=1\nexport CHICKADEE_TRACE=" + quoteShell(dir) + "\nexec " + quoteShell(exe) + " -test.run=TestQEMUHelper -- \"$@\"\n"} {
 		if e = os.WriteFile(filepath.Join(bin, name), []byte(script), 0700); e != nil {
 			t.Fatal(e)
 		}
@@ -191,3 +191,5 @@ func TestLifecycleAndAmbiguousJITFailure(t *testing.T) {
 		})
 	}
 }
+
+func quoteShell(s string) string { return "'" + strings.ReplaceAll(s, "'", "'\\''") + "'" }

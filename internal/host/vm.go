@@ -48,12 +48,13 @@ func StartBootCheck(ctx context.Context, c config.Config, slot int, id string) (
 }
 func start(ctx context.Context, c config.Config, slot int, id string, offline bool) (v *VM, err error) {
 	v = &VM{ID: id, Slot: slot, Dir: filepath.Join(c.StateDir, "vms", id), exited: make(chan struct{})}
-	if err = os.MkdirAll(v.Dir, 0700); err != nil {
-		return v, err
+	if err = os.Mkdir(v.Dir, 0700); err != nil {
+		return nil, err
 	}
 	// Keep directory on any failure; restart reconciliation removes it safely.
 	disk := filepath.Join(v.Dir, "disk.qcow2")
 	create := exec.CommandContext(ctx, "qemu-img", "create", "-q", "-f", "qcow2", "-F", "qcow2", "-b", filepath.Join(c.ImageDir, "base.qcow2"), disk, fmt.Sprintf("%dG", c.DiskGiB))
+	create.Env = processEnv()
 	if err = create.Run(); err != nil {
 		return v, fmt.Errorf("overlay creation failed")
 	}
@@ -73,6 +74,7 @@ func start(ctx context.Context, c config.Config, slot int, id string, offline bo
 		"-netdev", netdev, "-device", "virtio-net-device,netdev=net",
 		"-chardev", "socket,id=bootstrap,path=" + sock + ",server=on,wait=on", "-serial", "chardev:bootstrap"}
 	v.cmd = exec.Command("prlimit", args...)
+	v.cmd.Env = processEnv()
 	v.cmd.SysProcAttr = &syscall.SysProcAttr{Pdeathsig: syscall.SIGKILL}
 	// Never forward untrusted guest console or QEMU arguments to journald.
 	v.cmd.Stdout = io.Discard
@@ -121,6 +123,9 @@ func start(ctx context.Context, c config.Config, slot int, id string, offline bo
 	return v, nil
 }
 func (v *VM) Stop() error {
+	if v == nil {
+		return nil
+	}
 	if v.Conn != nil {
 		_ = v.Conn.Close()
 	}
@@ -141,6 +146,9 @@ func (v *VM) Stop() error {
 	}
 }
 func (v *VM) Cleanup() error {
+	if v == nil {
+		return nil
+	}
 	if e := v.Stop(); e != nil {
 		return e
 	}
@@ -210,3 +218,6 @@ func (w *cappedWriter) Write(b []byte) (int, error) {
 	}
 	return n, nil
 }
+
+// Hypervisor subprocesses need command lookup and a locale, not controller secrets.
+func processEnv() []string { return []string{"PATH=" + os.Getenv("PATH"), "LANG=C"} }

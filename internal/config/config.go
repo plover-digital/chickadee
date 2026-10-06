@@ -66,6 +66,9 @@ func (c Config) Validate() error {
 	if !Name.MatchString(c.ScaleSet) || c.Warm < 0 || c.Warm > c.Max || c.Max < 1 || c.Max > 32 || c.CPUs < 1 || c.CPUs > 16 || c.MemoryMiB < 512 || c.MemoryMiB > 32768 || c.DiskGiB < 4 || c.DiskGiB > 128 || c.BootSeconds < 10 || c.BootSeconds > 600 || c.JobSeconds < 60 || c.JobSeconds > 86400 {
 		return fmt.Errorf("invalid name, capacity, resources, or timeout")
 	}
+	if c.ImageDir == c.StateDir || strings.HasPrefix(c.ImageDir, c.StateDir+"/") || strings.HasPrefix(c.StateDir, c.ImageDir+"/") {
+		return fmt.Errorf("image and state directories must be separate and nonoverlapping")
+	}
 	if strings.ContainsAny(c.StateDir+c.ImageDir, ",\n\r") {
 		return fmt.Errorf("image and state paths cannot contain QEMU delimiters")
 	}

@@ -58,7 +58,7 @@ func (b *testBackend) Remove(ctx context.Context, name string) error {
 func TestPoolSerialLifecycle(t *testing.T) {
 	for _, fail := range []bool{false, true} {
 		t.Run(map[bool]string{false: "completed", true: "ambiguous-jit"}[fail], func(t *testing.T) {
-			c := config.Config{StateDir: t.TempDir(), Warm: 1, Max: 1, ScaleSet: "chickadee", JobSeconds: 60}
+			c := config.Config{StateDir: privateTemp(t), Warm: 1, Max: 1, ScaleSet: "chickadee", JobSeconds: 60}
 			demand := make(chan int, 4)
 			b := &testBackend{demand: demand, fail: fail}
 			ctx, cancel := context.WithCancel(context.Background())
@@ -138,7 +138,7 @@ func TestPoolSerialLifecycle(t *testing.T) {
 	}
 }
 func TestRestartReconciliationRetainsFailedRemovals(t *testing.T) {
-	c := config.Config{StateDir: t.TempDir(), ScaleSet: "chickadee"}
+	c := config.Config{StateDir: privateTemp(t), ScaleSet: "chickadee"}
 	_ = os.MkdirAll(filepath.Join(c.StateDir, "records"), 0700)
 	_ = os.MkdirAll(filepath.Join(c.StateDir, "vms"), 0700)
 	r := host.Record{ID: "0123456789abcdef", Name: "chickadee-0123456789abcdef"}
@@ -174,7 +174,7 @@ func (b *removalFailure) Remove(context.Context, string) error {
 }
 
 func TestAcquireCleansDisksAndEnforcesSingleOwner(t *testing.T) {
-	c := config.Config{StateDir: t.TempDir()}
+	c := config.Config{StateDir: privateTemp(t)}
 	old := filepath.Join(c.StateDir, "vms", "old", "disk.qcow2")
 	if e := os.MkdirAll(filepath.Dir(old), 0700); e != nil {
 		t.Fatal(e)
@@ -197,7 +197,7 @@ func TestAcquireCleansDisksAndEnforcesSingleOwner(t *testing.T) {
 	}
 }
 func TestDelayedRegistrationIntentRetained(t *testing.T) {
-	c := config.Config{StateDir: t.TempDir(), ScaleSet: "chickadee"}
+	c := config.Config{StateDir: privateTemp(t), ScaleSet: "chickadee"}
 	_ = os.MkdirAll(filepath.Join(c.StateDir, "records"), 0700)
 	_ = os.MkdirAll(filepath.Join(c.StateDir, "vms"), 0700)
 	r := host.Record{ID: "0123456789abcdef", Name: "chickadee-0123456789abcdef", NotBefore: time.Now().Add(time.Hour)}
@@ -211,4 +211,42 @@ func TestDelayedRegistrationIntentRetained(t *testing.T) {
 	if e != nil || len(rs) != 1 {
 		t.Fatal("discarded intent before delayed-registration grace period")
 	}
+}
+
+func TestRuntimeRejectsPublicOrSymlinkedDirectories(t *testing.T) {
+	t.Run("public", func(t *testing.T) {
+		dir := privateTemp(t)
+		if e := os.Chmod(dir, 0777); e != nil {
+			t.Fatal(e)
+		}
+		if o, e := Acquire(config.Config{StateDir: dir}); e == nil {
+			o.Close()
+			t.Fatal("public runtime accepted")
+		}
+	})
+	t.Run("symlink", func(t *testing.T) {
+		base := privateTemp(t)
+		target := privateTemp(t)
+		link := filepath.Join(base, "runtime")
+		if e := os.Symlink(target, link); e != nil {
+			t.Fatal(e)
+		}
+		if o, e := Acquire(config.Config{StateDir: link}); e == nil {
+			o.Close()
+			t.Fatal("symlinked runtime accepted")
+		}
+		entries, _ := os.ReadDir(target)
+		if len(entries) != 0 {
+			t.Fatal("modified rejected runtime target")
+		}
+	})
+}
+
+func privateTemp(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	if e := os.Chmod(dir, 0700); e != nil {
+		t.Fatal(e)
+	}
+	return dir
 }

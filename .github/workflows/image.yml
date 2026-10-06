@@ -8,10 +8,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: '1.26.3'
           cache: false
@@ -19,7 +19,17 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y qemu-system-x86 qemu-utils libguestfs-tools \
-            python3 curl gpgv ubuntu-keyring xz-utils build-essential
+            python3 curl gpgv ubuntu-keyring xz-utils build-essential linux-image-generic
+      - name: Provide a readable appliance kernel without changing host permissions
+        run: |
+          mkdir -p build/appliance
+          kernel_src=$(compgen -G '/boot/vmlinuz-*-generic' | sort -V | tail -n 1)
+          test -n "$kernel_src"
+          kernel_version=${kernel_src##*/vmlinuz-}
+          sudo install -m 0644 "$kernel_src" build/appliance/vmlinuz
+          printf 'SUPERMIN_KERNEL=%s/build/appliance/vmlinuz\n' "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+          printf 'SUPERMIN_KERNEL_VERSION=%s\n' "$kernel_version" >> "$GITHUB_ENV"
+          printf 'SUPERMIN_MODULES=/lib/modules/%s\n' "$kernel_version" >> "$GITHUB_ENV"
       - name: Build credential-free runner image
         run: make image
       - name: Check real KVM boot where available
@@ -39,7 +49,7 @@ jobs:
           bin/chickadee -boot-check -config build/bootcheck.json
       - name: Archive versioned image artifacts
         run: tar -czf build/chickadee-image.tar.gz -C images .
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: chickadee-image
           path: build/chickadee-image.tar.gz

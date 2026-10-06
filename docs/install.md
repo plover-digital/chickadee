@@ -13,7 +13,7 @@ Install build and runtime dependencies on the intended Ubuntu machine:
 ```sh
 sudo apt-get update
 sudo apt-get install -y qemu-system-x86 qemu-utils libguestfs-tools nftables \
-  iproute2 util-linux python3 curl gpgv ubuntu-keyring xz-utils build-essential
+  iproute2 util-linux python3 curl gpgv ubuntu-keyring xz-utils build-essential linux-image-generic
 ```
 
 Install Go **1.26.3** from the official [Go downloads](https://go.dev/dl/) after
@@ -27,6 +27,13 @@ Clone this repository locally, then:
 git clone https://github.com/plover-digital/chickadee.git
 cd chickadee
 make build test
+mkdir -p build/appliance
+builder_kernel=$(compgen -G '/boot/vmlinuz-*-generic' | sort -V | tail -n 1)
+builder_kernel_version=${builder_kernel##*/vmlinuz-}
+sudo install -m 0644 "$builder_kernel" build/appliance/vmlinuz
+export SUPERMIN_KERNEL="$PWD/build/appliance/vmlinuz"
+export SUPERMIN_KERNEL_VERSION="$builder_kernel_version"
+export SUPERMIN_MODULES="/lib/modules/$builder_kernel_version"
 make image
 cp examples/config.json config.json
 ```
@@ -34,6 +41,14 @@ cp examples/config.json config.json
 The dependency graph and verified checksums are committed in `go.mod` and
 `go.sum`. Build/test use readonly module mode. Dependency changes should be
 reviewed with their corresponding checksum changes.
+
+Libguestfs/supermin needs a readable builder kernel and matching modules. Ubuntu
+may install `/boot/vmlinuz-*` readable only by root. Copy a selected installed
+kernel into `build/appliance/vmlinuz` using `sudo install -m 0644`, then set
+`SUPERMIN_KERNEL`, `SUPERMIN_KERNEL_VERSION`, and `SUPERMIN_MODULES` to that copy
+and its matching `/lib/modules/VERSION`. This avoids changing permissions on the
+host kernel. The public image workflow includes these steps. See the
+[upstream libguestfs FAQ](https://libguestfs.org/guestfs-faq.1.html).
 
 The image build takes time and substantial temporary disk space. It uses
 libguestfs with software emulation for **offline image editing**, without

@@ -3,7 +3,8 @@
 The controller owns one dedicated GitHub runner scale set and one local image
 profile. A single event loop owns pool state. One worker per VM owns its process,
 serial socket and disk. QEMU runs as an unprivileged service user, with KVM and
-an existing TAP interface. The controller needs no network administration
+an existing TAP interface. Hypervisor subprocesses receive a minimal PATH/locale environment rather than
+inheriting controller credentials. The controller needs no network administration
 capability; the separately reviewed root network setup creates the TAPs and NAT.
 
 ## Lifecycle
@@ -62,7 +63,8 @@ Abrupt crashes, timeouts and a full guest disk can prevent guest log export.
 
 ## Restart and cleanup
 
-A filesystem lock prevents concurrent controllers using the same state directory.
+Runtime directories are checked for owner-only permissions, correct ownership and
+absence of symlinks. Image and runtime paths must not overlap. A filesystem lock prevents concurrent controllers using the same state directory.
 Systemd kills the service cgroup; QEMU also has a parent-death SIGKILL. Linux
 parent-death signaling follows the creating OS thread; the systemd cgroup remains
 the primary shutdown boundary. Before

@@ -35,6 +35,11 @@ rather than per-VM cgroups, best-effort log export and unverified real-host netw
   silently replayed. Its registration intent survives failure; a different VM is
   used for a subsequent attempt.
 - The systemd service sets `MemorySwapMax=0` alongside `MemoryMax`.
+- Runtime directories must be private, owned by the controller and not symlinks;
+  immutable image and runtime paths cannot overlap. VM directories are created
+  exclusively so a collision cannot overwrite an existing disk.
+- Hypervisor and image-tool subprocesses get a minimal environment, dropping
+  controller token/cloud credentials; a subprocess test checks the boundary.
 - Organization deployment documentation includes public-repository access and
   selected-workflow policy prerequisites rather than assuming a label is a security
   boundary. No existing organization policy is silently modified.
@@ -60,3 +65,15 @@ rather than per-VM cgroups, best-effort log export and unverified real-host netw
 Upstream `master` manuals can describe newer versions than Ubuntu 24.04's packages.
 They establish design guidance, not feature availability on the installed host.
 The reference host and pinned image must still pass [real-host acceptance](validation.md).
+
+The first public image build verified Ubuntu's GPG signature and the runner
+checksum, then failed constructing the supermin appliance. Upstream libguestfs
+documents Ubuntu's root-only kernel permissions and supports explicit kernel and
+module overrides. The builder now copies a kernel into its own build directory
+rather than changing `/boot` permissions. This cause is an informed diagnosis;
+the corrected workflow must demonstrate successful appliance construction.
+[libguestfs FAQ](https://libguestfs.org/guestfs-faq.1.html),
+[supermin kernel overrides](https://libguestfs.org/supermin.1.html).
+
+Workflow action pins were also updated to current official Node 24 releases after
+GitHub CI reported deprecated Node 20 action runtimes.

@@ -3,6 +3,8 @@
 package host
 
 import (
+	"context"
+	"github.com/plover-digital/chickadee/internal/config"
 	"github.com/plover-digital/chickadee/internal/protocol"
 	"net"
 	"os"
@@ -96,5 +98,38 @@ func TestPIDFDWaitsForRealProcessExit(t *testing.T) {
 	}
 	if e := waitPIDFD(int(fd), time.Second); e != nil {
 		t.Fatal(e)
+	}
+}
+
+func TestHypervisorEnvironmentExcludesControllerSecrets(t *testing.T) {
+	t.Setenv("GH_TOKEN", "test-only-not-a-token")
+	cmd := exec.Command("sh", "-c", `test -z "${GH_TOKEN+x}"`)
+	cmd.Env = processEnv()
+	if e := cmd.Run(); e != nil {
+		t.Fatal("controller credential environment reached the child")
+	}
+}
+
+func TestStartCannotOverwriteAnExistingVMDirectory(t *testing.T) {
+	c := config.Config{StateDir: t.TempDir()}
+	id := "0123456789abcdef"
+	dir := filepath.Join(c.StateDir, "vms", id)
+	if e := os.MkdirAll(dir, 0700); e != nil {
+		t.Fatal(e)
+	}
+	disk := filepath.Join(dir, "disk.qcow2")
+	if e := os.WriteFile(disk, []byte("existing VM disk"), 0600); e != nil {
+		t.Fatal(e)
+	}
+	v, e := Start(context.Background(), c, 1, id)
+	if e == nil {
+		t.Fatal("existing VM directory reused")
+	}
+	if e = v.Cleanup(); e != nil {
+		t.Fatal(e)
+	}
+	b, e := os.ReadFile(disk)
+	if e != nil || string(b) != "existing VM disk" {
+		t.Fatal("failed start changed existing disk")
 	}
 }

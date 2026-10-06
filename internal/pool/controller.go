@@ -48,6 +48,15 @@ func Acquire(c config.Config) (owner *Ownership, err error) {
 		if e := os.MkdirAll(d, 0700); e != nil {
 			return nil, e
 		}
+
+		info, e := os.Lstat(d)
+		if e != nil {
+			return nil, e
+		}
+		stat, ok := info.Sys().(*syscall.Stat_t)
+		if !info.IsDir() || !ok || stat.Uid != uint32(os.Geteuid()) || info.Mode().Perm()&0077 != 0 {
+			return nil, fmt.Errorf("runtime directories must be owned by the controller, private, and not symlinks")
+		}
 	}
 	lock, e := os.OpenFile(filepath.Join(c.StateDir, "lock"), os.O_CREATE|os.O_RDWR, 0600)
 	if e != nil {
@@ -230,6 +239,9 @@ func runOwned(ctx context.Context, c config.Config, b Backend, desired <-chan in
 				slot++
 			}
 			id := host.NewID()
+			for entries[id] != nil {
+				id = host.NewID()
+			}
 			v := &entry{state: VM{ID: id, State: Booting}, slot: slot, assign: make(chan string, 1), retire: make(chan struct{})}
 			entries[id] = v
 			wg.Add(1)
