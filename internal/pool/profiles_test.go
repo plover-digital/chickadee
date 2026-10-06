@@ -212,3 +212,113 @@ func TestRemovedProfileRecoveryAndScope(t *testing.T) {
 		t.Fatal("changed scope accepted")
 	}
 }
+
+func TestDrainFinishesSpentGuestWithoutNewBoot(t *testing.T) {
+	c, backends, boots, running, start := profileFixture(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	demand := make(chan Demand, 10)
+	drain := make(chan struct{})
+	done := make(chan error, 1)
+	go func() { done <- runProfilesWithDrain(ctx, c, backends, demand, start, drain) }()
+	demand <- Demand{"chickadee", 1}
+	job := awaitBoot(t, boots)
+	awaitRunning(t, running)
+	close(drain)
+	demand <- Demand{"chickadee-small-ubuntu-2404", 2}
+	select {
+	case <-job.m.done:
+		t.Fatal("drain killed job")
+	case <-boots:
+		t.Fatal("drain booted guest")
+	case e := <-done:
+		t.Fatalf("drained before job finished: %v", e)
+	case <-time.After(1100 * time.Millisecond):
+	}
+	close(job.m.job)
+	select {
+	case e := <-done:
+		if e != nil {
+			t.Fatal(e)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("drain did not finish")
+	}
+	if _, e := os.Stat(job.m.dir); !os.IsNotExist(e) {
+		t.Fatal("drain left credentialed disk")
+	}
+}
+func TestScopedRecoveryRetainsInstallationIdentity(t *testing.T) {
+	c, _, _, _, _ := profileFixture(t)
+	scope := config.Scope{GitHubURL: "https://github.com/EXAMPLE-ORG", InstallationID: 123, RunnerGroupID: 2, Profiles: c.Profiles}
+	c.Scopes = map[string]config.Scope{"primary": scope}
+	c.Profiles = nil
+	old := host.Record{ID: "0123456789abcdef", Name: "chickadee-0123456789abcdef", GitHubURL: scope.GitHubURL, RunnerGroupID: scope.RunnerGroupID}
+	recovery, e := RecoveryConfig(c, old)
+	if e != nil || recovery.InstallationID != 123 || recovery.Key() != config.ScopeKey(scope.GitHubURL, "chickadee") {
+		t.Fatal("legacy scope not recovered")
+	}
+	old.InstallationID = 999
+	if _, e := RecoveryConfig(c, old); e == nil {
+		t.Fatal("changed installation accepted")
+	}
+}
+
+func TestSameLabelScopesRouteSeparatelyAndShareCapacity(t *testing.T) {
+	c, _, boots, running, start := profileFixture(t)
+	label := "chickadee"
+	profile := c.Profiles[label]
+	c.Profiles = nil
+	c.Scopes = map[string]config.Scope{
+		"one": {GitHubURL: "https://github.com/one/repo", InstallationID: 11, RunnerGroupID: 1, Profiles: map[string]config.Profile{label: profile}},
+		"two": {GitHubURL: "https://github.com/two/repo", InstallationID: 22, RunnerGroupID: 1, Profiles: map[string]config.Profile{label: profile}},
+	}
+	backends := map[string]Backend{}
+	jit := map[string]chan string{}
+	for _, p := range c.ProfileConfigs() {
+		jit[p.Key()] = make(chan string, 2)
+		backends[p.Key()] = &profileBackend{profile: label, jit: jit[p.Key()]}
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	demand := make(chan Demand, 4)
+	done := make(chan error, 1)
+	go func() { done <- runProfiles(ctx, c, backends, demand, start) }()
+	one := config.ScopeKey("https://github.com/one/repo", label)
+	two := config.ScopeKey("https://github.com/two/repo", label)
+	demand <- Demand{one, 1}
+	first := awaitBoot(t, boots)
+	awaitRunning(t, running)
+	if first.c.InstallationID != 11 {
+		t.Fatal("wrong installation")
+	}
+	select {
+	case <-jit[one]:
+	default:
+		t.Fatal("wrong JIT backend")
+	}
+	demand <- Demand{two, 1}
+	select {
+	case <-boots:
+		t.Fatal("two medium guests exceeded shared RAM")
+	case <-jit[two]:
+		t.Fatal("credentials issued without capacity")
+	case <-time.After(1100 * time.Millisecond):
+	}
+	demand <- Demand{one, 0}
+	close(first.m.job)
+	second := awaitBoot(t, boots)
+	awaitRunning(t, running)
+	if second.c.InstallationID != 22 || second.c.GitHubURL != "https://github.com/two/repo" {
+		t.Fatal("scope crossed")
+	}
+	select {
+	case <-jit[two]:
+	default:
+		t.Fatal("second scope used wrong JIT backend")
+	}
+	cancel()
+	if e := <-done; !errors.Is(e, context.Canceled) {
+		t.Fatal(e)
+	}
+}

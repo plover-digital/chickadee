@@ -88,8 +88,8 @@ func run(path string, cleanup, bootCheck bool) error {
 		if e != nil {
 			return e
 		}
-		backends[p.ScaleSet] = b
-		clients[p.ScaleSet] = b
+		backends[p.Key()] = b
+		clients[p.Key()] = b
 	}
 	records, e := host.Records(c.StateDir)
 	if e != nil {
@@ -103,8 +103,10 @@ func run(path string, cleanup, bootCheck bool) error {
 		if backends[name] != nil {
 			continue
 		}
-		recovery := profiles[0]
-		recovery.ScaleSet = name
+		recovery, e := pool.RecoveryConfig(c, r)
+		if e != nil {
+			return e
+		}
 		initCtx, cc := context.WithTimeout(ctx, 60*time.Second)
 		b, e := github.Existing(initCtx, recovery)
 		cc()
@@ -118,8 +120,18 @@ func run(path string, cleanup, bootCheck bool) error {
 		defer cc()
 		return pool.CleanupProfiles(cleanCtx, c, backends, owner)
 	}
-	demand := make(chan pool.Demand, 32)
-	results := make(chan error, len(profiles)+1)
+	demand := make(chan pool.Demand, 2*len(profiles))
+	pollCtx, cancelPoll := context.WithCancel(ctx)
+	defer cancelPoll()
+	drainSignal := make(chan os.Signal, 1)
+	signal.Notify(drainSignal, syscall.SIGUSR1)
+	defer signal.Stop(drainSignal)
+	drain := make(chan struct{})
+	type result struct {
+		pool bool
+		err  error
+	}
+	results := make(chan result, len(profiles)+1)
 	var wg sync.WaitGroup
 	for _, p := range profiles {
 		wg.Add(1)
@@ -127,30 +139,50 @@ func run(path string, cleanup, bootCheck bool) error {
 			defer wg.Done()
 			values := make(chan int, 16)
 			pollDone := make(chan error, 1)
-			go func() { pollDone <- clients[p.ScaleSet].Poll(ctx, p.ScaleSet, p.Max, values) }()
+			go func() { pollDone <- clients[p.Key()].Poll(pollCtx, p.ScaleSet, p.Max, values) }()
 			for {
 				select {
 				case n := <-values:
 					select {
-					case demand <- pool.Demand{Profile: p.ScaleSet, Assigned: n}:
-					case <-ctx.Done():
-						results <- <-pollDone
+					case demand <- pool.Demand{Profile: p.Key(), Assigned: n}:
+					case <-pollCtx.Done():
+						results <- result{err: <-pollDone}
 						return
 					}
 				case e := <-pollDone:
-					results <- e
+					results <- result{err: e}
 					return
-				case <-ctx.Done():
-					results <- <-pollDone
+				case <-pollCtx.Done():
+					results <- result{err: <-pollDone}
 					return
 				}
 			}
 		}(p)
 	}
 	wg.Add(1)
-	go func() { defer wg.Done(); results <- pool.RunProfilesOwned(ctx, c, backends, demand, owner) }()
-	e = <-results
-	cancel()
-	wg.Wait()
-	return e
+	go func() {
+		defer wg.Done()
+		results <- result{pool: true, err: pool.RunProfilesDrainOwned(ctx, c, backends, demand, owner, drain)}
+	}()
+
+	draining := false
+	for {
+		select {
+		case <-drainSignal:
+			if !draining {
+				draining = true
+				close(drain)
+				cancelPoll()
+				slog.Info("Draining for controlled scope/config update")
+			}
+		case r := <-results:
+			if draining && !r.pool {
+				continue
+			}
+			cancel()
+			cancelPoll()
+			wg.Wait()
+			return r.err
+		}
+	}
 }

@@ -62,9 +62,10 @@ Origin checks, and stores no OAuth credentials on disk.
 
 **A pending request does not create runners or change controller config.** The
 first hosted beta requires operator admission and a configured GitHub scope.
-Current controllers serve one org/repo scope; don't launch multiple independent
-controllers against shared TAPs or advertise cross-customer capacity without
-shared ownership/budget enforcement. Personal repos need repository-scoped
+Use `examples/scopes.json` to serve multiple authorized org/repo scopes in one
+controller. Each scope has independent scale sets and JIT credentials while
+sharing the host CPU, memory, concurrency and TAP budgets. Never launch multiple
+independent controllers against shared TAPs. Personal repos need repository-scoped
 pools; org pools can use repository/workflow-restricted runner groups.
 
 The site is not a billing system, tenant-isolation guarantee, workflow editor,
@@ -74,3 +75,20 @@ changes or exposes an unauthenticated pool-admin endpoint. It stores at most
 or repositories in a returned listing requires operator handling rather than
 silent truncation. OAuth tokens remain in transient server memory only; logs
 must not include request queries, authorization headers or raw upstream bodies.
+
+## Operator activation
+
+Keep request metadata private. `scripts/admit-installation.py --config CONFIG
+--request REQUEST --output CANDIDATE --trusted-workflows` rechecks the GitHub
+installation, repository identity, permissions and selected-repository access.
+For personal repositories the request user must own the account. Organization
+groups restrict selected repositories and main-branch workflows. New scopes
+start with no warm guests and share the existing host limits. Review the beta
+trust model before admitting workflows; the website cannot grant admission.
+
+Validate with `chickadee -config CANDIDATE -check`. On a controller with drain
+support, `systemctl kill --kill-whom=main --signal=SIGUSR1 chickadee` stops new
+assignments, retires credential-free guests and lets active jobs finish. Wait
+until the service exits successfully, install the reviewed configuration, then
+start it. SIGTERM remains an immediate shutdown. Back up the previous config
+and binary for rollback. Never send SIGUSR1 to an older controller.

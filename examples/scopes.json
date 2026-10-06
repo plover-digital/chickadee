@@ -1,0 +1,114 @@
+{
+  "app_client_id": "YOUR-APP-CLIENT-ID",
+  "app_key_file": "/etc/chickadee/app.pem",
+  "boot_timeout_seconds": 120,
+  "job_timeout_seconds": 3600,
+  "state_dir": "/var/lib/chickadee",
+  "images": {
+    "ubuntu-2404": {
+      "path": "/var/lib/chickadee-images/ubuntu-2404/v1",
+      "os": "ubuntu",
+      "version": "24.04",
+      "disk_gib": 16,
+      "machine": "microvm"
+    },
+    "rocky-102": {
+      "path": "/var/lib/chickadee-images/rocky-102/v1",
+      "os": "rocky",
+      "version": "10.2",
+      "disk_gib": 16,
+      "machine": "q35"
+    }
+  },
+  "resource_classes": {
+    "small": {
+      "cpus": 2,
+      "memory_mib": 4096
+    },
+    "medium": {
+      "cpus": 4,
+      "memory_mib": 8192
+    }
+  },
+  "limits": {
+    "max_vms": 2,
+    "max_vcpus": 6,
+    "max_memory_mib": 12288
+  },
+  "scopes": {
+    "primary": {
+      "github_url": "https://github.com/YOUR-ORG/YOUR-REPO",
+      "app_installation_id": 123456,
+      "runner_group_id": 1,
+      "profiles": {
+        "chickadee": {
+          "image": "rocky-102",
+          "resources": "medium",
+          "warm_pool": 1,
+          "max_vms": 1
+        },
+        "chickadee-small-ubuntu-2404": {
+          "image": "ubuntu-2404",
+          "resources": "small",
+          "warm_pool": 0,
+          "max_vms": 2
+        },
+        "chickadee-medium-ubuntu-2404": {
+          "image": "ubuntu-2404",
+          "resources": "medium",
+          "warm_pool": 0,
+          "max_vms": 1
+        },
+        "chickadee-small-rocky-102": {
+          "image": "rocky-102",
+          "resources": "small",
+          "warm_pool": 0,
+          "max_vms": 2
+        },
+        "chickadee-medium-rocky-102": {
+          "image": "rocky-102",
+          "resources": "medium",
+          "warm_pool": 0,
+          "max_vms": 1
+        }
+      }
+    },
+    "beta-repository": {
+      "github_url": "https://github.com/ANOTHER-USER/ANOTHER-REPO",
+      "app_installation_id": 654321,
+      "runner_group_id": 1,
+      "profiles": {
+        "chickadee": {
+          "image": "rocky-102",
+          "resources": "medium",
+          "warm_pool": 0,
+          "max_vms": 1
+        },
+        "chickadee-small-ubuntu-2404": {
+          "image": "ubuntu-2404",
+          "resources": "small",
+          "warm_pool": 0,
+          "max_vms": 2
+        },
+        "chickadee-medium-ubuntu-2404": {
+          "image": "ubuntu-2404",
+          "resources": "medium",
+          "warm_pool": 0,
+          "max_vms": 1
+        },
+        "chickadee-small-rocky-102": {
+          "image": "rocky-102",
+          "resources": "small",
+          "warm_pool": 0,
+          "max_vms": 2
+        },
+        "chickadee-medium-rocky-102": {
+          "image": "rocky-102",
+          "resources": "medium",
+          "warm_pool": 0,
+          "max_vms": 1
+        }
+      }
+    }
+  }
+}

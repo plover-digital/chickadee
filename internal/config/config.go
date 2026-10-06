@@ -34,7 +34,16 @@ type Limits struct {
 	CPUs      int `json:"max_vcpus"`
 	MemoryMiB int `json:"max_memory_mib"`
 }
+type Scope struct {
+	GitHubURL      string             `json:"github_url"`
+	InstallationID int64              `json:"app_installation_id"`
+	RunnerGroupID  int                `json:"runner_group_id"`
+	Profiles       map[string]Profile `json:"profiles"`
+}
 type Config struct {
+	Scopes    map[string]Scope `json:"scopes,omitempty"`
+	scopePool bool
+
 	Machine         string               `json:"machine,omitempty"`
 	Images          map[string]Image     `json:"images,omitempty"`
 	ResourceClasses map[string]Resources `json:"resource_classes,omitempty"`
@@ -78,7 +87,37 @@ func Load(path string) (Config, error) {
 }
 
 // ProfileConfigs resolves the catalog once; workers receive immutable flat configs.
+// Key identifies a queue inside its GitHub scope. Labels can repeat across scopes.
+func (c Config) Key() string {
+	if c.scopePool {
+		return ScopeKey(c.GitHubURL, c.ScaleSet)
+	}
+	return c.ScaleSet
+}
+func ScopeKey(scope, label string) string {
+	return strings.ToLower(strings.TrimRight(scope, "/")) + "|" + label
+}
 func (c Config) ProfileConfigs() []Config {
+	if len(c.Scopes) > 0 {
+		names := make([]string, 0, len(c.Scopes))
+		for name := range c.Scopes {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+		var out []Config
+		for _, name := range names {
+			scope := c.Scopes[name]
+			bound := c
+			bound.Scopes = nil
+			bound.GitHubURL = scope.GitHubURL
+			bound.InstallationID = scope.InstallationID
+			bound.RunnerGroupID = scope.RunnerGroupID
+			bound.Profiles = scope.Profiles
+			bound.scopePool = true
+			out = append(out, bound.ProfileConfigs()...)
+		}
+		return out
+	}
 	if len(c.Profiles) == 0 {
 		return []Config{c}
 	}
@@ -110,12 +149,15 @@ func (c Config) ProfileConfigs() []Config {
 	return out
 }
 func (c Config) HostLimits() Limits {
-	if len(c.Profiles) > 0 {
+	if len(c.Profiles) > 0 || len(c.Scopes) > 0 {
 		return c.Limits
 	}
 	return Limits{Max: c.Max, CPUs: c.Max * c.CPUs, MemoryMiB: c.Max * c.MemoryMiB}
 }
 func (c Config) Validate() error {
+	if len(c.Scopes) > 0 {
+		return c.validateScopes()
+	}
 	if len(c.Profiles) > 0 {
 		return c.validateCatalog()
 	}
@@ -236,6 +278,44 @@ func (c Config) validateCatalog() error {
 		if e := v.Validate(); e != nil {
 			return fmt.Errorf("profile %s: %w", v.ScaleSet, e)
 		}
+	}
+	return nil
+}
+
+func (c Config) validateScopes() error {
+	if len(c.Scopes) > 16 || len(c.Profiles) > 0 || c.GitHubURL != "" || c.InstallationID != 0 || c.RunnerGroupID != 0 {
+		return fmt.Errorf("scopes replace the top-level GitHub scope and profiles")
+	}
+	seen := map[string]bool{}
+	count, cpu, ram := 0, 0, 0
+	queues := 0
+	for name, scope := range c.Scopes {
+		if !Name.MatchString(name) || len(scope.Profiles) == 0 {
+			return fmt.Errorf("scope needs a valid name and profiles")
+		}
+		canonical := strings.ToLower(strings.TrimRight(scope.GitHubURL, "/"))
+		if seen[canonical] {
+			return fmt.Errorf("duplicate GitHub scope")
+		}
+		seen[canonical] = true
+		bound := c
+		bound.Scopes = nil
+		bound.GitHubURL = scope.GitHubURL
+		bound.InstallationID = scope.InstallationID
+		bound.RunnerGroupID = scope.RunnerGroupID
+		bound.Profiles = scope.Profiles
+		if e := bound.Validate(); e != nil {
+			return fmt.Errorf("scope %s: %w", name, e)
+		}
+		for _, p := range bound.ProfileConfigs() {
+			count += p.Warm
+			cpu += p.Warm * p.CPUs
+			ram += p.Warm * p.MemoryMiB
+			queues++
+		}
+	}
+	if queues > 64 || count > c.Limits.Max || cpu > c.Limits.CPUs || ram > c.Limits.MemoryMiB {
+		return fmt.Errorf("combined scope queue/warm budgets exceeded")
 	}
 	return nil
 }

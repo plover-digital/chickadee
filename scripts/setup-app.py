@@ -22,18 +22,20 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-def api(path, method="GET", token=None):
+def api(path, method="GET", token=None, body=None):
     headers = {"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28",
                "User-Agent": "chickadee-app-setup"}
     if token:
         headers["Authorization"] = "Bearer " + token
-    request = urllib.request.Request("https://api.github.com" + path, method=method, headers=headers)
+    if body is not None:
+        headers["Content-Type"] = "application/json"
+    request = urllib.request.Request("https://api.github.com" + path, data=None if body is None else json.dumps(body).encode(), method=method, headers=headers)
     try:
         with urllib.request.build_opener(NoRedirect).open(request, timeout=15) as response:
             data = response.read(1024 * 1024 + 1)
         if len(data) > 1024 * 1024:
             raise ValueError("GitHub response exceeds setup limit")
-        return json.loads(data)
+        return json.loads(data) if data else None
     except urllib.error.HTTPError as e:
         raise RuntimeError(f"GitHub setup API returned HTTP {e.code}") from None
     except (urllib.error.URLError, json.JSONDecodeError):

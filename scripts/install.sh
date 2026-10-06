@@ -8,7 +8,7 @@ cd "$(dirname "$0")/.."
 config=${1:?Usage: install.sh CONFIG_JSON}
 [[ -f bin/chickadee ]]
 bin/chickadee -config "$config" -check
-catalog=$(python3 -c 'import json,sys;print(bool(json.load(open(sys.argv[1])).get("profiles")))' "$config")
+catalog=$(python3 -c 'import json,sys;c=json.load(open(sys.argv[1]));print(bool(c.get("profiles") or c.get("scopes")))' "$config")
 if [[ $catalog == False ]]; then
   (cd images && sha256sum --check --status SHA256SUMS)
 else

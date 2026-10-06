@@ -86,3 +86,57 @@ func TestCatalogDefaultAndBounds(t *testing.T) {
 		})
 	}
 }
+
+func scopedCatalog(t *testing.T) Config {
+	c := catalog(t)
+	profiles := c.Profiles
+	c.Scopes = map[string]Scope{"primary": {GitHubURL: c.GitHubURL, InstallationID: c.InstallationID, RunnerGroupID: c.RunnerGroupID, Profiles: profiles}, "tester": {GitHubURL: "https://github.com/EXAMPLE-USER/EXAMPLE-REPO", InstallationID: 654321, RunnerGroupID: 1, Profiles: map[string]Profile{"chickadee": {Image: "ubuntu-2404", Resources: "medium", Max: 1}}}}
+	c.GitHubURL = ""
+	c.InstallationID = 0
+	c.RunnerGroupID = 0
+	c.Profiles = nil
+	return c
+}
+func TestSeparateGitHubScopesWithSameLabel(t *testing.T) {
+	c := scopedCatalog(t)
+	if e := c.Validate(); e != nil {
+		t.Fatal(e)
+	}
+	profiles := c.ProfileConfigs()
+	if len(profiles) != 3 {
+		t.Fatal("missing scope queues")
+	}
+	keys := map[string]bool{}
+	labels := 0
+	for _, p := range profiles {
+		if keys[p.Key()] {
+			t.Fatal("scope alias collision")
+		}
+		keys[p.Key()] = true
+		if p.ScaleSet == "chickadee" {
+			labels++
+		}
+		if e := p.Validate(); e != nil {
+			t.Fatal(e)
+		}
+	}
+	if labels != 2 {
+		t.Fatal("shared workflow label not preserved")
+	}
+	bad := scopedCatalog(t)
+	scope := bad.Scopes["tester"]
+	scope.GitHubURL = bad.Scopes["primary"].GitHubURL
+	bad.Scopes["tester"] = scope
+	if bad.Validate() == nil {
+		t.Fatal("duplicate API scope accepted")
+	}
+	bad = scopedCatalog(t)
+	scope = bad.Scopes["tester"]
+	p := scope.Profiles["chickadee"]
+	p.Warm = 1
+	scope.Profiles["chickadee"] = p
+	bad.Scopes["tester"] = scope
+	if bad.Validate() == nil {
+		t.Fatal("warm budget exceeded across scopes")
+	}
+}

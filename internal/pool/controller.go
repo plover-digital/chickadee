@@ -143,6 +143,17 @@ func RunProfilesOwned(ctx context.Context, c config.Config, backends map[string]
 		return host.Start(ctx, c, slot, id)
 	})
 }
+
+// RunProfilesDrainOwned retires unspent capacity and lets existing jobs finish
+// when drain closes, then releases ownership to a controlled config update.
+func RunProfilesDrainOwned(ctx context.Context, c config.Config, backends map[string]Backend, desired <-chan Demand, owner *Ownership, drain <-chan struct{}) error {
+	if owner == nil {
+		return fmt.Errorf("state ownership required")
+	}
+	return runProfilesWithDrain(ctx, c, backends, desired, func(ctx context.Context, c config.Config, slot int, id string) (machine, error) {
+		return host.Start(ctx, c, slot, id)
+	}, drain)
+}
 func CleanupProfiles(ctx context.Context, c config.Config, backends map[string]Backend, owner *Ownership) error {
 	if owner == nil {
 		return fmt.Errorf("state ownership required")
@@ -165,27 +176,30 @@ func runOwned(ctx context.Context, c config.Config, b Backend, desired <-chan in
 					return
 				}
 				select {
-				case demands <- Demand{c.ScaleSet, n}:
+				case demands <- Demand{c.Key(), n}:
 				case <-adapterCtx.Done():
 					return
 				}
 			}
 		}
 	}()
-	return runProfiles(ctx, c, map[string]Backend{c.ScaleSet: b}, demands, start)
+	return runProfiles(ctx, c, map[string]Backend{c.Key(): b}, demands, start)
 }
 func runProfiles(ctx context.Context, c config.Config, backends map[string]Backend, desired <-chan Demand, start starter) error {
+	return runProfilesWithDrain(ctx, c, backends, desired, start, nil)
+}
+func runProfilesWithDrain(ctx context.Context, c config.Config, backends map[string]Backend, desired <-chan Demand, start starter, drain <-chan struct{}) error {
 	if e := reconcileProfiles(ctx, c, backends); e != nil {
 		return e
 	}
 	configs := map[string]config.Config{}
 	names := []string{}
 	for _, p := range c.ProfileConfigs() {
-		if backends[p.ScaleSet] == nil {
+		if backends[p.Key()] == nil {
 			return fmt.Errorf("profile backend missing")
 		}
-		configs[p.ScaleSet] = p
-		names = append(names, p.ScaleSet)
+		configs[p.Key()] = p
+		names = append(names, p.Key())
 	}
 	limits := c.HostLimits()
 	runCtx, cancel := context.WithCancel(ctx)
@@ -202,10 +216,15 @@ func runProfiles(ctx context.Context, c config.Config, backends map[string]Backe
 	// FIFO admission blocks smaller new boots behind an older request that cannot
 	// fit, so sustained small-job traffic cannot starve a medium/large profile.
 	waiting := []string{}
+	draining := false
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
+		case <-drain:
+			drain = nil
+			draining = true
+			slog.Info("Pool draining; no new credentials or boots")
 		case d, ok := <-desired:
 			if !ok {
 				if ctx.Err() != nil {
@@ -267,6 +286,24 @@ func runProfiles(ctx context.Context, c config.Config, backends map[string]Backe
 				}
 			}
 		}
+		select {
+		case <-drain:
+			drain = nil
+			draining = true
+		default:
+		}
+		if draining {
+			for _, v := range entries {
+				if v.state.State == Ready || v.state.State == Booting {
+					v.state.State = Dead
+					close(v.retire)
+				}
+			}
+			if len(entries) == 0 {
+				return nil
+			}
+			continue
+		}
 		counts := func(name string) (total, active, idle int) {
 			for _, v := range entries {
 				if v.profile != name {
@@ -298,8 +335,8 @@ func runProfiles(ctx context.Context, c config.Config, backends map[string]Backe
 				if e := v.state.Spend(); e != nil {
 					return e
 				}
-				runnerName := name + "-" + v.state.ID
-				if e := host.Save(c.StateDir, host.Record{ID: v.state.ID, Name: runnerName, GitHubURL: c.GitHubURL, RunnerGroupID: c.RunnerGroupID, NotBefore: time.Now().Add(10 * time.Minute)}); e != nil {
+				runnerName := p.ScaleSet + "-" + v.state.ID
+				if e := host.Save(c.StateDir, host.Record{ID: v.state.ID, Name: runnerName, GitHubURL: p.GitHubURL, RunnerGroupID: p.RunnerGroupID, InstallationID: p.InstallationID, NotBefore: time.Now().Add(10 * time.Minute)}); e != nil {
 					return e
 				}
 				v.assign <- runnerName
@@ -462,24 +499,65 @@ func worker(ctx context.Context, c config.Config, b Backend, v *entry, events ch
 	report("done", e)
 }
 func reconcile(ctx context.Context, c config.Config, b Backend) error {
-	return reconcileProfiles(ctx, c, map[string]Backend{c.ScaleSet: b})
+	return reconcileProfiles(ctx, c, map[string]Backend{c.Key(): b})
 }
 
 // RecordProfile derives the immutable scale-set identity from a private intent.
 // Old records need no migration and removed profiles remain recoverable.
-func RecordProfile(c config.Config, r host.Record) (string, error) {
-	if r.GitHubURL != c.GitHubURL || r.RunnerGroupID != c.RunnerGroupID {
-		return "", fmt.Errorf("journal scope changed; restore original GitHub URL and runner group")
-	}
+// RecoveryConfig resolves historical scope identity before contacting GitHub.
+func RecoveryConfig(c config.Config, r host.Record) (config.Config, error) {
 	suffix := "-" + r.ID
 	name := strings.TrimSuffix(r.Name, suffix)
 	if name == r.Name || !config.Name.MatchString(name) {
-		return "", fmt.Errorf("invalid journal profile")
+		return config.Config{}, fmt.Errorf("invalid journal profile")
 	}
-	if len(c.Profiles) == 0 && name != c.ScaleSet {
-		return "", fmt.Errorf("journal scope changed; restore original scale-set configuration")
+	if len(c.Scopes) == 0 {
+		if r.GitHubURL != c.GitHubURL || r.RunnerGroupID != c.RunnerGroupID || (r.InstallationID != 0 && r.InstallationID != c.InstallationID) {
+			return config.Config{}, fmt.Errorf("journal scope changed; restore original GitHub URL, installation and runner group")
+		}
+		if len(c.Profiles) == 0 && name != c.ScaleSet {
+			return config.Config{}, fmt.Errorf("journal scope changed; restore original scale-set configuration")
+		}
+		recovery := c.ProfileConfigs()[0]
+		recovery.ScaleSet = name
+		return recovery, nil
 	}
-	return name, nil
+	var match *config.Config
+	for _, p := range c.ProfileConfigs() {
+		if config.ScopeKey(p.GitHubURL, "") == config.ScopeKey(r.GitHubURL, "") {
+			copy := p
+			match = &copy
+			break
+		}
+	}
+	if match != nil {
+		if match.RunnerGroupID != r.RunnerGroupID || (r.InstallationID != 0 && match.InstallationID != r.InstallationID) {
+			return config.Config{}, fmt.Errorf("journal installation/group changed; restore original scope")
+		}
+		match.ScaleSet = name
+		return *match, nil
+	}
+	// A removed scope is recoverable only with complete durable authentication
+	// identity. Old journals require restoring their scope config rather than guessing.
+	if r.InstallationID <= 0 {
+		return config.Config{}, fmt.Errorf("restore historical scope config to recover legacy intent")
+	}
+	recovery := c.ProfileConfigs()[0]
+	recovery.ScaleSet = name
+	recovery.GitHubURL = r.GitHubURL
+	recovery.RunnerGroupID = r.RunnerGroupID
+	recovery.InstallationID = r.InstallationID
+	if e := recovery.Validate(); e != nil {
+		return config.Config{}, fmt.Errorf("invalid historical scope")
+	}
+	return recovery, nil
+}
+func RecordProfile(c config.Config, r host.Record) (string, error) {
+	recovery, e := RecoveryConfig(c, r)
+	if e != nil {
+		return "", e
+	}
+	return recovery.Key(), nil
 }
 func recordScope(c config.Config, r host.Record) error { _, e := RecordProfile(c, r); return e }
 func reconcileProfiles(ctx context.Context, c config.Config, backends map[string]Backend) error {

@@ -3,8 +3,10 @@
 import json, os, pathlib, subprocess, sys
 
 def settings(c):
-    if c.get('profiles'):
-        profiles = [dict(c['resource_classes'][p['resources']], **c['images'][p['image']], max_vms=p['max_vms']) for p in c['profiles'].values()]
+    if c.get('profiles') or c.get('scopes'):
+        raw=list(c.get('profiles',{}).values())
+        for scope in c.get('scopes',{}).values():raw.extend(scope['profiles'].values())
+        profiles = [dict(c['resource_classes'][p['resources']], **c['images'][p['image']], max_vms=p['max_vms']) for p in raw]
         limits = c['limits']
         count, cpu, memory = limits['max_vms'], limits['max_vcpus'], limits['max_memory_mib']
     else:
@@ -31,7 +33,7 @@ def main():
             assert st.st_uid==0 and not st.st_mode & 0o022, 'image bundles must be root-owned and not group/other writable'
         m=json.load(open(root/'manifest.json'))
         assert p['disk_gib']==m['disk_gib'], 'disk size must match the built filesystem'
-        if c.get('profiles'):
+        if c.get('profiles') or c.get('scopes'):
             assert m.get('os')==p['os'] and m.get('os_version')==p['version'] and m.get('architecture')=='amd64', 'manifest OS/version/architecture mismatch'
             assert m.get('machine')==p['machine'], 'manifest QEMU machine mismatch'
         if m.get('minimum_cpu')=='x86-64-v3':
