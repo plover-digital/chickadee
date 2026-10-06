@@ -1,0 +1,49 @@
+[Unit]
+Description=Chickadee keyless VM host manager
+Wants=network-online.target
+After=network-online.target chickadee-network.service
+Requires=chickadee-network.service
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+User=chickadee-worker
+Group=chickadee-worker
+SupplementaryGroups=kvm
+ExecStartPre=/usr/local/bin/chickadee-worker -config /etc/chickadee-worker/config.json -check
+ExecStart=/usr/local/bin/chickadee-worker -config /etc/chickadee-worker/config.json
+Restart=on-failure
+RestartSec=10
+KillMode=control-group
+# SIGTERM drains locally. Existing jobs keep their bounded local deadline.
+TimeoutStopSec=15000
+TimeoutStartSec=600
+UMask=0077
+StateDirectory=chickadee-worker
+StateDirectoryMode=0700
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+# Private bubblewrap proc mounting is incompatible with masked parent proc.
+# Host sysctl writes are denied by UID/capabilities and verified in preflight.
+ProtectKernelTunables=no
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+CapabilityBoundingSet=
+DevicePolicy=closed
+DeviceAllow=/dev/urandom r
+DeviceAllow=/dev/kvm rw
+DeviceAllow=/dev/net/tun rw
+ReadOnlyPaths=/var/lib/chickadee-images
+ReadWritePaths=/var/lib/chickadee-worker
+MemoryMax=13824M
+MemorySwapMax=0
+CPUQuota=600%
+TasksMax=512
+LimitNOFILE=1024
+
+[Install]
+WantedBy=multi-user.target

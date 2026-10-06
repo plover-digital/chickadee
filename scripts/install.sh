@@ -7,6 +7,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 config=${1:?Usage: install.sh CONFIG_JSON}
 [[ -f bin/chickadee ]]
+command -v bwrap >/dev/null || { echo 'Install bubblewrap before installing Chickadee.' >&2; exit 1; }
 bin/chickadee -config "$config" -check
 catalog=$(python3 -c 'import json,sys;c=json.load(open(sys.argv[1]));print(bool(c.get("profiles") or c.get("scopes")))' "$config")
 if [[ $catalog == False ]]; then

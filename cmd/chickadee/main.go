@@ -22,7 +22,23 @@ func main() {
 	check := flag.Bool("check", false, "validate configuration without contacting GitHub")
 	cleanup := flag.Bool("cleanup", false, "recover local state and remove stale registrations without starting runners")
 	bootCheck := flag.Bool("boot-check", false, "boot to READY twice and destroy both VMs; no GitHub or host network changes")
+	sandboxCheck := flag.Bool("check-sandbox", false, "verify mandatory QEMU isolation without GitHub or a guest")
+	sandboxProbe := flag.String("sandbox-probe", "", "internal isolation preflight child")
 	flag.Parse()
+	if *sandboxProbe != "" {
+		if e := host.SandboxProbe(*sandboxProbe); e != nil {
+			slog.Error("sandbox probe failed", "reason", e.Error())
+			os.Exit(1)
+		}
+		return
+	}
+	if *sandboxCheck {
+		if e := host.CheckSandbox(); e != nil {
+			slog.Error("sandbox preflight failed", "reason", e.Error())
+			os.Exit(1)
+		}
+		return
+	}
 	if (*check && (*cleanup || *bootCheck)) || (*cleanup && *bootCheck) {
 		slog.Error("choose only one of -check, -cleanup, or -boot-check")
 		os.Exit(1)

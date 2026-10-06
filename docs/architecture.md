@@ -146,11 +146,13 @@ disabled; rebuild with reviewed new runner/kernel/Ubuntu pins. GitHub may stop
 assigning jobs if the runner is outdated; follow its
 [runner update policy](https://docs.github.com/en/actions/reference/runners/self-hosted-runners#runner-software-updates-on-self-hosted-runners).
 
-QEMU and the controller currently share a host UID. They do not share host files
-with the guest, but a successful escape into QEMU could read the App key or other
-VM state. Seccomp does not provide a per-VM filesystem boundary. Stronger UID,
-namespace and MAC isolation, plus per-VM host resource control, must precede a
-managed-service security claim. See the [Exa primary-source audit](research-audit.md).
+QEMU and the controller retain the same host UID, but the launcher now requires
+per-VM filesystem, PID and network namespaces. Controller keys, other VM state
+and host processes are absent from the QEMU sandbox. See [isolation](isolation.md)
+for its exact mounts, credential-free probes and host acceptance procedure.
+Per-VM cgroups, storage quotas, kernel/QEMU review and broader isolation testing
+remain required before a managed-service security claim. See the
+[Exa primary-source audit](research-audit.md).
 
 ## Profile scheduling
 

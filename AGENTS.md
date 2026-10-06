@@ -8,7 +8,7 @@ without a Chickadee Roost account, website, vendor API or external database.
 
 - This repository owns QEMU/KVM, guest bootstrap and serial protocol, immutable
   image builders, local VM scheduling, resource limits, cleanup and the standalone
-  GitHub adapter. A future versioned host API also belongs here.
+  GitHub adapter. The versioned public worker API also belongs here.
 - Chickadee Roost owns hosted accounts, OAuth/dashboard, customer admission,
   service policy, aggregate usage and fleet routing. Do not add billing or
   customer-account dependencies to the VM engine.
@@ -17,7 +17,8 @@ without a Chickadee Roost account, website, vendor API or external database.
 
 Website and admission code have moved to the independent public Roost module.
 Check current files and the repository map; do not assume proposed fleet commands
-or remote APIs exist. The current host adapter is still single-host.
+or remote APIs exist. Standalone operation is single-host; experimental keyless workers use the public
+workerapi contract, with hosted fleet policy owned by Roost.
 
 ## Work and verification
 
@@ -43,7 +44,8 @@ or remote APIs exist. The current host adapter is still single-host.
 - Queue-only SIGHUP updates preserve jobs and compatible warm VMs. Image/global
   changes and binary upgrades require controlled draining, not an abrupt restart.
 - Do not duplicate GitHub listeners by copying deployment config to another host.
-  Multi-host support is proposed and not implemented in the current release.
+  Fleet support is experimental. Keep one central GitHub listener per queue;
+  validate both workers and restart/partition behavior before expanding deployment.
 
 ## Deployment boundaries
 

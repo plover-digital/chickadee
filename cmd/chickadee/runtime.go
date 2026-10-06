@@ -67,7 +67,9 @@ func serve(parent context.Context, c config.Config, path string, backends map[st
 			values := make(chan int, 16)
 			done := make(chan error, 1)
 			go func() {
-				err := client.Poll(pollCtx, p.ScaleSet, p.Max, values)
+				err := pollWithRetry(pollCtx, values, 2*time.Second, func(callCtx context.Context, out chan<- int) error {
+					return client.Poll(callCtx, p.ScaleSet, p.Max, out)
+				})
 				close(finished) // Session.Close has finished before a replacement starts.
 				done <- err
 			}()
@@ -269,4 +271,31 @@ func writeReloadResult(dir, digest string, reloadErr error) error {
 		return e
 	}
 	return os.Rename(f.Name(), filepath.Join(dir, "reload.json"))
+}
+
+// A queue outage clears its outstanding demand and retries independently.
+// Existing credentialed VMs and unrelated queues keep running.
+func pollWithRetry(ctx context.Context, values chan<- int, delay time.Duration, poll func(context.Context, chan<- int) error) error {
+	for {
+		err := poll(ctx, values)
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		// Do not log API error bodies: upstream messages can contain sensitive data.
+		slog.Warn("Queue demand listener unavailable; preserving existing jobs and retrying")
+		_ = err
+		select {
+		case values <- 0:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+		timer := time.NewTimer(delay)
+		select {
+		case <-timer.C:
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err()
+		}
+		delay = min(30*time.Second, delay*2)
+	}
 }

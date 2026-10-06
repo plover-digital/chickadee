@@ -20,7 +20,7 @@ rather than per-VM cgroups, best-effort log export and unverified real-host netw
 | Public repositories | GitHub advises against exposing self-hosted runners to public fork workloads; groups default to private repositories. | Default public CI uses hosted runners. Self-hosting is opt-in for reviewed main-branch jobs, with group repository/workflow restrictions. |
 | microvm | QEMU supports microvm with KVM, host kernel/initrd and virtio-mmio; PCI/ACPI features are absent. | Direct boot, KVM required for job VMs; no snapshots or suspend. Generic kernel features are checked in image build. |
 | Serial startup | A listening socket with `wait=on` blocks startup until a client connects. | Host connects before boot; guest disables echo, sends READY once, and waits for CONFIG. Boot-only check exercises this. |
-| Process security | QEMU recommends unprivileged processes and access limited to each guest's own resources; seccomp is only one isolation layer. | Non-root and seccomp enabled, but a shared UID can access the host App key and other disks after an emulator escape. Stronger per-VM filesystem/process isolation is required before a managed service. |
+| Process security | QEMU recommends unprivileged processes and access limited to each guest's own resources; seccomp is only one isolation layer. | Non-root and seccomp retained; mandatory per-VM bubblewrap filesystem/PID/network namespaces now hide keys, sibling disks and host processes. Source probes pass; actual host acceptance and per-VM resource isolation remain required. See [isolation](isolation.md). |
 | Exit proof | Process pidfds become ready only once all threads in that process have exited. | Recovery uses pidfd signaling **and polling**, then deletes disks. A real-process test covers the wait. |
 | Resources | systemd quotas apply to the unit and its processes; swap has a separate limit. | Aggregate CPU/RAM/task quotas, swap disabled, guest vCPU/RAM bounds, and per-QEMU disk file-size cap. Not per-VM CPU/host-overhead cgroups or traffic shaping. |
 | Backing storage | Updating a backing image corrupts dependent overlays; live images must not be modified with qemu-img. | Base installed root-owned/read-only; never commit/rebase live disks; overlays deleted after exit. No secure-erase promise. |
@@ -46,8 +46,9 @@ rather than per-VM cgroups, best-effort log export and unverified real-host netw
 - Organization deployment documentation includes public-repository access and
   selected-workflow policy prerequisites rather than assuming a label is a security
   boundary. No existing organization policy is silently modified.
-- The trust model names shared-UID exposure and per-VM resource isolation gaps as
-  managed-service blockers; KVM plus seccomp alone is not claimed to solve them.
+- The trust model records per-VM namespace isolation and remaining resource/security
+  review gaps; source probes do not replace real-host acceptance. KVM plus
+  seccomp alone is not claimed to solve tenant isolation.
 
 ## Primary references
 

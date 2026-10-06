@@ -3,12 +3,15 @@
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/plover-digital/chickadee/internal/config"
 )
@@ -71,5 +74,47 @@ func TestQueueReloadAcknowledgesExactConfigAndRejectsHostChanges(t *testing.T) {
 	json.Unmarshal(data, &state)
 	if state["status"] != "rejected" || state["config_sha256"] != rejectedDigest {
 		t.Fatal("rejected update was not distinguishable from previous acknowledgement")
+	}
+}
+
+func TestQueuePollFailureClearsDemandAndRetriesWithoutCancelingJobs(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	values := make(chan int, 4)
+	done := make(chan error, 1)
+	attempt := 0
+	go func() {
+		done <- pollWithRetry(ctx, values, time.Millisecond, func(call context.Context, out chan<- int) error {
+			attempt++
+			if attempt == 1 {
+				out <- 4
+				return fmt.Errorf("session failed")
+			}
+			out <- 2
+			<-call.Done()
+			return call.Err()
+		})
+	}()
+	for _, want := range []int{4, 0, 2} {
+		select {
+		case got := <-values:
+			if got != want {
+				t.Fatalf("demand=%d want%d", got, want)
+			}
+		case <-time.After(time.Second):
+			t.Fatal("queue did not recover")
+		}
+	}
+	if ctx.Err() != nil {
+		t.Fatal("queue outage canceled fleet context")
+	}
+	cancel()
+	select {
+	case err := <-done:
+		if err != context.Canceled {
+			t.Fatal(err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("retry did not stop")
 	}
 }

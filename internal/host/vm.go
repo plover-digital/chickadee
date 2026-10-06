@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -22,13 +23,14 @@ import (
 )
 
 type VM struct {
-	ID     string
-	Slot   int
-	Dir    string
-	cmd    *exec.Cmd
-	exited chan struct{}
-	Conn   net.Conn
-	Reader *protocol.Reader
+	ID      string
+	Slot    int
+	Dir     string
+	cmd     *exec.Cmd
+	exited  chan struct{}
+	exitErr error
+	Conn    net.Conn
+	Reader  *protocol.Reader
 }
 
 func NewID() string {
@@ -63,12 +65,20 @@ func start(ctx context.Context, c config.Config, slot int, id string, offline bo
 		return v, fmt.Errorf("overlay creation failed")
 	}
 	sock := filepath.Join(v.Dir, "serial.sock")
-	netdev := fmt.Sprintf("tap,id=net,ifname=ck%02d,script=no,downscript=no", slot)
+	netdev := inheritedTAPNetdev()
+	var tap *os.File
+	if !offline {
+		tap, err = openOwnedTAP(slot)
+		if err != nil {
+			return v, fmt.Errorf("owned TAP open failed")
+		}
+		defer tap.Close()
+	}
 	if offline {
 		netdev = "user,id=net,restrict=on"
 	}
 	machineType, diskDevice, netDevice, rngDevice := machineDevices(c.Machine)
-	args := []string{"--fsize=" + strconv.FormatInt(int64(c.DiskGiB+1)<<30, 10) + ":" + strconv.FormatInt(int64(c.DiskGiB+1)<<30, 10), "--", "qemu-system-x86_64",
+	args := []string{"--fsize=" + strconv.FormatInt(int64(c.DiskGiB+1)<<30, 10) + ":" + strconv.FormatInt(int64(c.DiskGiB+1)<<30, 10), "--",
 		"-name", "chickadee-" + id, "-machine", machineType, "-enable-kvm", "-cpu", "host", "-smp", strconv.Itoa(c.CPUs), "-m", strconv.Itoa(c.MemoryMiB),
 		"-object", "rng-random,id=rng,filename=/dev/urandom", "-device", rngDevice + ",rng=rng",
 		"-nodefaults", "-no-user-config", "-display", "none", "-monitor", "none", "-no-reboot",
@@ -76,9 +86,37 @@ func start(ctx context.Context, c config.Config, slot int, id string, offline bo
 		"-kernel", filepath.Join(c.ImageDir, "vmlinuz"), "-initrd", filepath.Join(c.ImageDir, "initrd"),
 		"-append", fmt.Sprintf("root=LABEL=chickadee rw console=tty0 quiet panic=1 reboot=t net.ifnames=0 ck.slot=%d", slot),
 		"-drive", "if=none,id=root,format=qcow2,file=" + disk, "-device", diskDevice + ",drive=root",
-		"-netdev", netdev, "-device", netDevice + ",netdev=net",
+		"-netdev", netdev, "-device", networkDeviceArgs(netDevice),
 		"-chardev", "socket,id=bootstrap,path=" + sock + ",server=on,wait=on", "-serial", "chardev:bootstrap"}
+	sandbox, e := qemuSandbox(v.Dir, c.ImageDir, args[2:])
+	if e != nil {
+		return v, e
+	}
+	args = append(args[:2], sandbox...)
+	infoRead, infoWrite, e := os.Pipe()
+	if e != nil {
+		return v, e
+	}
+	defer infoRead.Close()
+	defer infoWrite.Close()
+	infoFD := 3
+	if tap != nil {
+		infoFD = 4
+	}
+	// Insert before the sandbox command separator.
+	for i := 2; i < len(args); i++ {
+		if args[i] == "--" {
+			args = append(args[:i], append([]string{"--info-fd", strconv.Itoa(infoFD)}, args[i:]...)...)
+			break
+		}
+	}
 	v.cmd = exec.Command("prlimit", args...)
+	if tap != nil {
+		v.cmd.ExtraFiles = []*os.File{tap, infoWrite}
+	}
+	if tap == nil {
+		v.cmd.ExtraFiles = []*os.File{infoWrite}
+	}
 	v.cmd.Env = processEnv()
 	v.cmd.SysProcAttr = &syscall.SysProcAttr{Pdeathsig: syscall.SIGKILL}
 	// Never forward untrusted guest console or QEMU arguments to journald.
@@ -92,7 +130,31 @@ func start(ctx context.Context, c config.Config, slot int, id string, offline bo
 		qlog.Close()
 		return v, fmt.Errorf("QEMU start failed")
 	}
-	go func() { _ = v.cmd.Wait(); _ = qlog.Close(); close(v.exited) }()
+	_ = infoWrite.Close()
+	_ = infoRead.SetReadDeadline(time.Now().Add(10 * time.Second))
+	var info struct {
+		PID int `json:"child-pid"`
+	}
+	infoErr := json.NewDecoder(io.LimitReader(infoRead, 4096)).Decode(&info)
+	childFD := -1
+	childGone := false
+	if infoErr == nil && info.PID > 0 {
+		fd, _, errno := syscall.Syscall(434, uintptr(info.PID), 0, 0)
+		if errno == 0 {
+			childFD = int(fd)
+		} else if errno == syscall.ESRCH {
+			childGone = true
+		} else {
+			infoErr = errno
+		}
+	} else {
+		infoErr = fmt.Errorf("sandbox process identity unavailable")
+	}
+	go v.awaitSandboxExit(qlog, childFD, childGone)
+	if infoErr != nil {
+		_ = v.Stop()
+		return v, fmt.Errorf("sandbox process identity unavailable; disk retained")
+	}
 	stopCancel := context.AfterFunc(ctx, func() { _ = v.cmd.Process.Kill() })
 	defer stopCancel()
 	defer func() {
@@ -139,13 +201,13 @@ func (v *VM) Stop() error {
 	}
 	select {
 	case <-v.exited:
-		return nil
+		return v.exitErr
 	default:
 	}
 	_ = v.cmd.Process.Kill()
 	select {
 	case <-v.exited:
-		return nil
+		return v.exitErr
 	case <-time.After(10 * time.Second):
 		return fmt.Errorf("QEMU exit unconfirmed; disk retained")
 	}
@@ -237,4 +299,32 @@ func machineDevices(name string) (string, string, string, string) {
 		return "q35", "virtio-blk-pci", "virtio-net-pci", "virtio-rng-pci"
 	}
 	return "microvm,acpi=off,isa-serial=on,auto-kernel-cmdline=on", "virtio-blk-device", "virtio-net-device", "virtio-rng-device"
+}
+
+// Guardian termination alone is insufficient: wait for the namespace's actual
+// QEMU thread group before exposing an exit event to cleanup/scheduling.
+func (v *VM) awaitSandboxExit(log io.Closer, childFD int, childGone bool) {
+	_ = v.cmd.Wait()
+	if log != nil {
+		_ = log.Close()
+	}
+	if childFD >= 0 {
+		v.exitErr = waitPIDFD(childFD, 10*time.Second)
+		syscall.Close(childFD)
+	} else if !childGone {
+		v.exitErr = fmt.Errorf("QEMU exit unconfirmed; disk retained")
+	}
+	close(v.exited)
+}
+
+// The QEMU fd= branch rejects script/downscript even when set to no.
+func inheritedTAPNetdev() string { return "tap,id=net,fd=3" }
+
+// Direct kernel boot does not need a PCI network option ROM. Avoid firmware
+// symlink dependencies outside the bounded sandbox on RPM distributions.
+func networkDeviceArgs(device string) string {
+	if device == "virtio-net-pci" {
+		return device + ",netdev=net,romfile="
+	}
+	return device + ",netdev=net"
 }

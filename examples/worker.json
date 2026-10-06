@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "identity": {"worker_id": "worker-one", "broker_id": "roost", "generation": 1},
+  "state_dir": "/var/lib/chickadee-worker",
+  "listen": "127.0.0.1:18443",
+  "tls": {
+    "certificate_file": "/etc/chickadee-worker/worker.crt",
+    "key_file": "/etc/chickadee-worker/worker.key",
+    "ca_file": "/etc/chickadee-worker/fleet-ca.crt"
+  },
+  "budget": {"max_vms": 2, "max_cpus": 6, "max_memory_mib": 12288},
+  "boot_timeout_seconds": 120,
+  "job_timeout_seconds": 3600,
+  "reservation_timeout_seconds": 180,
+  "profiles": [
+    {
+      "id": "ubuntu-2604-small",
+      "digest": "0000000000000000000000000000000000000000000000000000000000000000",
+      "image_dir": "/var/lib/chickadee-image/ubuntu-2604",
+      "machine": "q35",
+      "cpus": 2, "memory_mib": 4096, "disk_gib": 48, "warm_pool": 0
+    },
+    {
+      "id": "ubuntu-2604-medium",
+      "digest": "0000000000000000000000000000000000000000000000000000000000000000",
+      "image_dir": "/var/lib/chickadee-image/ubuntu-2604",
+      "machine": "q35",
+      "cpus": 4, "memory_mib": 8192, "disk_gib": 48, "warm_pool": 1
+    }
+  ]
+}

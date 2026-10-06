@@ -1,8 +1,10 @@
 # Proposal: service manager and host managers
 
-Status: design review, not implemented. The current release runs its VM fleet on
-one Linux host. Adding a second machine requires a worker boundary, not a copy of
-the existing configuration. This proposal uses the separate host and Roost repositories, Go binaries,
+Status: experimental worker implementation and pilot acceptance in progress.
+Standalone operation remains single-host. The keyless host engine and bounded
+mTLS worker API now exist; Roost owns the fleet scheduler. Full hosted rollout
+and the acceptance matrix below are separate from source completion. Adding a
+second machine uses the worker boundary, never a copy of GitHub listeners. This proposal uses the separate host and Roost repositories, Go binaries,
 systemd and local disks; it adds no Kubernetes, shared filesystem, external
 database or controller high availability.
 
@@ -24,7 +26,7 @@ billing and host routing. The proposed repository split is:
 The service-manager component is named **Chickadee Roost**; the hosted website
 remains `chickadee.run`. The website, OAuth and admission bridge have moved to the public
 [Roost repository](https://github.com/plover-digital/chickadee-roost); the host API
-and fleet routing remain planned. The host repository must never depend
+and experimental fleet routing are now under acceptance. The host repository must never depend
 on the service repository. Share only a small versioned protocol/client package,
 not a common library containing customer state and VM execution code.
 
@@ -82,8 +84,10 @@ flowchart TD
 The controller alone owns GitHub listeners, App credentials, JIT creation,
 customer policy, placement and fleet-wide accounting. Agents own their local
 QEMU processes, serial sockets, TAP slots, overlays, deadlines and cleanup.
-An outbound mutually authenticated TLS connection lets an agent reach a single
-controller without opening a worker management port. Guest networking must not
+The initial prototype uses a worker HTTPS listener bound to an explicit private
+address, mutually authenticated TLS 1.3, pinned CA and exact worker/broker URI
+identities. Operators restrict its firewall source to the broker. An outbound
+agent connection is a possible later transport; it is not implemented. Guest networking must not
 grant access to management services. Host enrollment and certificates are
 operator-controlled, not a public runner-provider signup.
 

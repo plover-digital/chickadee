@@ -16,7 +16,7 @@ Install build and runtime dependencies on the intended Ubuntu machine:
 ```sh
 sudo apt-get update
 sudo apt-get install -y qemu-system-x86 qemu-utils libguestfs-tools isc-dhcp-client nftables \
-  iproute2 util-linux python3 curl gpgv ubuntu-keyring xz-utils build-essential linux-image-generic
+  iproute2 util-linux bubblewrap python3 curl gpgv ubuntu-keyring xz-utils build-essential linux-image-generic
 ```
 
 Install Go **1.26.3** from the official [Go downloads](https://go.dev/dl/) after

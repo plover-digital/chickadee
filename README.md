@@ -84,3 +84,12 @@ and usage graphs. Supported queue updates do not restart running job VMs.
 Its website, OAuth, admission and customer policy live in their own public repository; self-hosting Chickadee does not require Roost.
 Multi-host scheduling is planned, not implemented; see the
 [multi-host proposal](docs/multi-host.md).
+
+## Experimental keyless workers
+
+`chickadee-worker` manages a shared credential-free VM pool without GitHub App
+keys. The public [worker protocol](workerapi/README.md) uses pinned mTLS identities
+and a trusted local image/resource catalog; [Chickadee Roost](https://github.com/plover-digital/chickadee-roost) owns hosted listeners and fleet placement.
+Standalone installation remains independent of Roost. See
+[isolation](docs/isolation.md) and [fleet design and limitations](docs/multi-host.md)
+before deploying untrusted jobs.

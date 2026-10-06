@@ -28,7 +28,10 @@ NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
 PrivateTmp=yes
-ProtectKernelTunables=yes
+# A masked parent proc prevents unprivileged bubblewrap from mounting its
+# private PID-namespace proc. Host sysctl writes remain denied by the service
+# UID and empty capability set; preflight verifies denial without writing.
+ProtectKernelTunables=no
 ProtectKernelModules=yes
 ProtectControlGroups=yes
 RestrictSUIDSGID=yes
