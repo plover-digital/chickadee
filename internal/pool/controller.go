@@ -159,12 +159,18 @@ func RunProfilesOwned(ctx context.Context, c config.Config, backends map[string]
 // RunProfilesDrainOwned retires unspent capacity and lets existing jobs finish
 // when drain closes, then releases ownership to a controlled config update.
 func RunProfilesDrainOwned(ctx context.Context, c config.Config, backends map[string]Backend, desired <-chan Demand, owner *Ownership, drain <-chan struct{}) error {
+	return RunProfilesReloadDrainOwned(ctx, c, backends, desired, owner, drain, nil)
+}
+
+// RunProfilesReloadDrainOwned accepts validated live scope updates while keeping
+// the same process ownership, physical VM pool and credentialed jobs.
+func RunProfilesReloadDrainOwned(ctx context.Context, c config.Config, backends map[string]Backend, desired <-chan Demand, owner *Ownership, drain <-chan struct{}, updates <-chan ProfileUpdate) error {
 	if owner == nil {
 		return fmt.Errorf("state ownership required")
 	}
-	return runProfilesWithDrain(ctx, c, backends, desired, func(ctx context.Context, c config.Config, slot int, id string) (machine, error) {
+	return runProfilesWithUpdates(ctx, c, backends, desired, func(ctx context.Context, c config.Config, slot int, id string) (machine, error) {
 		return host.Start(ctx, c, slot, id)
-	}, drain)
+	}, drain, updates)
 }
 func CleanupProfiles(ctx context.Context, c config.Config, backends map[string]Backend, owner *Ownership) error {
 	if owner == nil {
@@ -201,6 +207,16 @@ func runProfiles(ctx context.Context, c config.Config, backends map[string]Backe
 	return runProfilesWithDrain(ctx, c, backends, desired, start, nil)
 }
 func runProfilesWithDrain(ctx context.Context, c config.Config, backends map[string]Backend, desired <-chan Demand, start starter, drain <-chan struct{}) error {
+	return runProfilesWithUpdates(ctx, c, backends, desired, start, drain, nil)
+}
+
+func runProfilesWithUpdates(ctx context.Context, c config.Config, backends map[string]Backend, desired <-chan Demand, start starter, drain <-chan struct{}, updates <-chan ProfileUpdate) error {
+	// Registries belong exclusively to this actor, never to the poll supervisor.
+	ownedBackends := make(map[string]Backend, len(backends))
+	for name, backend := range backends {
+		ownedBackends[name] = backend
+	}
+	backends = ownedBackends
 	if e := reconcileProfiles(ctx, c, backends); e != nil {
 		return e
 	}
@@ -229,6 +245,10 @@ func runProfilesWithDrain(ctx context.Context, c config.Config, backends map[str
 	// fit, so sustained small-job traffic cannot starve a medium/large profile.
 	waiting := []string{}
 	draining := false
+	active := map[string]bool{}
+	for _, name := range names {
+		active[name] = true
+	}
 	for {
 		select {
 		case <-ctx.Done():
@@ -237,6 +257,88 @@ func runProfilesWithDrain(ctx context.Context, c config.Config, backends map[str
 			drain = nil
 			draining = true
 			slog.Info("Pool draining; no new credentials or boots")
+		case update, ok := <-updates:
+			if !ok {
+				updates = nil
+				continue
+			}
+			select {
+			case <-drain:
+				drain = nil
+				draining = true
+			default:
+			}
+			err := ValidateReload(c, update.Config)
+			if draining {
+				err = fmt.Errorf("pool is draining")
+			}
+			var profiles []config.Config
+			if err == nil {
+				profiles = update.Config.ProfileConfigs()
+				for _, p := range profiles {
+					if update.Backends[p.Key()] == nil && backends[p.Key()] == nil {
+						err = fmt.Errorf("profile backend missing")
+						break
+					}
+					for _, previous := range configs {
+						if config.ScopeKey(previous.GitHubURL, "") == config.ScopeKey(p.GitHubURL, "") && !sameScopeIdentity(previous, p) {
+							err = fmt.Errorf("historical scope identity is still in use")
+						}
+						if previous.Key() == p.Key() && !compatibleGuest(previous, p) {
+							err = fmt.Errorf("historical queue profile is still in use")
+						}
+					}
+				}
+			}
+			if err == nil {
+				newNames := []string{}
+				newActive := map[string]bool{}
+				newConfigs := make(map[string]config.Config, len(configs)+len(profiles))
+				for name, p := range configs {
+					newConfigs[name] = p
+				}
+				for _, p := range profiles {
+					newNames = append(newNames, p.Key())
+					newActive[p.Key()] = true
+					newConfigs[p.Key()] = p
+				}
+				// Publish the status successfully before touching live entries/maps.
+				err = writeStatus(update.Config, newConfigs, newNames, entries, requested, false)
+				if err == nil {
+					names, active, configs = newNames, newActive, newConfigs
+					for _, p := range profiles {
+						if update.Backends[p.Key()] != nil {
+							backends[p.Key()] = update.Backends[p.Key()]
+						}
+					}
+					for _, v := range entries {
+						if !active[v.profile] && (v.state.State == Ready || v.state.State == Booting) {
+							v.state.State = Dead
+							close(v.retire)
+						}
+					}
+					kept := waiting[:0]
+					for _, name := range waiting {
+						if active[name] {
+							kept = append(kept, name)
+						}
+					}
+					waiting = kept
+					for name := range requested {
+						if !active[name] {
+							delete(requested, name)
+						}
+					}
+					c = update.Config
+				}
+			}
+			if update.Applied != nil {
+				update.Applied <- err
+			}
+			if err != nil {
+				slog.Warn("Pool update rejected")
+			}
+			continue
 		case d, ok := <-desired:
 			if !ok {
 				if ctx.Err() != nil {
@@ -245,8 +347,9 @@ func runProfilesWithDrain(ctx context.Context, c config.Config, backends map[str
 				return fmt.Errorf("demand stream closed")
 			}
 			p, ok := configs[d.Profile]
-			if !ok {
-				return fmt.Errorf("unknown demand profile")
+			if !ok || !active[d.Profile] {
+				// A canceled poller may already have a queued final demand value.
+				continue
 			}
 			n := min(p.Max, max(0, d.Assigned))
 			if n != requested[d.Profile] {
@@ -301,6 +404,32 @@ func runProfilesWithDrain(ctx context.Context, c config.Config, backends map[str
 				cc()
 				if e != nil {
 					slog.Warn("registration cleanup pending")
+				}
+			}
+			// Keep historical identities only while a worker or durable intent
+			// can still need them. Never prune when journal inspection fails.
+			if records, err := host.Records(c.StateDir); err == nil {
+				needed := map[string]bool{}
+				for _, v := range entries {
+					needed[v.profile] = true
+				}
+				valid := true
+				for _, record := range records {
+					name, err := RecordProfile(c, record)
+					if err != nil {
+						valid = false
+						break
+					}
+					needed[name] = true
+				}
+				if valid {
+					for name := range backends {
+						if !active[name] && !needed[name] {
+							delete(configs, name)
+							delete(backends, name)
+							delete(nextBoot, name)
+						}
+					}
 				}
 			}
 		}
@@ -441,7 +570,8 @@ func runProfilesWithDrain(ctx context.Context, c config.Config, backends map[str
 			v := &entry{profile: name, state: VM{ID: id, State: Booting}, slot: slot, assign: make(chan assignment, 1), retire: make(chan struct{})}
 			entries[id] = v
 			wg.Add(1)
-			go func() { defer wg.Done(); worker(runCtx, configs[name], v, events, start) }()
+			bootConfig := configs[name]
+			go func() { defer wg.Done(); worker(runCtx, bootConfig, v, events, start) }()
 		}
 		// Shrink canceled/excess warm capacity, retaining resources until done.
 		for _, name := range names {

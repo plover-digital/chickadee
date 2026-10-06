@@ -4,19 +4,22 @@
 Run as root on the runner host. Site transport is pinned SSH + private Unix
 socket. Policy admits trusted user IDs and explicitly approved queues only.
 """
-import argparse, copy, fcntl, importlib.util, json, os, pathlib, subprocess, tempfile, time
+import argparse, copy, fcntl, importlib.util, hashlib, json, os, pathlib, re, subprocess, tempfile, time
 
 spec=importlib.util.spec_from_file_location('admit',pathlib.Path(__file__).with_name('admit-installation.py'))
 admit=importlib.util.module_from_spec(spec);spec.loader.exec_module(admit)
 
 
-def approved_request(entry, policy):
+def approved_request(entry, policy, profile_catalog=None):
     approval=policy.get('approved_users',{}).get(str(entry['user']['id']))
     if approval is None:return None
     desired=entry.get('desired_state') or 'active'
     if desired not in ('active','paused','disconnected'):raise ValueError('invalid desired state')
     requested=entry.get('queues') or ['chickadee']
-    allowed=approval.get('queues',['chickadee'])
+    if approval.get('auto_queues',False):
+        if approval['auto_queues'] is not True or profile_catalog is None:raise ValueError('automatic queue policy requires the configured host catalog')
+        allowed=list(profile_catalog)
+    else:allowed=approval.get('queues',['chickadee'])
     queues=['chickadee']+list(dict.fromkeys(q for q in requested if q!='chickadee' and q in allowed))
     return dict(entry,queues=queues,max_vms=approval.get('max_vms',1))
 
@@ -25,7 +28,99 @@ def scope_name(entry):
     return ('org-'+str(entry['account']['id']) if entry['account']['type']=='Organization' else 'repo-'+str(entry['repository']['id']))
 
 
-def install_config(candidate,path,quarantine):
+def workflow_access(entry, policy):
+    mode=policy.get('repository_workflow_access',{}).get(str(entry['repository']['id']),'workflow')
+    if mode not in ('workflow','repository'):raise ValueError('invalid operator workflow access policy')
+    if mode=='repository' and (entry['account']['type']!='Organization' or not entry['repository'].get('private')):
+        raise ValueError('repository-only workflow approval requires an exact private organization repository')
+    return mode
+
+
+class WorkflowPathRequired(ValueError):
+    pass
+
+
+def workflow_for_request(entry, policy, config):
+    """Use an explicit org workflow; only existing scopes retain old policy defaults."""
+    provided=entry.get('workflow_path')
+    if entry['account']['type']!='Organization':
+        return '.github/workflows/chickadee.yml' # Personal scopes do not use runner groups.
+    if not provided:
+        url=('https://github.com/'+entry['account']['login']).lower().rstrip('/')
+        scopes=config.get('scopes') or {'primary':config}
+        legacy=any(scope.get('github_url','').lower().rstrip('/')==url and scope.get('app_installation_id')==entry['installation_id'] for scope in scopes.values())
+        if not legacy:
+            raise WorkflowPathRequired('Enter the main-branch workflow file path to finish organization setup.')
+        provided=policy.get('workflow','.github/workflows/ci.yaml')
+    if not isinstance(provided,str) or not re.fullmatch(r'\.github/workflows/[A-Za-z0-9_-]+\.ya?ml',provided):
+        raise WorkflowPathRequired('Use a workflow file path such as .github/workflows/ci.yml; the runner group allows its main branch.')
+    return provided
+
+
+def replace_config_bytes(path, encoded, ownership):
+    fd,name=tempfile.mkstemp(prefix='.config-',dir=path.parent)
+    try:
+        with os.fdopen(fd,'wb') as file:file.write(encoded);file.flush();os.fsync(file.fileno())
+        os.chown(name,ownership.st_uid,ownership.st_gid);os.chmod(name,ownership.st_mode&0o777)
+        os.replace(name,path)
+    finally:
+        pathlib.Path(name).unlink(missing_ok=True)
+
+
+class LiveReloadRejected(RuntimeError):
+    pass
+
+class LiveReloadUncertain(RuntimeError):
+    pass
+
+
+def wait_reload_ack(runtime, digest, started):
+    import datetime
+    deadline=time.monotonic()+150
+    while True:
+        try:
+            acknowledgement=json.loads((runtime/'reload.json').read_text())
+            updated=datetime.datetime.fromisoformat(acknowledgement['updated_at'].replace('Z','+00:00')).timestamp()
+            if acknowledgement.get('config_sha256')==digest and updated>=started:
+                if acknowledgement.get('status')=='applied':return
+                if acknowledgement.get('status')=='rejected':raise LiveReloadRejected('controller rejected live scope update')
+        except (OSError,ValueError,KeyError):pass
+        if time.monotonic()>deadline:raise LiveReloadUncertain('controller did not acknowledge live scope update')
+        time.sleep(1)
+
+
+def install_live_config(candidate, path):
+    """Install scope changes without stopping job VMs; require controller confirmation."""
+    old_bytes=path.read_bytes();ownership=path.stat()
+    runtime=pathlib.Path(json.loads(old_bytes)['state_dir'])
+    encoded=(json.dumps(candidate,indent=2)+'\n').encode()
+    digest=hashlib.sha256(encoded).hexdigest()
+    backup=path.with_name(path.name+'.before-managed-update');backup.write_bytes(old_bytes);backup.chmod(0o600)
+    started=time.time()
+    replace_config_bytes(path,encoded,ownership)
+    try:
+        subprocess.run(['systemctl','kill','--kill-whom=main','--signal=SIGHUP','chickadee'],check=True)
+        wait_reload_ack(runtime,digest,started)
+    except LiveReloadRejected:
+        # A rejected acknowledgement proves the actor retained its previous state.
+        replace_config_bytes(path,old_bytes,ownership)
+        raise
+    except Exception:
+        # A lost ACK is ambiguous: synchronize the actor back to the restored disk.
+        replace_config_bytes(path,old_bytes,ownership)
+        restored=time.time()
+        try:
+            subprocess.run(['systemctl','kill','--kill-whom=main','--signal=SIGHUP','chickadee'],check=True)
+            wait_reload_ack(runtime,hashlib.sha256(old_bytes).hexdigest(),restored)
+        except Exception as error:
+            marker=runtime/'admission-uncertain.json'
+            fd=os.open(marker,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600)
+            with os.fdopen(fd,'w') as file:json.dump({'reason':'Live update and rollback were not acknowledged; operator must verify runtime before clearing this admission stop.'},file);file.write('\n');file.flush();os.fsync(file.fileno())
+            raise LiveReloadUncertain('runtime rollback not acknowledged; further admission stopped') from error
+        raise LiveReloadUncertain('live update was not acknowledged; previous runtime restored')
+
+
+def install_config(candidate,path,quarantine,live_reload=False):
     encoded=json.dumps(candidate,indent=2)+'\n'
     with tempfile.TemporaryDirectory(prefix='chickadee-config-') as tmp:
         stage=pathlib.Path(tmp)/'config.json';stage.write_text(encoded);stage.chmod(0o600)
@@ -34,6 +129,9 @@ def install_config(candidate,path,quarantine):
         state=subprocess.check_output(['systemctl','show','chickadee','-p','ActiveState','--value'],text=True).strip()
         if state=='activating':raise RuntimeError('controller still starting; retry later')
         active=state=='active'
+        if active and live_reload and not quarantine:
+            install_live_config(candidate,path)
+            return
         if active:
             subprocess.run(['systemctl','kill','--kill-whom=main','--signal=SIGUSR1','chickadee'],check=True)
             deadline=time.monotonic()+candidate['job_timeout_seconds']+120
@@ -108,19 +206,25 @@ def main():
         site_available=False
         entries=json.loads((state/'requests.json').read_text()) if (state/'requests.json').exists() else []
     if not isinstance(entries,list) or len(entries)>500:raise ValueError('invalid site request list')
+    if (pathlib.Path(original['state_dir'])/'admission-uncertain.json').exists():
+        raise LiveReloadUncertain('admission stopped until operator verifies runtime')
     updates=[];quarantine=set()
     # Managed scope seeds allow revocation checks before a user has signed in.
+    catalog=original.get('profiles') or original.get('scopes',{}).get('primary',{}).get('profiles',{})
     requests_by_scope={scope_name(e):e for e in policy.get('managed_requests',[])}
     for entry in entries:
-        if approved_request(entry,policy) is None:continue
+        if approved_request(entry,policy,catalog) is None:continue
         name=scope_name(entry);previous=requests_by_scope.get(name)
         if previous is not None and (previous['user']['id']!=entry['user']['id'] or previous['installation_id']!=entry['installation_id']):raise ValueError('conflicting scope owners require operator review')
-        requests_by_scope[name]=entry
+        merged=dict(entry)
+        if previous is not None and not merged.get('workflow_path') and previous['repository']['id']==entry['repository']['id'] and previous.get('workflow_path'):
+            merged['workflow_path']=previous['workflow_path']
+        requests_by_scope[name]=merged
     requests=list(requests_by_scope.values())
     jwt=admit.setup.app_jwt(original['app_client_id'],pathlib.Path(original['app_key_file']))
     verified={}
     for entry in requests:
-        request=approved_request(entry,policy)
+        request=approved_request(entry,policy,catalog)
         if request is None:continue
         name=scope_name(entry)
         # Never let an enrollment mutate the operator's primary scope.
@@ -131,7 +235,7 @@ def main():
             continue
         if name in verified:raise ValueError('multiple requests target one scope; operator reconciliation required')
         verified[name]=True
-        desired=entry.get('desired_state') or 'active';status='pending';enabled=[];message=''
+        desired=entry.get('desired_state') or 'active';status='pending';enabled=[];message='';applied_workflow='';applied_access='workflow'
         revoked=False
         try:
             lookup_installation=True
@@ -160,22 +264,41 @@ def main():
             status='permission-required' if revoked else desired
             message='GitHub access removed, suspended, or awaiting permission approval.' if revoked else 'New assignments stopped; running jobs finished before applying this state.'
         else:
+            try:
+                mode=workflow_access(request,policy)
+                workflow='.github/workflows/chickadee.yml' if mode=='repository' else workflow_for_request(request,policy,original)
+            except WorkflowPathRequired as error:
+                # One incomplete org setup must not block all other beta users.
+                if entry.get('id'):
+                    updates.append({'id':entry['id'],'status':'pending','enabled_queues':[],'message':str(error)})
+                continue
             with tempfile.TemporaryDirectory(prefix='chickadee-admission-') as tmp:
                 config=pathlib.Path(tmp)/'config.json';config.write_text(json.dumps(candidate));config.chmod(0o600)
                 req=pathlib.Path(tmp)/'request.json';req.write_text(json.dumps(request));req.chmod(0o600)
                 output=pathlib.Path(tmp)/'output.json'
-                subprocess.run(['python3',str(pathlib.Path(__file__).with_name('admit-installation.py')),'--config',str(config),'--request',str(req),'--output',str(output),'--trusted-workflows','--workflow',policy.get('workflow','.github/workflows/ci.yaml')],check=True,stdout=subprocess.DEVNULL)
+                command=['python3',str(pathlib.Path(__file__).with_name('admit-installation.py')),'--config',str(config),'--request',str(req),'--output',str(output),'--trusted-workflows','--workflow',workflow]
+                if mode=='repository':command.append('--repository-only')
+                subprocess.run(command,check=True,stdout=subprocess.DEVNULL)
                 candidate=json.loads(output.read_text())
             scope=candidate['scopes'][name]
             # Policy defines exact enabled queues, not a permanent union.
             scope['profiles']={q:p for q,p in scope['profiles'].items() if q in request['queues']}
             scope['max_vms']=request['max_vms']
             scope.pop('disabled',None)
-            enabled=list(scope['profiles']);status='active'
+            enabled=list(scope['profiles']);status='active';applied_workflow='' if mode=='repository' else workflow;applied_access=mode
             if set(entry.get('queues') or ['chickadee'])-set(enabled):message='Additional queue requests are awaiting operator approval.'
-        if entry.get('id'):updates.append({'id':entry['id'],'status':status,'enabled_queues':enabled,'message':message})
+        if entry.get('id'):updates.append({'id':entry['id'],'status':status,'enabled_queues':enabled,'enabled_workflow_path':applied_workflow,'enabled_workflow_access':applied_access,'message':message})
         elif status=='active':updates.append({'id':'','status':status,'enabled_queues':enabled,'message':message,'_import':dict(entry,queues=request['queues'],enabled_queues=enabled,status='active',scope=('organization' if entry['account']['type']=='Organization' else 'repository'))})
-    if candidate!=original:install_config(candidate,path,quarantine)
+    if candidate!=original:
+        if site_available:
+            for update in updates:
+                if update['status']!='active' or not update.get('id'):continue
+                old_entry=next(e for e in entries if e.get('id')==update['id'])
+                name=scope_name(old_entry)
+                if candidate.get('scopes',{}).get(name)==original.get('scopes',{}).get(name):continue
+                admin('status',{'id':update['id'],'status':'approved','enabled_queues':list(original.get('scopes',{}).get(name,{}).get('profiles',{})),
+                     'message':'Approved; activating selected queues in the shared fleet.' if policy.get('live_reload') is True and not quarantine else 'Approved; provisioning the selected queues after running jobs finish.'})
+        install_config(candidate,path,quarantine,live_reload=policy.get('live_reload',False) is True)
     if site_available:
         for update in updates:
             seed=update.pop('_import',None)

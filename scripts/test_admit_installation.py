@@ -34,3 +34,18 @@ class Admission(unittest.TestCase):
  def test_unknown_queue_rejected(self):
   self.request['queues']=['chickadee-large-ubuntu-2404']
   with self.assertRaises(ValueError):m.proposed(self.config,self.request,self.install,self.repo,1)
+
+
+class RunnerGroupPolicy(unittest.TestCase):
+ def test_default_group_restricts_exact_selected_workflow(self):
+  body=m.runner_group_plan('owned',{'id':7,'private':True},'example/repo/.github/workflows/ci.yml@refs/heads/main')
+  self.assertTrue(body['restricted_to_workflows']);self.assertEqual(body['selected_repository_ids'],[7]);self.assertFalse(body['allows_public_repositories']);self.assertEqual(len(body['selected_workflows']),1)
+ def test_explicit_repository_mode_is_private_and_selected(self):
+  body=m.runner_group_plan('owned',{'id':7,'private':True},'unused',True)
+  self.assertFalse(body['restricted_to_workflows']);self.assertEqual(body['selected_workflows'],[]);self.assertEqual(body['visibility'],'selected');self.assertEqual(body['selected_repository_ids'],[7]);self.assertFalse(body['allows_public_repositories'])
+ def test_repository_mode_cannot_allow_public_repository(self):
+  with self.assertRaises(ValueError):m.runner_group_plan('owned',{'id':7,'private':False},'unused',True)
+ def test_repository_mode_cannot_broaden_another_existing_repository(self):
+  m.validate_repository_only_selection({'total_count':1,'repositories':[{'id':7}]},7)
+  for listing in [{'total_count':2,'repositories':[{'id':7},{'id':8}]},{'total_count':1,'repositories':[{'id':8}]},{'total_count':2,'repositories':[{'id':7}]}]:
+   with self.assertRaises(ValueError):m.validate_repository_only_selection(listing,7)

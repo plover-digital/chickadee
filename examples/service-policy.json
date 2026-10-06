@@ -1,10 +1,12 @@
 {
+  "live_reload": true,
   "approved_users": {
     "123456789": {
-      "queues": ["chickadee"],
+      "auto_queues": true,
       "max_vms": 1
     }
   },
+  "repository_workflow_access": {},
   "managed_requests": [],
   "workflow": ".github/workflows/ci.yaml"
 }

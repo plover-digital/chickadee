@@ -40,10 +40,23 @@ def proposed(c, request, installation, repo, group_id):
     result['scopes'][('org-' if installation['account']['type']=='Organization' else 'repo-')+str(installation['account']['id'] if installation['account']['type']=='Organization' else repo['id'])]={'github_url':url,'app_installation_id':installation['id'],'runner_group_id':group_id,'profiles':profiles,'max_vms':request.get('max_vms',1)}
     return result
 
+def validate_repository_only_selection(selected, repository_id):
+    if selected['total_count']!=1 or {r['id'] for r in selected['repositories']}!={repository_id}:
+        raise ValueError('repository-only approval cannot broaden access for other selected repositories')
+
+def runner_group_plan(name, repo, ref, repository_only=False):
+    if repository_only and not repo['private']:
+        raise ValueError('repository-only access requires the explicitly approved private repository')
+    return {'name':name,'visibility':'selected','selected_repository_ids':[repo['id']],
+            'allows_public_repositories':False if repository_only else not repo['private'],
+            'restricted_to_workflows':not repository_only,
+            'selected_workflows':[] if repository_only else [ref]}
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--config',required=True);p.add_argument('--request',required=True);p.add_argument('--output',required=True)
     p.add_argument('--trusted-workflows',action='store_true',help='operator has reviewed beta trust and workflow policy')
+    p.add_argument('--repository-only',action='store_true',help='explicit operator approval for every workflow in the one selected private organization repository')
     p.add_argument('--workflow',default='.github/workflows/chickadee.yml',help='main-branch workflow allowed for org groups')
     p.add_argument('--queue',action='append',help='explicit additional queue; repeat as needed (default: chickadee only)')
     args=p.parse_args()
@@ -75,6 +88,8 @@ def main():
         raise ValueError('request identity no longer matches GitHub')
     if account['type']=='User' and account['id']!=request['user']['id']:
         raise ValueError('personal beta admission requires the repository owner')
+    if args.repository_only and (account['type']!='Organization' or not repo['private']):
+        raise ValueError('repository-only access requires an approved private organization repository')
     group_id=1
     if account['type']=='Organization':
         org=account['login'];base='/orgs/'+org+'/actions/runner-groups'
@@ -87,13 +102,19 @@ def main():
             name='chickadee-'+str(installation['app_id'])+'-'+str(iid)
             groups=setup.api(base+'?per_page=100',token=token)
             if any(g['name']==name for g in groups['runner_groups']):raise ValueError('group already exists; recover its ownership/config before retrying')
-            group=setup.api(base,'POST',token,{'name':name,'visibility':'selected','selected_repository_ids':[rid],'allows_public_repositories':not repo['private'],'restricted_to_workflows':True,'selected_workflows':[ref]})
+            group=setup.api(base,'POST',token,runner_group_plan(name,repo,ref,args.repository_only))
         else:
             group=setup.api(base+'/'+str(own['runner_group_id']),token=token)
-            if group['visibility']!='selected' or not group.get('restricted_to_workflows'):raise ValueError('existing group must restrict repositories and workflows')
-            refs=set(group['selected_workflows']);refs.add(ref)
-            setup.api(base+'/'+str(group['id'])+'/repositories/'+str(rid),'PUT',token)
-            group=setup.api(base+'/'+str(group['id']),'PATCH',token,{'restricted_to_workflows':True,'selected_workflows':sorted(refs),'allows_public_repositories':group['allows_public_repositories'] or not repo['private']})
+            if group['visibility']!='selected':raise ValueError('existing group must restrict repositories')
+            if args.repository_only:
+                selected=setup.api(base+'/'+str(group['id'])+'/repositories?per_page=100',token=token)
+                validate_repository_only_selection(selected,rid)
+                group=setup.api(base+'/'+str(group['id']),'PATCH',token,{'restricted_to_workflows':False,'selected_workflows':[],'allows_public_repositories':False})
+            else:
+                if not group.get('restricted_to_workflows'):raise ValueError('existing repository-only group requires explicit repository-only policy')
+                refs=set(group['selected_workflows']);refs.add(ref)
+                setup.api(base+'/'+str(group['id'])+'/repositories/'+str(rid),'PUT',token)
+                group=setup.api(base+'/'+str(group['id']),'PATCH',token,{'restricted_to_workflows':True,'selected_workflows':sorted(refs),'allows_public_repositories':group['allows_public_repositories'] or not repo['private']})
         group_id=group['id']
     output=proposed(c,request,installation,repo,group_id)
     path=pathlib.Path(args.output)

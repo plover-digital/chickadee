@@ -179,3 +179,11 @@ Pending requests say **awaiting approval**, not processing. The private operator
 may report `approved` only after review; that state describes activation being
 processed. `active` remains the applied state. Requested workflow changes do
 not replace the previously applied workflow access until approved and reported.
+
+An operator can explicitly approve repository-wide workflow access for a trusted
+organization repository, including pull-request jobs. The private relay records
+`enabled_workflow_access: "repository"` only after the selected-repository runner
+group policy has been applied. This is distinct from the default exact main-branch
+workflow restriction (`"workflow"`). New requests do not grant this broader mode;
+the dashboard describes the actual approved mode without requiring a main-only
+file path for a repository that already has repository-wide approval.

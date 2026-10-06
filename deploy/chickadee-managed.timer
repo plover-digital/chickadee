@@ -3,8 +3,8 @@ Description=Reconcile approved Chickadee beta requests and GitHub access
 
 [Timer]
 OnBootSec=2min
-OnUnitInactiveSec=1min
-AccuracySec=10s
+OnUnitInactiveSec=15s
+AccuracySec=2s
 Unit=chickadee-managed.service
 
 [Install]

@@ -12,6 +12,9 @@ Group=chickadee
 SupplementaryGroups=kvm
 ExecStartPre=/usr/local/lib/chickadee/preflight.sh
 ExecStart=/usr/local/bin/chickadee -config /etc/chickadee/config.json
+# Queue-only reloads preserve running jobs and warm VMs. The operator checks
+# /var/lib/chickadee/reload.json for the applied config SHA and outcome.
+ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 RestartSec=10
 KillMode=control-group

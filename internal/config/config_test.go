@@ -39,6 +39,7 @@ func TestRejectUnknownAndTrailingConfig(t *testing.T) {
 
 func catalog(t *testing.T) Config {
 	c := validConfig(t)
+	c.Machine = ""
 	c.ScaleSet = ""
 	c.Warm = 0
 	c.Max = 0

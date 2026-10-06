@@ -13,7 +13,6 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 )
@@ -120,69 +119,5 @@ func run(path string, cleanup, bootCheck bool) error {
 		defer cc()
 		return pool.CleanupProfiles(cleanCtx, c, backends, owner)
 	}
-	demand := make(chan pool.Demand, 2*len(profiles))
-	pollCtx, cancelPoll := context.WithCancel(ctx)
-	defer cancelPoll()
-	drainSignal := make(chan os.Signal, 1)
-	signal.Notify(drainSignal, syscall.SIGUSR1)
-	defer signal.Stop(drainSignal)
-	drain := make(chan struct{})
-	type result struct {
-		pool bool
-		err  error
-	}
-	results := make(chan result, len(profiles)+1)
-	var wg sync.WaitGroup
-	for _, p := range profiles {
-		wg.Add(1)
-		go func(p config.Config) {
-			defer wg.Done()
-			values := make(chan int, 16)
-			pollDone := make(chan error, 1)
-			go func() { pollDone <- clients[p.Key()].Poll(pollCtx, p.ScaleSet, p.Max, values) }()
-			for {
-				select {
-				case n := <-values:
-					select {
-					case demand <- pool.Demand{Profile: p.Key(), Assigned: n}:
-					case <-pollCtx.Done():
-						results <- result{err: <-pollDone}
-						return
-					}
-				case e := <-pollDone:
-					results <- result{err: e}
-					return
-				case <-pollCtx.Done():
-					results <- result{err: <-pollDone}
-					return
-				}
-			}
-		}(p)
-	}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		results <- result{pool: true, err: pool.RunProfilesDrainOwned(ctx, c, backends, demand, owner, drain)}
-	}()
-
-	draining := false
-	for {
-		select {
-		case <-drainSignal:
-			if !draining {
-				draining = true
-				close(drain)
-				cancelPoll()
-				slog.Info("Draining for controlled scope/config update")
-			}
-		case r := <-results:
-			if draining && !r.pool {
-				continue
-			}
-			cancel()
-			cancelPoll()
-			wg.Wait()
-			return r.err
-		}
-	}
+	return serve(ctx, c, path, backends, clients, owner)
 }
