@@ -10,7 +10,8 @@ secrets, customer information and coordinated security reports private.
 ## Work tracking
 
 Track public implementation, bugs, designs and release acceptance in
-[GitHub Issues](https://github.com/plover-digital/chickadee/issues). Each issue
+[Chickadee Issues](https://github.com/plover-digital/chickadee/issues) for host work
+and [Roost Issues](https://github.com/plover-digital/chickadee-roost/issues) for service work. Each issue
 should state the expected behavior and acceptance evidence. Keep deployment
 inventories, customer details and commercial planning in internal tracking;
 never place credentials in either tracker.
@@ -50,8 +51,9 @@ resource cgroups, stronger VM sandboxing, fleet scheduling, upgrades,
 incident response and service-level guarantees are separate future work. They do
 not belong in the first one-host vertical slice. Shared customer caches, snapshot
 cloning, multi-host scheduling and HA remain
-deferred. An optional GitHub App onboarding dashboard, usage graph and approved
-queue reconciliation are implemented; they do not provide billing or a hardened
+deferred. The separately deployable public [Chickadee Roost](https://github.com/plover-digital/chickadee-roost)
+provides an optional GitHub App onboarding dashboard, usage graph and approved
+queue reconciliation; they do not provide billing or a hardened
 shared-tenant service. See the [multi-host proposal](multi-host.md). The user has
 now requested multiple resource/image selections; see the
 [profile design draft](selection-design.md) and [platform comparison](runner-platform-research.md).

@@ -49,11 +49,15 @@ Generate an **OAuth client secret** in the GitHub App settings and store it in a
 readable only by the web-service user. Set `CHICKADEE_OAUTH_SECRET_FILE` to that file.
 This secret is different from the App's private PEM key and is required even when
 using PKCE. Neither belongs in Git, workflow YAML, support tickets, or chat.
-See [onboarding-site.md](onboarding-site.md) for the web-service configuration.
+The OAuth website and these authentication tests now belong to
+[Chickadee Roost](https://github.com/plover-digital/chickadee-roost). See its
+[onboarding guide](https://github.com/plover-digital/chickadee-roost/blob/main/docs/onboarding-site.md)
+for web-service configuration. Chickadee standalone hosts use App installation
+authentication and do not require customer OAuth.
 
 ## Validation
 
-Tests cover PKCE and callback binding, expired and cross-browser state rejection,
+Roost tests cover PKCE and callback binding, expired and cross-browser state rejection,
 one-time callback replay rejection, safe cookies, upstream error handling without
 credential reflection, forged repository enrollment rejection, and GitHub-admin access
 checks. A live deployment still needs an owner-authorized browser sign-in to verify

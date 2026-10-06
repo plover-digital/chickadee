@@ -2,7 +2,7 @@
 
 Status: design review, not implemented. The current release runs its VM fleet on
 one Linux host. Adding a second machine requires a worker boundary, not a copy of
-the existing configuration. This proposal keeps one repository, Go binaries,
+the existing configuration. This proposal uses the separate host and Roost repositories, Go binaries,
 systemd and local disks; it adds no Kubernetes, shared filesystem, external
 database or controller high availability.
 
@@ -22,9 +22,9 @@ billing and host routing. The proposed repository split is:
   operations documentation; credentials remain outside Git repositories.
 
 The service-manager component is named **Chickadee Roost**; the hosted website
-remains `chickadee.run`. This is the planned layout. The current published release
-still includes website code, and extraction must preserve deployment behavior
-before any paths or services are removed. The host repository must never depend
+remains `chickadee.run`. The website, OAuth and admission bridge have moved to the public
+[Roost repository](https://github.com/plover-digital/chickadee-roost); the host API
+and fleet routing remain planned. The host repository must never depend
 on the service repository. Share only a small versioned protocol/client package,
 not a common library containing customer state and VM execution code.
 
@@ -177,9 +177,9 @@ gap or make an arbitrary external provider trustworthy.
 | `internal/host/vm.go` | Local paths, subprocess and serial socket | Extract a host-agent interface; reuse existing QEMU lifecycle locally. |
 | `internal/host/journal.go` | Local VM ID and registration intent | Add host/generation/reservation ownership centrally and idempotent local command records. |
 | `internal/pool/reload.go` | Queue changes within a fixed local catalog | Distinguish fleet policy updates from per-host capabilities and safe draining. |
-| `scripts/reconcile-site.py` | One controller's config and applied status | Continue one reconciler; workers must not independently update customer enrollment. |
-| `internal/usage` and `internal/site/services.go` | Local reservation intervals and latest scope snapshot | Deduplicate by host, generation and VM; publish one fleet aggregate per customer scope. |
-| `internal/site/usage.go` | Daily bounds based on at most 32 VMs | Use explicit bounded fleet/customer limits; do not remove validation. |
+| Roost `scripts/reconcile-site.py` | One controller's config and applied status | Continue one reconciler; workers must not independently update customer enrollment. |
+| Host `internal/usage` and Roost `internal/site/services.go` | Local reservation intervals and latest scope snapshot | Deduplicate by host, generation and VM; publish one fleet aggregate per customer scope. |
+| Roost `internal/site/usage.go` | Daily bounds based on at most 32 VMs | Use explicit bounded fleet/customer limits; do not remove validation. |
 
 ## Smallest implementation sequence
 

@@ -78,9 +78,9 @@ boot/job validation; see the validation log. The [Ubuntu 26.04 builder](docs/ubu
 Rocky 9.8 remains tracked work. The [provider comparison](docs/runner-platform-research.md)
 and [design rationale](docs/selection-design.md) explain the model.
 
-An optional [GitHub App onboarding site](docs/onboarding-site.md) provides
+The separately deployable [Chickadee Roost service](https://github.com/plover-digital/chickadee-roost) provides
 sign-in, selected-repository installation, approved-beta opt-in queue activation
 and usage graphs. Supported queue updates do not restart running job VMs.
-It is separate from the runner controller; self-hosting does not require it.
+Its website, OAuth, admission and customer policy live in their own public repository; self-hosting Chickadee does not require Roost.
 Multi-host scheduling is planned, not implemented; see the
 [multi-host proposal](docs/multi-host.md).

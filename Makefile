@@ -3,7 +3,6 @@ build:
 	mkdir -p bin
 	CGO_ENABLED=0 go build -buildvcs=false -mod=readonly -trimpath -o bin/chickadee ./cmd/chickadee
 	CGO_ENABLED=0 go build -buildvcs=false -trimpath -o bin/chickadee-guest ./cmd/chickadee-guest
-	CGO_ENABLED=0 go build -buildvcs=false -trimpath -o bin/chickadee-web ./cmd/chickadee-web
 
 test:
 	go test -race -mod=readonly ./...

@@ -167,6 +167,6 @@ Credentialed guests are never reused or evicted for that reason. See
 
 Scope additions, removals and queue selections can use acknowledged `SIGHUP`
 reload without restarting running job VMs. Image/resource definitions and global
-host limits still require a controlled restart. The optional managed bridge
+host limits still require a controlled restart. The optional [Roost admission bridge](https://github.com/plover-digital/chickadee-roost/blob/main/docs/managed-beta.md)
 verifies GitHub access and applies approved selections; installing the App alone
 does not grant compute. See [managed beta](managed-beta.md).

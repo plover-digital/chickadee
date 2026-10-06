@@ -90,6 +90,6 @@ that every OS release has a validated image builder.
 
 Scope/queue admission supports acknowledged `SIGHUP` reload; image/resource and
 host-limit changes follow the controlled restart procedure above. The optional
-[managed bridge](managed-beta.md) applies supported opt-in queues automatically
+[Roost admission bridge](https://github.com/plover-digital/chickadee-roost/blob/main/docs/managed-beta.md) applies supported opt-in queues automatically
 for approved accounts. This is still one host, not a fleet scheduler. See the
 [multi-host proposal](multi-host.md) for the second-host design.
