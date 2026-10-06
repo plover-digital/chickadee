@@ -132,8 +132,9 @@ local RUNNING currently proves only listener process launch.
 1. Add image bundles, reusable CPU/RAM classes and named profiles/scale sets.
    Keep one controller and enforce global weighted host budgets as well as
    per-profile maxima; test routing, fairness and mixed-resource exhaustion.
-2. Start with versioned Ubuntu 24.04 and Rocky Linux 9.8 selectors. Keep the
-   verified Ubuntu builder; add Rocky only after boot/job/restart validation.
+2. Start with versioned Ubuntu 24.04, Ubuntu 26.04 and Rocky Linux 9.8 selectors. Keep the
+   verified Ubuntu 24.04 builder; add the other releases only after
+   boot/job/restart validation.
    Validate manifests, compatibility and artifact digests before exposing a queue.
 3. Add tested guest capabilities, if needed, without exposing host services.
 4. Design cache authorization and writer isolation separately, then implement a
