@@ -1,0 +1,122 @@
+[
+  {
+    "platform": "chickadee",
+    "sample": 1,
+    "commit": "f8b074b29913590cebe677e5ad208ecc6cfa5abd",
+    "cpu_count": 2,
+    "kernel": "6.8.0-142-generic",
+    "go": "go version go1.26.3 linux/amd64",
+    "memory_kib": 2015008,
+    "seconds": {
+      "module_download": 2.581,
+      "cold_build": 15.153,
+      "cold_test": 30.692,
+      "warm_build": 0.144,
+      "warm_test": 0.246,
+      "job_execution": 65.0,
+      "checkout": 2.0,
+      "go_setup": 8.0,
+      "cold_build_test": 45.845
+    }
+  },
+  {
+    "platform": "chickadee",
+    "sample": 2,
+    "commit": "f8b074b29913590cebe677e5ad208ecc6cfa5abd",
+    "cpu_count": 2,
+    "kernel": "6.8.0-142-generic",
+    "go": "go version go1.26.3 linux/amd64",
+    "memory_kib": 2015008,
+    "seconds": {
+      "module_download": 0.346,
+      "cold_build": 15.334,
+      "cold_test": 30.65,
+      "warm_build": 0.145,
+      "warm_test": 0.248,
+      "job_execution": 63.0,
+      "checkout": 1.0,
+      "go_setup": 9.0,
+      "cold_build_test": 45.983999999999995
+    }
+  },
+  {
+    "platform": "chickadee",
+    "sample": 3,
+    "commit": "f8b074b29913590cebe677e5ad208ecc6cfa5abd",
+    "cpu_count": 2,
+    "kernel": "6.8.0-142-generic",
+    "go": "go version go1.26.3 linux/amd64",
+    "memory_kib": 2015008,
+    "seconds": {
+      "module_download": 0.351,
+      "cold_build": 15.24,
+      "cold_test": 30.515,
+      "warm_build": 0.148,
+      "warm_test": 0.253,
+      "job_execution": 64.0,
+      "checkout": 1.0,
+      "go_setup": 10.0,
+      "cold_build_test": 45.755
+    }
+  },
+  {
+    "platform": "ubuntu-24.04",
+    "sample": 1,
+    "commit": "f8b074b29913590cebe677e5ad208ecc6cfa5abd",
+    "cpu_count": 4,
+    "kernel": "6.17.0-1022-azure",
+    "go": "go version go1.26.3 linux/amd64",
+    "memory_kib": 16373452,
+    "seconds": {
+      "module_download": 0.075,
+      "cold_build": 11.694,
+      "cold_test": 27.413,
+      "warm_build": 0.107,
+      "warm_test": 0.194,
+      "job_execution": 57.0,
+      "checkout": 1.0,
+      "go_setup": 9.0,
+      "cold_build_test": 39.107
+    }
+  },
+  {
+    "platform": "ubuntu-24.04",
+    "sample": 2,
+    "commit": "f8b074b29913590cebe677e5ad208ecc6cfa5abd",
+    "cpu_count": 4,
+    "kernel": "6.17.0-1022-azure",
+    "go": "go version go1.26.3 linux/amd64",
+    "memory_kib": 16373452,
+    "seconds": {
+      "module_download": 0.255,
+      "cold_build": 12.052,
+      "cold_test": 27.358,
+      "warm_build": 0.116,
+      "warm_test": 0.193,
+      "job_execution": 56.0,
+      "checkout": 1.0,
+      "go_setup": 11.0,
+      "cold_build_test": 39.41
+    }
+  },
+  {
+    "platform": "ubuntu-24.04",
+    "sample": 3,
+    "commit": "f8b074b29913590cebe677e5ad208ecc6cfa5abd",
+    "cpu_count": 4,
+    "kernel": "6.17.0-1022-azure",
+    "go": "go version go1.26.3 linux/amd64",
+    "memory_kib": 16373452,
+    "seconds": {
+      "module_download": 0.27,
+      "cold_build": 7.257,
+      "cold_test": 20.197,
+      "warm_build": 0.071,
+      "warm_test": 0.126,
+      "job_execution": 42.0,
+      "checkout": 2.0,
+      "go_setup": 8.0,
+      "cold_build_test": 27.454
+    }
+  }
+]
