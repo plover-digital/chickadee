@@ -18,6 +18,7 @@ install -m 0640 -o root -g chickadee "$config" /etc/chickadee/config.json
 install -m 0755 bin/chickadee /usr/local/bin/chickadee
 cp -a images/. /var/lib/chickadee-image/
 chown -R root:root /var/lib/chickadee-image
+find /var/lib/chickadee-image -type d -exec chmod 0755 {} +
 find /var/lib/chickadee-image -type f -exec chmod 0444 {} +
 install -m 0755 scripts/network.sh scripts/preflight.sh /usr/local/lib/chickadee/
 install -m 0644 deploy/chickadee.service deploy/chickadee-network.service /etc/systemd/system/
