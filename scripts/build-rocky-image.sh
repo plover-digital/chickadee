@@ -74,7 +74,8 @@ tar -xzf /tmp/runner.tar.gz -C /opt/actions-runner
 chown -R runner:runner /opt/actions-runner
 rm -f /tmp/runner.tar.gz
 chmod 0755 /usr/local/bin/chickadee-guest /usr/local/bin/chickadee-network
-/opt/actions-runner/bin/Runner.Listener --version
+runuser -u runner -- /opt/actions-runner/bin/Runner.Listener --version
+rm -rf /opt/actions-runner/_diag
 systemctl mask serial-getty@ttyS0.service getty@tty1.service sshd.service NetworkManager.service NetworkManager-wait-online.service
 systemctl enable chickadee-network.service chickadee-bootstrap.service
 mkdir -p /etc/cloud
