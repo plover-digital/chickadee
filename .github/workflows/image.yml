@@ -32,6 +32,15 @@ jobs:
           printf 'SUPERMIN_MODULES=/lib/modules/%s\n' "$kernel_version" >> "$GITHUB_ENV"
       - name: Build credential-free runner image
         run: make image
+      - name: Archive versioned image artifacts
+        run: tar -czf build/chickadee-image.tar.gz -C images .
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: chickadee-image
+          path: build/chickadee-image.tar.gz
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
       - name: Check real KVM boot where available
         run: |
           if [ ! -r /dev/kvm ] || [ ! -w /dev/kvm ]; then
@@ -47,12 +56,3 @@ jobs:
           json.dump(c, open('build/bootcheck.json', 'w'))
           PY
           bin/chickadee -boot-check -config build/bootcheck.json
-      - name: Archive versioned image artifacts
-        run: tar -czf build/chickadee-image.tar.gz -C images .
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: chickadee-image
-          path: build/chickadee-image.tar.gz
-          if-no-files-found: error
-          compression-level: 0
-          retention-days: 7

@@ -94,7 +94,9 @@ virt-customize -a build/base.qcow2 \
   --upload guest/chickadee-bootstrap.service:/etc/systemd/system/chickadee-bootstrap.service \
   --upload build/provision.sh:/tmp/chickadee-provision.sh \
   --run-command 'bash /tmp/chickadee-provision.sh' \
-  --delete /tmp/chickadee-provision.sh
+  --delete /tmp/chickadee-provision.sh \
+  --delete /etc/resolv.conf \
+  --write /etc/resolv.conf:"nameserver 1.1.1.1"
 # Inspect the sole installed kernel, then retain versioned artifacts plus fixed names for QEMU.
 guestfish --ro -a build/base.qcow2 -m /dev/sda download /image-packages.txt images/packages.txt
 kernel=$(guestfish --ro -a build/base.qcow2 -m /dev/sda glob-expand '/boot/vmlinuz-*')
