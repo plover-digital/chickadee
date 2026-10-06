@@ -22,6 +22,9 @@ of Git. The generic example remains usable by any organization or repository.
    by default and recommends avoiding self-hosted public-fork workloads.
 4. Where supported, restrict the group to selected workflows and the reviewed ref:
    `plover-digital/chickadee/.github/workflows/chickadee-ci.yml@refs/heads/main`.
+   Temporarily also allow
+   `plover-digital/chickadee/.github/workflows/chickadee-smoke.yml@refs/heads/main`
+   while performing the manual smoke test, then remove that allowance if unused.
    Keep fork pull requests on the default GitHub-hosted CI. A runner label alone
    is not an access-control boundary.
 

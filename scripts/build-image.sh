@@ -33,6 +33,12 @@ xz --decompress --stdout "build/downloads/$root_tar" > build/root.tar
 export LIBGUESTFS_BACKEND=direct
 # Software emulation is sufficient for offline image editing, never for job VMs.
 export LIBGUESTFS_BACKEND_SETTINGS=force_tcg
+# libguestfs prefers passt whenever it is runnable. Keep the trusted builder on
+# QEMU's outbound SLIRP fallback without changing installed host network tools.
+mkdir -p build/appliance-bin
+printf '#!/bin/sh\nexit 127\n' > build/appliance-bin/passt
+chmod 0755 build/appliance-bin/passt
+export PATH="$PWD/build/appliance-bin:$PATH"
 virt-make-fs --format=qcow2 --type=ext4 --size=16G build/root.tar build/base.qcow2
 cat > build/provision.sh <<PROVISION
 #!/bin/bash

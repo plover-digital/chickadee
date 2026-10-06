@@ -1,8 +1,8 @@
 # Primary-source design audit
 
-Research date: 2026-10-05. Discovery and retrieval used the Exa plugin: 12 searches
+Research date: 2026-10-05. Discovery and retrieval used the Exa plugin: 13 searches
 across four workstreams (GitHub, QEMU, image/storage, host lifecycle/networking),
-60 returned results, 58 distinct URLs before consolidating versioned mirrors.
+65 returned results, 63 distinct URLs before consolidating versioned mirrors.
 Third-party tutorials and promotional pages were excluded from the conclusions.
 The references below are upstream documentation or source. Search-result similarity
 was not treated as proof; relevant pages and pinned client code were checked.
@@ -35,6 +35,9 @@ rather than per-VM cgroups, best-effort log export and unverified real-host netw
   silently replayed. Its registration intent survives failure; a different VM is
   used for a subsequent attempt.
 - The systemd service sets `MemorySwapMax=0` alongside `MemoryMax`.
+- Controller/VM startup refuses root execution, including boot-only checks.
+- Runner intents bind to the original GitHub URL, group and scale-set name; a
+  changed scope fails closed before discarding old state.
 - Runtime directories must be private, owned by the controller and not symlinks;
   immutable image and runtime paths cannot overlap. VM directories are created
   exclusively so a collision cannot overwrite an existing disk.
@@ -77,3 +80,13 @@ the corrected workflow must demonstrate successful appliance construction.
 
 Workflow action pins were also updated to current official Node 24 releases after
 GitHub CI reported deprecated Node 20 action runtimes.
+
+The readable-kernel fix advanced the image build past appliance construction.
+The next failure was libguestfs's automatic `passt` startup. Its upstream direct
+backend probes `passt --help` and uses SLIRP when the helper is unavailable. The
+recipe now applies a private, build-only PATH shim that reports `passt` unavailable,
+selecting the upstream SLIRP fallback without uninstalling or modifying host tools.
+This affects the trusted image-building appliance only; job VM networking remains
+explicit routed TAP/NAT.
+[Backend probe](https://github.com/libguestfs/libguestfs/blob/master/lib/launch.c),
+[SLIRP fallback](https://github.com/libguestfs/libguestfs/blob/master/lib/launch-direct.c).

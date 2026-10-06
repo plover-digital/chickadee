@@ -250,3 +250,30 @@ func privateTemp(t *testing.T) string {
 	}
 	return dir
 }
+
+func TestChangedGitHubScopeCannotDiscardOldState(t *testing.T) {
+	c := config.Config{StateDir: privateTemp(t), ScaleSet: "chickadee", GitHubURL: "https://github.com/new-org", RunnerGroupID: 1}
+	for _, d := range []string{"records", "vms"} {
+		if e := os.Mkdir(filepath.Join(c.StateDir, d), 0700); e != nil {
+			t.Fatal(e)
+		}
+	}
+	r := host.Record{ID: "0123456789abcdef", Name: "chickadee-0123456789abcdef", GitHubURL: "https://github.com/old-org", RunnerGroupID: 1}
+	if e := host.Save(c.StateDir, r); e != nil {
+		t.Fatal(e)
+	}
+	disk := filepath.Join(c.StateDir, "vms", r.ID, "disk.qcow2")
+	if e := os.Mkdir(filepath.Dir(disk), 0700); e != nil {
+		t.Fatal(e)
+	}
+	if e := os.WriteFile(disk, nil, 0600); e != nil {
+		t.Fatal(e)
+	}
+	if o, e := Acquire(c); e == nil {
+		o.Close()
+		t.Fatal("different scope accepted")
+	}
+	if _, e := os.Stat(disk); e != nil {
+		t.Fatal("discarded state before scope reconciliation")
+	}
+}

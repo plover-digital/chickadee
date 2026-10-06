@@ -40,6 +40,9 @@ func main() {
 	}
 }
 func run(path string, cleanup, bootCheck bool) error {
+	if os.Geteuid() == 0 {
+		return errors.New("run chickadee as the unprivileged service account; use root only for installation and network setup")
+	}
 	c, e := config.Load(path)
 	if e != nil {
 		return e

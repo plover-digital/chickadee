@@ -70,6 +70,15 @@ func Acquire(c config.Config) (owner *Ownership, err error) {
 	if e = syscall.Flock(int(lock.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); e != nil {
 		return nil, fmt.Errorf("another controller owns state_dir")
 	}
+	records, e := host.Records(c.StateDir)
+	if e != nil {
+		return nil, e
+	}
+	for _, r := range records {
+		if e = recordScope(c, r); e != nil {
+			return nil, e
+		}
+	}
 	if e = host.ReapOwned(c.StateDir); e != nil {
 		return nil, e
 	}
@@ -210,7 +219,7 @@ func runOwned(ctx context.Context, c config.Config, b Backend, desired <-chan in
 				return e
 			}
 			name := c.ScaleSet + "-" + v.state.ID
-			if e = host.Save(c.StateDir, host.Record{ID: v.state.ID, Name: name, NotBefore: time.Now().Add(10 * time.Minute)}); e != nil {
+			if e = host.Save(c.StateDir, host.Record{ID: v.state.ID, Name: name, GitHubURL: c.GitHubURL, RunnerGroupID: c.RunnerGroupID, NotBefore: time.Now().Add(10 * time.Minute)}); e != nil {
 				return e
 			}
 			v.assign <- name
@@ -293,6 +302,9 @@ func reconcile(ctx context.Context, c config.Config, b Backend) error {
 		return e
 	}
 	for _, r := range records {
+		if e = recordScope(c, r); e != nil {
+			return e
+		}
 		// An existing VM directory means that registration may still be active.
 		if _, e = os.Stat(filepath.Join(c.StateDir, "vms", r.ID)); e == nil {
 			continue
@@ -311,6 +323,13 @@ func reconcile(ctx context.Context, c config.Config, b Backend) error {
 		if e = host.Forget(c.StateDir, r.ID); e != nil {
 			return e
 		}
+	}
+	return nil
+}
+
+func recordScope(c config.Config, r host.Record) error {
+	if r.GitHubURL != c.GitHubURL || r.RunnerGroupID != c.RunnerGroupID || r.Name != c.ScaleSet+"-"+r.ID {
+		return fmt.Errorf("journal scope changed; restore the original GitHub URL, runner group and scale-set configuration")
 	}
 	return nil
 }

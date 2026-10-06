@@ -47,6 +47,9 @@ func StartBootCheck(ctx context.Context, c config.Config, slot int, id string) (
 	return start(ctx, c, slot, id, true)
 }
 func start(ctx context.Context, c config.Config, slot int, id string, offline bool) (v *VM, err error) {
+	if os.Geteuid() == 0 {
+		return nil, fmt.Errorf("QEMU must run as an unprivileged user")
+	}
 	v = &VM{ID: id, Slot: slot, Dir: filepath.Join(c.StateDir, "vms", id), exited: make(chan struct{})}
 	if err = os.Mkdir(v.Dir, 0700); err != nil {
 		return nil, err

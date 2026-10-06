@@ -50,6 +50,10 @@ and its matching `/lib/modules/VERSION`. This avoids changing permissions on the
 host kernel. The public image workflow includes these steps. See the
 [upstream libguestfs FAQ](https://libguestfs.org/guestfs-faq.1.html).
 
+The trusted image-building appliance uses QEMU's SLIRP outbound networking.
+A build-local PATH shim disables libguestfs's automatic passt preference; no host
+network tools are removed or modified. This is separate from job VM TAP/NAT.
+
 The image build takes time and substantial temporary disk space. It uses
 libguestfs with software emulation for **offline image editing**, without
 mounting the image on the host. Job VMs always require KVM. Inputs are Ubuntu's
@@ -205,4 +209,5 @@ PY
 bin/chickadee -boot-check -config build/bootcheck.json
 ```
 
+Run this command as a normal user with KVM access, not with sudo.
 If boot fails, inspect private QEMU diagnostics in the scratch `logs/` directory.

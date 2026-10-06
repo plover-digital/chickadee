@@ -12,9 +12,11 @@ import (
 var idPattern = regexp.MustCompile(`^[0-9a-f]{16}$`)
 
 type Record struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	NotBefore time.Time `json:"not_before,omitempty"`
+	ID            string    `json:"id"`
+	Name          string    `json:"name"`
+	GitHubURL     string    `json:"github_url"`
+	RunnerGroupID int       `json:"runner_group_id"`
+	NotBefore     time.Time `json:"not_before,omitempty"`
 }
 
 // Persist intent before JIT generation. Names permit reconciliation even when the API response is lost.

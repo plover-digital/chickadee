@@ -74,7 +74,9 @@ all process threads have exited
 before deleting old VM directories. If exit cannot be confirmed, it retains disks
 and fails closed. Other VM managers' processes are not intentionally matched.
 
-Registration intents are fsynced **before** a JIT API request, so a lost response
+Registration intents bind to the GitHub URL, runner group and scale-set name;
+changing these settings fails closed before old state is discarded. Intents are
+fsynced **before** a JIT API request, so a lost response
 can be reconciled by runner name without having its ID. Only registrations in the
 configured scale set are removed. Removal errors retain the intent and are retried.
 Intents are retained for at least ten minutes from creation and checked again after
