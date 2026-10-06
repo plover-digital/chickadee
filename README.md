@@ -65,3 +65,8 @@ requests a fresh job VM through GitHub's scale-set queue.
 The [Exa primary-source audit](docs/research-audit.md) tracks design guidance and
 remaining security gaps. The [plover-digital organization profile](docs/plover-digital.md)
 documents our pilot without including credentials or private host details.
+
+The [runner-platform comparison](docs/runner-platform-research.md) and
+[selectable-profile design draft](docs/selection-design.md) cover the proposed
+next step: different Linux image bundles and resource classes. These features
+are not implemented by the current single-profile controller.

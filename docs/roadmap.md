@@ -41,4 +41,7 @@ Billing, tenant authentication, separate App-key/QEMU identities, per-VM filesys
 resource cgroups, stronger VM sandboxing, fleet scheduling, upgrades,
 incident response and service-level guarantees are separate future work. They do
 not belong in the first one-host vertical slice. Shared caches, dashboards,
-multiple images, snapshot cloning, multi-host scheduling and HA remain deferred.
+snapshot cloning, multi-host scheduling and HA remain deferred. The user has
+now requested multiple resource/image selections; see the
+[profile design draft](selection-design.md) and [platform comparison](runner-platform-research.md).
+Multiple profiles/images are the next design phase and are not implemented yet.
