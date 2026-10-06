@@ -16,6 +16,8 @@ Restart=on-failure
 RestartSec=10
 KillMode=control-group
 TimeoutStopSec=180
+# Startup verifies large immutable images before admitting any VM.
+TimeoutStartSec=300
 UMask=0077
 StateDirectory=chickadee
 StateDirectoryMode=0700
