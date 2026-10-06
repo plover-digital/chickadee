@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/actions/scaleset"
 	"github.com/plover-digital/chickadee/internal/config"
+	"log/slog"
 	"net/url"
 	"os"
 	"strings"
@@ -101,6 +102,17 @@ func (c *Client) Poll(ctx context.Context, owner string, max int, desired chan<-
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+	return pollMessages(ctx, session, max, desired)
+}
+
+// A separate interface keeps ordering and cancellation testable without GitHub.
+type messageSession interface {
+	GetMessage(context.Context, int, int) (*scaleset.RunnerScaleSetMessage, error)
+	AcquireJobs(context.Context, []int64) ([]int64, error)
+	DeleteMessage(context.Context, int) error
+}
+
+func pollMessages(ctx context.Context, session messageSession, max int, desired chan<- int) error {
 	last := 0
 	for {
 		m, e := session.GetMessage(ctx, last, max)
@@ -121,17 +133,21 @@ func (c *Client) Poll(ctx context.Context, owner string, max int, desired chan<-
 			}
 			ids = append(ids, j.RunnerRequestID)
 		}
-		if len(ids) > 0 {
-			if _, e = session.AcquireJobs(ctx, ids); e != nil {
-				return fmt.Errorf("job acquisition failed")
-			}
-		}
 		if m.Statistics != nil {
 			select {
 			case desired <- min(max, maxInt(0, m.Statistics.TotalAssignedJobs)):
 			case <-ctx.Done():
 				return ctx.Err()
 			}
+		}
+		// Statistics already describe owned demand. Let warm provisioning overlap
+		// acquisition; never infer desired runners from available-message counts.
+		if len(ids) > 0 {
+			started := time.Now()
+			if _, e = session.AcquireJobs(ctx, ids); e != nil {
+				return fmt.Errorf("job acquisition failed")
+			}
+			slog.Info("Scale-set acquisition completed", "duration_ms", time.Since(started).Milliseconds())
 		}
 		if e = session.DeleteMessage(ctx, m.MessageID); e != nil {
 			return fmt.Errorf("message acknowledgement failed")
