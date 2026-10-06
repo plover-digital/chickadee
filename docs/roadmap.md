@@ -45,3 +45,8 @@ snapshot cloning, multi-host scheduling and HA remain deferred. The user has
 now requested multiple resource/image selections; see the
 [profile design draft](selection-design.md) and [platform comparison](runner-platform-research.md).
 Multiple profiles/images are the next design phase and are not implemented yet.
+
+Next image/profile targets: Ubuntu 24.04 and Rocky Linux 9.8, with labels
+`chickadee-{size}-{os}-{version}` (for example,
+`chickadee-small-ubuntu-24-04`). Rocky image building and multi-profile runtime
+support remain unimplemented; see [selection design](selection-design.md).

@@ -10,7 +10,9 @@ it does not introduce Kubernetes, databases, snapshots or multiple hosts.
 **Image bundle:** immutable root disk plus matching versioned kernel/initrd and
 manifest/checksums. Describes OS/version, architecture, runner/bootstrap versions
 and tested capabilities. The controller is independent of the workload's language.
-The initial reference builder remains Ubuntu; other Linux bundles must implement
+The first two OS targets are **Ubuntu 24.04** and **Rocky Linux 9.8**, both
+Linux amd64. Ubuntu has an existing builder; Rocky is a new implementation
+target and is not yet supported by the shipped builder. Both must implement
 the same bounded serial/bootstrap and networking contract.
 
 **Resource class:** CPU and RAM allocation, such as 2 vCPU / 4 GiB,
@@ -31,6 +33,39 @@ that all profiles can run at their maxima simultaneously.
 Caches and network policy can become separate approved policies later. Neither
 is required for the first selectable-profile implementation.
 
+## OS versions and workflow names
+
+Use `chickadee-{size}-{os}-{version}`. OS version is part of the OS selector,
+with dots represented as hyphens: `ubuntu-24-04` and `rocky-9-8`. The initial
+catalog has small (2 vCPU / 4 GiB), medium (4 / 8) and large (8 / 16) for each
+OS: six selectable profiles. Operators enable only the profiles that fit their
+host; an enabled profile may have a zero warm target and boot on demand.
+
+Examples: `chickadee-small-ubuntu-24-04`, `chickadee-medium-rocky-9-8` and
+`chickadee-large-ubuntu-24-04`. Do not expose an unversioned or `latest` alias
+initially, and do not change the size definitions silently.
+
+OS release and image revision are separate. Each release label points to an
+explicitly configured immutable artifact revision with pinned runner, kernel,
+initrd, source image/package inputs and verified digests. Security rebuilds
+within a release use new artifact revisions and an explicit drain/restart;
+existing guests retain their original base identity. Moving to a different OS
+release creates a new queue and requires a workflow change.
+
+[Rocky's support policy](https://docs.rockylinux.org/releases/) supports only the
+latest minor release in each major series. A pinned old queue is reproducible,
+not indefinitely supported: document its retirement and replace it deliberately
+when the next minor release arrives. Rocky 9 is the initial major-series target;
+Rocky 10 has a higher x86-64-v3 CPU requirement and is outside this first slice.
+
+Rocky's [versioned cloud image artifacts](https://docs.rockylinux.org/10/teams/rel_eng/image/)
+are potential inputs, not proof of microvm compatibility. The Rocky builder
+must pin and verify its inputs, check its kernel's virtio-mmio command-line
+support, prepare a matching dracut initrd and runner dependencies, and validate
+its filesystem, networking and SELinux behavior. Do not disable SELinux merely
+to get a smoke test passing. Support is earned by READY, a real one-job run,
+cleanup/replacement and restart tests for both OS families.
+
 ## Example proposed configuration
 
 This is an **illustrative fragment**, not a config accepted by the current binary.
@@ -40,8 +75,8 @@ All image paths below are examples, not artifacts shipped in this repository.
 ```json
 {
   "images": {
-    "ubuntu-2404": {"path": "/var/lib/chickadee-images/ubuntu-2404/20261006"},
-    "debian": {"path": "/var/lib/chickadee-images/debian/validated-version"}
+    "ubuntu-24-04": {"path": "/var/lib/chickadee-images/ubuntu-24-04/20261006"},
+    "rocky-9-8": {"path": "/var/lib/chickadee-images/rocky-9-8/validated-version"}
   },
   "resource_classes": {
     "small": {"cpus": 2, "memory_mib": 4096},
@@ -49,14 +84,14 @@ All image paths below are examples, not artifacts shipped in this repository.
     "large": {"cpus": 8, "memory_mib": 16384}
   },
   "profiles": {
-    "chickadee-ubuntu-2404-small": {
-      "image": "ubuntu-2404", "resources": "small", "warm_pool": 1, "max_vms": 2
+    "chickadee-small-ubuntu-24-04": {
+      "image": "ubuntu-24-04", "resources": "small", "warm_pool": 1, "max_vms": 2
     },
-    "chickadee-debian-medium": {
-      "image": "debian", "resources": "medium", "warm_pool": 0, "max_vms": 2
+    "chickadee-medium-rocky-9-8": {
+      "image": "rocky-9-8", "resources": "medium", "warm_pool": 0, "max_vms": 2
     },
-    "chickadee-ubuntu-2404-large": {
-      "image": "ubuntu-2404", "resources": "large", "warm_pool": 0, "max_vms": 1
+    "chickadee-large-ubuntu-24-04": {
+      "image": "ubuntu-24-04", "resources": "large", "warm_pool": 0, "max_vms": 1
     }
   },
   "limits": {"max_vms": 4, "max_vcpus": 16, "max_memory_mib": 32768}
@@ -66,7 +101,7 @@ All image paths below are examples, not artifacts shipped in this repository.
 Workflow selection remains one line:
 
 ```yaml
-runs-on: chickadee-debian-medium
+runs-on: chickadee-medium-rocky-9-8
 ```
 
 A job targeting that label may run on any matching ephemeral runner in its scale
