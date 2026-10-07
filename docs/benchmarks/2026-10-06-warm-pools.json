@@ -83,6 +83,16 @@
   "storage_probe": {
     "run": 37554051669,
     "written_then_deleted_mib": 64,
-    "overlay_allocated_mib_after_trim": 35.504
+    "overlay_allocated_mib_after_trim": 35.504,
+    "accepted_as_disk_reclamation": false,
+    "reason": "probe_used_tmpfs"
+  },
+  "corrected_storage_probe": {
+    "run": 37560038685,
+    "written_synced_deleted_mib": 64,
+    "filesystem": "ext4",
+    "memory_backed": false,
+    "overlay_allocated_mib_after_trim": 37.441,
+    "overlay_apparent_mib": 98.438
   }
 }

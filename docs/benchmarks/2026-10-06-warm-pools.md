@@ -51,7 +51,7 @@ The [small smoke](https://github.com/plover-digital/chickadee/actions/runs/37553
 passed Docker, build, public egress, blocked private/host TCP access and root TRIM.
 The [medium storage probe](https://github.com/plover-digital/chickadee/actions/runs/37554051669)
 wrote and synced 64 MiB under `/tmp`, deleted it and trimmed the root filesystem.
-The overlay then occupied 35.504 MiB, but `/tmp` may be memory-backed; this
+The overlay then occupied 35.504 MiB, but `/tmp` is memory-backed; this
 observation is not accepted as proof of disk reclamation without filesystem
 identity. The corrected smoke uses RUNNER_TEMP on the verified root filesystem;
 follow-up acceptance and filesystem metadata are recorded separately.
@@ -59,3 +59,6 @@ follow-up acceptance and filesystem metadata are recorded separately.
 Warm targets are best-effort while jobs run. Other OS profiles may reclaim
 incompatible credential-free warm guests. Never remove active backing images
 or reclaim a VM after credential intent.
+
+The corrected root-backed TRIM probe and preferred-host launch results are in
+[the performance tuning report](2026-10-06-performance-tuning.md).
