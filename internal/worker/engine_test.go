@@ -503,3 +503,110 @@ func TestEngineTwoMediumDeniedButMediumPlusSmallAllowed(t *testing.T) {
 		t.Fatalf("mixed budget wrong: %+v", inventory.Used)
 	}
 }
+
+func TestFatalAdmissionRetainsUncertainVMAndLetsOtherJobFinish(t *testing.T) {
+	c := engineConfig(t)
+	c.Profiles[0].Warm = 0
+	e, f := testEngine(t, c)
+	first := reserveEngine(t, e, c.Identity, "uncertain", "medium")
+	second := reserveEngine(t, e, c.Identity, "healthy", "medium")
+	for _, id := range []string{"uncertain", "healthy"} {
+		if _, err := e.Seal(c.Identity, id); err != nil {
+			t.Fatal(err)
+		}
+		if err := e.Deliver(c.Identity, id, "e30="); err != nil {
+			t.Fatal(err)
+		}
+	}
+	f.mu.Lock()
+	bad := f.vms[first.Request.VMID]
+	good := f.vms[second.Request.VMID]
+	f.mu.Unlock()
+	bad.mu.Lock()
+	bad.cleanupError = true
+	bad.mu.Unlock()
+	bad.complete()
+	eventually(t, func() bool { e.mu.Lock(); defer e.mu.Unlock(); return e.fatal != nil })
+	inventory, err := e.Inventory()
+	if err != nil || !inventory.Draining || inventory.Used.VMs != 2 {
+		t.Fatalf("lost failure inventory: %+v %v", inventory, err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Millisecond)
+	defer cancel()
+	if !errors.Is(e.Wait(ctx), context.DeadlineExceeded) {
+		t.Fatal("failure let shutdown abandon healthy job")
+	}
+	select {
+	case <-good.exit:
+		t.Fatal("healthy job killed by sibling cleanup failure")
+	default:
+	}
+	if _, err := e.Reserve(context.Background(), c.Identity, "blocked", "medium"); err == nil {
+		t.Fatal("failure did not stop admission")
+	}
+	good.complete()
+	eventually(t, func() bool {
+		record, err := e.Status(c.Identity, "healthy")
+		return err == nil && record.State == Terminal && !record.CompletedAt.IsZero()
+	})
+	record, err := e.Status(c.Identity, "uncertain")
+	if err != nil || record.State == Terminal {
+		t.Fatalf("uncertain registration lost: %v %v", record, err)
+	}
+	inventory, err = e.Inventory()
+	if err != nil || inventory.Used.VMs != 1 {
+		t.Fatalf("uncertain capacity not retained: %+v %v", inventory, err)
+	}
+	if err := e.Wait(context.Background()); err == nil {
+		t.Fatal("cleanup failure hidden")
+	}
+	bad.mu.Lock()
+	bad.cleanupError = false
+	bad.mu.Unlock()
+	bad.Cleanup()
+	e.journal.Close()
+}
+func TestLowDiskStopsNewBootButPreservesRunningJobAndTerminalStatus(t *testing.T) {
+	c := engineConfig(t)
+	c.Profiles[0].Warm = 0
+	e, f := testEngine(t, c)
+	first := reserveEngine(t, e, c.Identity, "running", "medium")
+	if _, err := e.Seal(c.Identity, "running"); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.Deliver(c.Identity, "running", "e30="); err != nil {
+		t.Fatal(err)
+	}
+	e.mu.Lock()
+	e.spaceCheck = func(Config, int64) error { return errors.New("capacity unavailable") }
+	e.mu.Unlock()
+	if _, err := e.Reserve(context.Background(), c.Identity, "new", "medium"); err == nil {
+		t.Fatal("low disk boot accepted")
+	}
+	f.mu.Lock()
+	good := f.vms[first.Request.VMID]
+	count := len(f.vms)
+	f.mu.Unlock()
+	if count != 1 {
+		t.Fatal("new VM booted on low disk")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Millisecond)
+	defer cancel()
+	if !errors.Is(e.Wait(ctx), context.DeadlineExceeded) {
+		t.Fatal("low disk allowed running job shutdown")
+	}
+	select {
+	case <-good.exit:
+		t.Fatal("low disk killed existing job")
+	default:
+	}
+	good.complete()
+	eventually(t, func() bool {
+		record, err := e.Status(c.Identity, "running")
+		return err == nil && record.State == Terminal
+	})
+	if err := e.Wait(context.Background()); err == nil {
+		t.Fatal("low disk failure hidden")
+	}
+	e.journal.Close()
+}

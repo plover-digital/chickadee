@@ -62,11 +62,19 @@ func (c *Client) call(ctx context.Context, op string, req command) (response, er
 	r.Header.Set("Content-Type", "application/json")
 	resp, err := c.http.Do(r)
 	if err != nil {
+		if ctx.Err() != nil {
+			c.http.CloseIdleConnections() // Retire abandoned dials; active RPCs are not interrupted.
+			return response{}, fmt.Errorf("worker transport interrupted: %w", ctx.Err())
+		}
 		return response{}, fmt.Errorf("worker transport unavailable")
 	}
 	defer resp.Body.Close()
 	limited := io.LimitReader(resp.Body, MaxResponseBytes+1)
 	data, err := io.ReadAll(limited)
+	if err != nil && ctx.Err() != nil {
+		c.http.CloseIdleConnections()
+		return response{}, fmt.Errorf("worker response interrupted: %w", ctx.Err())
+	}
 	if err != nil || len(data) > MaxResponseBytes {
 		return response{}, fmt.Errorf("worker response exceeds limit")
 	}

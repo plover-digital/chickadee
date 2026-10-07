@@ -14,8 +14,9 @@ ExecStartPre=/usr/local/bin/chickadee-worker -config /etc/chickadee-worker/confi
 ExecStart=/usr/local/bin/chickadee-worker -config /etc/chickadee-worker/config.json
 Restart=on-failure
 RestartSec=10
-KillMode=control-group
-# SIGTERM drains locally. Existing jobs keep their bounded local deadline.
+KillMode=mixed
+# SIGTERM reaches only the manager; it drains locally while jobs finish.
+# SIGKILL reaches remaining children only after the bounded stop timeout.
 TimeoutStopSec=15000
 TimeoutStartSec=600
 UMask=0077

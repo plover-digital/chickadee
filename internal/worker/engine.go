@@ -49,13 +49,14 @@ type Inventory struct {
 	Records  []Record           `json:"records"`
 }
 type instance struct {
-	id      string
-	slot    int
-	profile Profile
-	state   State
-	vm      machine
-	request *Request
-	cancel  context.CancelFunc
+	id            string
+	slot          int
+	profile       Profile
+	state         State
+	vm            machine
+	request       *Request
+	cancel        context.CancelFunc
+	failedCleanup bool
 }
 type Engine struct {
 	mu         sync.Mutex
@@ -255,24 +256,25 @@ func (e *Engine) boot(ctx context.Context, v *instance) {
 func (e *Engine) cleanup(v *instance) {
 	if v.vm != nil {
 		if err := v.vm.Cleanup(); err != nil {
-			e.fail(fmt.Errorf("VM cleanup failed; capacity retained"))
+			e.cleanupFailed(v, fmt.Errorf("VM cleanup failed; capacity retained"))
 			return
 		}
 		select {
 		case <-v.vm.Exited():
 		default:
-			e.fail(fmt.Errorf("VM exit unconfirmed; capacity retained"))
+			e.cleanupFailed(v, fmt.Errorf("VM exit unconfirmed; capacity retained"))
 			return
 		}
 	}
 	if _, err := os.Lstat(filepath.Join(e.config.StateDir, "vms", v.id)); !errors.Is(err, os.ErrNotExist) {
-		e.fail(fmt.Errorf("VM disk cleanup unconfirmed; capacity retained"))
+		e.cleanupFailed(v, fmt.Errorf("VM disk cleanup unconfirmed; capacity retained"))
 		return
 	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	if v.request != nil {
 		if _, err := e.journal.RecoverTerminal(v.request.AssignmentID, ExitProof{VMID: v.id, QEMUExitConfirmed: true, DiskRemoved: true}); err != nil {
+			v.failedCleanup = true
 			e.failLocked(err)
 			return
 		}
@@ -286,20 +288,38 @@ func (e *Engine) failLocked(err error) {
 		e.fatal = err
 	}
 	e.draining = true
+	for _, idle := range e.entries {
+		if idle.state == "ready" {
+			idle.state = "retiring"
+			go e.cleanup(idle)
+		} else if idle.state == "booting" {
+			idle.state = "retiring"
+			idle.cancel()
+		}
+	}
 	e.notifyLocked()
 }
+func (e *Engine) cleanupFailed(v *instance, err error) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	v.failedCleanup = true
+	e.failLocked(err)
+}
 func (e *Engine) fail(err error) { e.mu.Lock(); defer e.mu.Unlock(); e.failLocked(err) }
-func (e *Engine) identityLocked(identity Identity) error {
+func (e *Engine) authenticateLocked(identity Identity) error {
 	if e.closed {
 		return ErrUncertain
 	}
 	if identity != e.config.Identity {
 		return ErrFenced
 	}
-	if e.fatal != nil {
-		return e.fatal
-	}
 	return nil
+}
+func (e *Engine) identityLocked(identity Identity) error {
+	if err := e.authenticateLocked(identity); err != nil {
+		return err
+	}
+	return e.fatal
 }
 func (e *Engine) findLocked(assignmentID string) (Record, *instance, error) {
 	if !idPattern.MatchString(assignmentID) {
@@ -503,7 +523,7 @@ func (e *Engine) Deliver(identity Identity, assignmentID, jit string) error {
 func (e *Engine) Status(identity Identity, assignmentID string) (Record, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	if err := e.identityLocked(identity); err != nil {
+	if err := e.authenticateLocked(identity); err != nil {
 		return Record{}, err
 	}
 	record, _, err := e.findLocked(assignmentID)
@@ -539,12 +559,12 @@ func (e *Engine) Inventory() (Inventory, error) {
 	sort.Slice(inventory.Records, func(i, j int) bool {
 		return inventory.Records[i].Request.AssignmentID < inventory.Records[j].Request.AssignmentID
 	})
-	return inventory, e.fatal
+	return inventory, nil
 }
 func (e *Engine) Drain(identity Identity) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	if err := e.identityLocked(identity); err != nil {
+	if err := e.authenticateLocked(identity); err != nil {
 		return err
 	}
 	e.draining = true
@@ -567,9 +587,18 @@ func (e *Engine) Wait(ctx context.Context) error {
 	for {
 		e.mu.Lock()
 		if e.fatal != nil {
-			err := e.fatal
-			e.mu.Unlock()
-			return err
+			pendingCleanup := false
+			for _, v := range e.entries {
+				if !v.failedCleanup {
+					pendingCleanup = true
+					break
+				}
+			}
+			if !pendingCleanup {
+				err := e.fatal
+				e.mu.Unlock()
+				return err
+			}
 		}
 		if e.draining && len(e.entries) == 0 {
 			e.closed = true

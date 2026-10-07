@@ -99,8 +99,20 @@ func run(path string, check bool) error {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+	return serveWorker(ctx, c.Config, engine, srv, func() error { return srv.ListenAndServeTLS("", "") })
+}
+
+type drainEngine interface {
+	Drain(worker.Identity) error
+	Wait(context.Context) error
+}
+
+// The listener stays available for reconciliation until local jobs finish.
+// This uses a fresh bounded wait context, never the canceled shutdown signal.
+func serveWorker(ctx context.Context, c worker.Config, engine drainEngine, srv *http.Server, listen func() error) error {
+	var err error
 	result := make(chan error, 1)
-	go func() { result <- srv.ListenAndServeTLS("", "") }()
+	go func() { result <- listen() }()
 	slog.Info("Keyless worker starting authenticated listener", "worker", c.Identity.WorkerID)
 	select {
 	case <-ctx.Done():
