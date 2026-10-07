@@ -17,7 +17,7 @@ import tempfile
 import time
 import zlib
 
-VERSION = 1
+VERSION = 2
 MIB = 1024 * 1024
 SEED = 20261006
 DEADLINE_SECONDS = 75
@@ -129,6 +129,54 @@ def metadata_work(directory, count=512):
     return dict(validated=True, files=count, bytes=count * 4096,
                 sha256=digest.hexdigest(), directory_fsyncs=2,
                 file_data='buffered_not_individually_fdatasynced')
+
+
+class ScratchStorageError(ValueError):
+    pass
+
+
+def mount_path(value):
+    # Kernel mountinfo escapes whitespace/backslashes using these octal forms.
+    # Decode once: an escaped literal backslash followed by 040 is not a space.
+    return re.sub(r'\\(040|011|012|134)', lambda match: chr(int(match.group(1), 8)), value)
+
+
+def filesystem_info(directory, mountinfo=None):
+    target = Path(directory).resolve()
+    if mountinfo is None:
+        try:
+            with Path('/proc/self/mountinfo').open(encoding='utf-8', errors='surrogateescape') as stream:
+                mountinfo = stream.read(512 * 1024 + 1)
+        except OSError:
+            mountinfo = ''
+    if len(mountinfo) > 512 * 1024:
+        raise ScratchStorageError('scratch_filesystem_unverified')
+    selected = None
+    depth = -1
+    for line in mountinfo.splitlines():
+        left, separator, right = line.partition(' - ')
+        fields = left.split()
+        suffix = right.split()
+        if not separator or len(fields) < 6 or len(suffix) < 3:
+            continue
+        mount = Path(mount_path(fields[4]))
+        kind = suffix[0]
+        if not mount.is_absolute() or '..' in mount.parts or not re.fullmatch(r'[A-Za-z0-9_.+-]{1,32}', kind):
+            continue
+        if (mount == target or mount in target.parents) and len(mount.parts) >= depth:
+            selected, depth = kind, len(mount.parts)
+    # A layered filesystem's backing type cannot be proven from this mount line.
+    memory = selected in ('tmpfs', 'ramfs') if selected else None
+    if selected in ('overlay', 'aufs'):
+        memory = None
+    return dict(filesystem_type=selected, memory_backed=memory)
+
+
+def require_disk_filesystem(info):
+    if info['memory_backed'] is True:
+        raise ScratchStorageError('memory_backed_scratch')
+    if info['memory_backed'] is not False:
+        raise ScratchStorageError('scratch_filesystem_unverified')
 
 
 def read_text(path):
@@ -259,6 +307,7 @@ def main():
     parser.add_argument('--cpu-mib', type=int, choices=(32, 64, 128), default=128)
     parser.add_argument('--disk-mib', type=int, choices=(128, 256), default=256)
     parser.add_argument('--image-digest', default='')
+    parser.add_argument('--scratch-dir', help='local disk-backed scratch parent; defaults to checkout/current directory')
     parser.add_argument('--worker', choices=('compression_roundtrip', 'cache_resident_sha256', 'buffered_write_fdatasync', 'cached_read_sha256', 'small_file_metadata'))
     parser.add_argument('--units', type=int, default=1)
     parser.add_argument('--directory')
@@ -269,6 +318,11 @@ def main():
     if args.image_digest and not re.fullmatch('[0-9a-f]{64}', args.image_digest):
         parser.error('image digest must be SHA256 hex')
     if args.worker:
+        if args.worker not in ('compression_roundtrip', 'cache_resident_sha256'):
+            try:
+                require_disk_filesystem(filesystem_info(args.directory))
+            except (OSError, ScratchStorageError):
+                return 1
         limit = 512 if args.worker == 'compression_roundtrip' else 1024
         if not 1 <= args.units <= limit:
             parser.error('worker units exceed bounded workload')
@@ -296,21 +350,29 @@ def main():
                                   compression_level=6, process_counts=[1, 2, 4],
                                   small_files=512, small_file_bytes=4096,
                                   deadline_seconds=DEADLINE_SECONDS), results=[])
+    result['storage'] = dict(filesystem_type=None, memory_backed=None)
     try:
-        with tempfile.TemporaryDirectory(prefix='chickadee-perf-') as directory:
+        # CPU cases remain valid even if storage is RAM-backed or unverified.
+        for kind, units in [('compression_roundtrip', args.cpu_mib * 4),
+                            ('cache_resident_sha256', args.cpu_mib * 8)]:
+            for processes in (1, 2, 4):
+                partitions = partition(units, processes)
+                result['results'].append(run_case(kind, [['--units', str(count)] for count in partitions], deadline, units))
+        scratch = Path(args.scratch_dir).resolve() if args.scratch_dir else Path.cwd()
+        with tempfile.TemporaryDirectory(dir=scratch, prefix='.chickadee-perf-') as directory:
+            result['storage'] = filesystem_info(directory)
+            require_disk_filesystem(result['storage'])
             if shutil.disk_usage(directory).free < (args.disk_mib + 16) * MIB:
                 raise ValueError('insufficient temporary disk space')
-            for kind, units in [('compression_roundtrip', args.cpu_mib * 4),
-                                ('cache_resident_sha256', args.cpu_mib * 8)]:
-                for processes in (1, 2, 4):
-                    partitions = partition(units, processes)
-                    result['results'].append(run_case(kind, [['--units', str(count)] for count in partitions], deadline, units))
             io_args = ['--directory', directory, '--disk-mib', str(args.disk_mib)]
             write = run_case('buffered_write_fdatasync', [io_args], deadline)
             result['results'].append(write)
             digest = write['workers'][0]['checks']['sha256']
             result['results'].append(run_case('cached_read_sha256', [io_args + ['--expected-digest', digest]], deadline))
             result['results'].append(run_case('small_file_metadata', [['--directory', directory]], deadline))
+    except ScratchStorageError as error:
+        result['status'] = 'incomplete'
+        result['error'] = str(error)
     except (OSError, ValueError, subprocess.SubprocessError):
         result['status'] = 'incomplete'
         result['error'] = 'worker_failure_or_deadline_exceeded'

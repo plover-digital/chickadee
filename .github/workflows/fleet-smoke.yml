@@ -50,9 +50,14 @@ jobs:
       - name: Verify guest disk reclamation
         run: |
           set -euo pipefail
-          dd if=/dev/urandom of=/tmp/chickadee-trim-probe bs=1M count=64 status=none
+          printf 'tmp_fstype=%s\n' "$(findmnt -n -o FSTYPE --target /tmp)"
+          printf 'runner_temp_fstype=%s\n' "$(findmnt -n -o FSTYPE --target "$RUNNER_TEMP")"
+          python3 -c 'import os; assert os.stat(os.environ["RUNNER_TEMP"]).st_dev == os.stat("/").st_dev, "disk probe must use root filesystem"'
+          test "$(findmnt -n -o FSTYPE --target "$RUNNER_TEMP")" != tmpfs
+          test "$(findmnt -n -o FSTYPE --target "$RUNNER_TEMP")" != ramfs
+          dd if=/dev/urandom of="$RUNNER_TEMP/chickadee-trim-probe" bs=1M count=64 status=none
           sync
-          rm /tmp/chickadee-trim-probe
+          rm "$RUNNER_TEMP/chickadee-trim-probe"
           sudo fstrim --verbose /
       - name: Short build
         run: |

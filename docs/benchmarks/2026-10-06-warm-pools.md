@@ -50,10 +50,11 @@ Image validation is outside normal warm assignment, but still affects host recov
 The [small smoke](https://github.com/plover-digital/chickadee/actions/runs/37553858544)
 passed Docker, build, public egress, blocked private/host TCP access and root TRIM.
 The [medium storage probe](https://github.com/plover-digital/chickadee/actions/runs/37554051669)
-wrote and synced 64 MiB of random data, deleted it and trimmed the root filesystem.
-During its subsequent hold, the entire writable qcow2 overlay occupied only 35.504 MiB
-of allocated host blocks. This demonstrates deleted data was not retained in
-the overlay; it does not measure savings for arbitrary customer workloads.
+wrote and synced 64 MiB under `/tmp`, deleted it and trimmed the root filesystem.
+The overlay then occupied 35.504 MiB, but `/tmp` may be memory-backed; this
+observation is not accepted as proof of disk reclamation without filesystem
+identity. The corrected smoke uses RUNNER_TEMP on the verified root filesystem;
+follow-up acceptance and filesystem metadata are recorded separately.
 
 Warm targets are best-effort while jobs run. Other OS profiles may reclaim
 incompatible credential-free warm guests. Never remove active backing images
