@@ -101,7 +101,8 @@ type fixture struct {
 	identity              Identity
 }
 
-func newFixture(t *testing.T) *fixture {
+func newFixture(t *testing.T) *fixture { return newFixtureHandler(t, nil) }
+func newFixtureHandler(t *testing.T, wrap func(Identity, *testBackend) http.Handler) *fixture {
 	t.Helper()
 	dir := t.TempDir()
 	caKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -129,7 +130,11 @@ func newFixture(t *testing.T) *fixture {
 	i := Identity{"worker-one", "broker-one", 1}
 	f := &fixture{identity: i, worker: mint("worker", workerURI(i.WorkerID), 2), broker: mint("broker", brokerURI(i.BrokerID), 3), other: mint("other", brokerURI("wrong-broker"), 4)}
 	f.backend = &testBackend{identity: i}
-	s := httptest.NewUnstartedServer(NewHandler(i, f.backend))
+	handler := NewHandler(i, f.backend)
+	if wrap != nil {
+		handler = wrap(i, f.backend)
+	}
+	s := httptest.NewUnstartedServer(handler)
 	s.Config.ErrorLog = log.New(io.Discard, "", 0)
 	s.TLS, err = serverTLS(f.worker)
 	if err != nil {

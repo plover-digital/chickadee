@@ -210,6 +210,8 @@ func TestCanceledInventoryDoesNotInterruptOtherActiveStatus(t *testing.T) {
 		handler := NewHandler(i, b)
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/v1/inventory" {
+				_, _ = io.Copy(io.Discard, r.Body)
+				r.Body.Close()
 				close(inventoryStarted)
 				<-r.Context().Done()
 				return

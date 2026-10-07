@@ -68,6 +68,13 @@ containing the local engine fields plus `listen` and `tls`. `-check` validates
 TLS identity, namespace isolation, catalog and pinned image files without
 starting a listener or VM. Normal startup verifies images, reconciles owned
 local state, creates configured warm guests and exposes the authenticated API.
-SIGTERM drains; HTTP status remains available while bounded jobs finish.
+SIGTERM to the main worker drains; HTTP status remains available while bounded
+jobs finish. A service manager must signal only the main process during this
+phase: systemd `KillMode=mixed` preserves children until the stop deadline,
+whereas `KillMode=control-group` signals QEMU immediately. Prefer authenticated
+Drain and confirmed completion before an upgrade. Caller cancellation/deadlines
+remain distinguishable through `errors.Is`; interrupted operations remain
+ambiguous and never authorize credential replay. Canceled calls retire idle
+connections and abandoned dials without interrupting other active RPCs.
 See [example policy](../examples/worker.json) and [VM isolation](../docs/isolation.md).
 This prototype is not completed hostile multi-tenant release acceptance.
