@@ -8,7 +8,7 @@
     "key_file": "/etc/chickadee-worker/worker.key",
     "ca_file": "/etc/chickadee-worker/fleet-ca.crt"
   },
-  "budget": {"max_vms": 2, "max_cpus": 6, "max_memory_mib": 12288},
+  "budget": {"max_vms": 3, "max_cpus": 6, "max_memory_mib": 12288},
   "boot_timeout_seconds": 120,
   "job_timeout_seconds": 3600,
   "reservation_timeout_seconds": 180,
@@ -18,7 +18,7 @@
       "digest": "0000000000000000000000000000000000000000000000000000000000000000",
       "image_dir": "/var/lib/chickadee-image/ubuntu-2604",
       "machine": "q35",
-      "cpus": 2, "memory_mib": 4096, "disk_gib": 48, "warm_pool": 0
+      "cpus": 2, "memory_mib": 4096, "disk_gib": 48, "warm_pool": 1
     },
     {
       "id": "ubuntu-2604-medium",

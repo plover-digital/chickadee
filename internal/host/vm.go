@@ -85,7 +85,7 @@ func start(ctx context.Context, c config.Config, slot int, id string, offline bo
 		"-sandbox", "on,obsolete=deny,elevateprivileges=deny,spawn=deny,resourcecontrol=deny",
 		"-kernel", filepath.Join(c.ImageDir, "vmlinuz"), "-initrd", filepath.Join(c.ImageDir, "initrd"),
 		"-append", fmt.Sprintf("root=LABEL=chickadee rw console=tty0 quiet panic=1 reboot=t net.ifnames=0 ck.slot=%d", slot),
-		"-drive", "if=none,id=root,format=qcow2,file=" + disk, "-device", diskDevice + ",drive=root",
+		"-drive", "if=none,id=root,format=qcow2,file=" + disk + ",discard=unmap,detect-zeroes=unmap", "-device", diskDevice + ",drive=root",
 		"-netdev", netdev, "-device", networkDeviceArgs(netDevice),
 		"-chardev", "socket,id=bootstrap,path=" + sock + ",server=on,wait=on", "-serial", "chardev:bootstrap"}
 	sandbox, e := qemuSandbox(v.Dir, c.ImageDir, args[2:])

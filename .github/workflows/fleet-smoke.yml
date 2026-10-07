@@ -10,6 +10,8 @@ on:
         options:
           - chickadee-fleet-smoke
           - chickadee
+          - chickadee-small-ubuntu-2604
+          - chickadee-medium-ubuntu-2604
       hold_seconds:
         description: Hold the guest for broker restart acceptance
         required: true
@@ -44,6 +46,13 @@ jobs:
             curl --noproxy '*' --silent --output /dev/null --connect-timeout 2 --max-time 3 "http://$address:18443" || result=$?
             test "$result" = 28
           done
+      - name: Verify guest disk reclamation
+        run: |
+          set -euo pipefail
+          dd if=/dev/urandom of=/tmp/chickadee-trim-probe bs=1M count=64 status=none
+          sync
+          rm /tmp/chickadee-trim-probe
+          sudo fstrim --verbose /
       - name: Short build
         run: |
           printf 'int main(void) { return 0; }\n' > /tmp/chickadee-smoke.c

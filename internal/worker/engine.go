@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sort"
@@ -212,6 +213,7 @@ func (e *Engine) bootLocked(p Profile) {
 	go e.boot(ctx, v)
 }
 func (e *Engine) boot(ctx context.Context, v *instance) {
+	started := time.Now()
 	c := hostconfig.Config{StateDir: e.config.StateDir, ImageDir: v.profile.ImageDir, Machine: v.profile.Machine, CPUs: v.profile.CPUs, MemoryMiB: v.profile.MemoryMiB, DiskGiB: v.profile.DiskGiB, BootSeconds: e.config.BootTimeoutSeconds, JobSeconds: e.config.JobTimeoutSeconds}
 	vm, err := e.start(ctx, c, v.slot, v.id)
 	if vm == nil && err == nil {
@@ -238,6 +240,7 @@ func (e *Engine) boot(ctx context.Context, v *instance) {
 		return
 	}
 	v.state = "ready"
+	slog.Info("Guest READY", "profile", v.profile.ID, "boot_ms", time.Since(started).Milliseconds())
 	e.notifyLocked()
 	e.mu.Unlock()
 	go func() {

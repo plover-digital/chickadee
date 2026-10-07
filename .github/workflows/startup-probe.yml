@@ -1,11 +1,20 @@
 name: Runner startup probe
 on:
   workflow_dispatch:
+    inputs:
+      runner_label:
+        description: Warm profile to measure
+        type: choice
+        default: chickadee
+        options:
+          - chickadee
+          - chickadee-small-ubuntu-2604
+          - chickadee-medium-ubuntu-2604
 permissions: {}
 jobs:
   chickadee:
     if: github.repository == 'plover-digital/chickadee' && github.ref == 'refs/heads/main'
-    runs-on: chickadee
+    runs-on: ${{ inputs.runner_label }}
     timeout-minutes: 5
     steps:
       - name: First command

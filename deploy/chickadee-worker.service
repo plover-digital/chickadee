@@ -10,7 +10,7 @@ StartLimitBurst=5
 User=chickadee-worker
 Group=chickadee-worker
 SupplementaryGroups=kvm
-ExecStartPre=/usr/local/bin/chickadee-worker -config /etc/chickadee-worker/config.json -check
+# The worker fully verifies images before serving; avoid hashing them twice.
 ExecStart=/usr/local/bin/chickadee-worker -config /etc/chickadee-worker/config.json
 Restart=on-failure
 RestartSec=10

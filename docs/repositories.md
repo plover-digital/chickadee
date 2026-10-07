@@ -19,8 +19,8 @@ systemd units have moved to Roost's independently buildable public module.
 Executable, environment and state paths are retained initially for deployment
 compatibility. This extraction does not implement fleet scheduling or change
 customer GitHub labels. The controller's GitHub adapter and standalone App setup
-helper remain available for independent self-host deployment. The versioned
-service-to-host API is planned, not implemented.
+helper remain available for independent self-host deployment. The versioned public `workerapi` and keyless `chickadee-worker` are implemented;
+Roost owns experimental multi-host placement and GitHub demand listeners.
 
 ## Choosing where to work
 
@@ -32,9 +32,9 @@ service-to-host API is planned, not implemented.
   deployment/rollback and capacity inventory: private operations.
 
 The VM engine must not import the service repository. The service uses the public
-host API/client once implemented, not Go `internal` VM packages, host paths or
-arbitrary shell commands. The current single-host admission bridge is a migration
-adapter; remote host management is still design work.
+host API/client, not Go `internal` VM packages, host paths or arbitrary shell
+commands. The admission bridge manages customer policy; keyless workers manage
+shared physical warm capacity.
 
 Public issues describe implementation and generic acceptance. Private issues and
 Notion describe deployment/customer specifics. Never store secret values in

@@ -610,3 +610,42 @@ func TestLowDiskStopsNewBootButPreservesRunningJobAndTerminalStatus(t *testing.T
 	}
 	e.journal.Close()
 }
+
+func TestEngineWarmSmallAndMediumWithinPhysicalBudget(t *testing.T) {
+	c := engineConfig(t)
+	c.Budget = Budget{MaxVMs: 3, MaxCPUs: 6, MaxMemoryMiB: 12288}
+	medium := c.Profiles[0]
+	medium.CPUs, medium.MemoryMiB = 4, 8192
+	small := medium
+	small.ID, small.CPUs, small.MemoryMiB = "small", 2, 4096
+	c.Profiles = []Profile{small, medium}
+	e, f := testEngine(t, c)
+	eventually(t, func() bool { i, _ := e.Inventory(); return i.Profiles[0].Ready == 1 && i.Profiles[1].Ready == 1 })
+	i, _ := e.Inventory()
+	if i.Used.VMs != 2 || i.Used.CPUs != 6 || i.Used.MemoryMiB != 12288 {
+		t.Fatal("warm shapes escaped physical budget", i.Used)
+	}
+	smallRecord := reserveEngine(t, e, c.Identity, strings.Repeat("1", 32), "small")
+	if _, err := e.Seal(c.Identity, smallRecord.Request.AssignmentID); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.Deliver(c.Identity, smallRecord.Request.AssignmentID, "dGVzdA=="); err != nil {
+		t.Fatal(err)
+	}
+	mediumRecord := reserveEngine(t, e, c.Identity, strings.Repeat("2", 32), "medium")
+	if smallRecord.Request.VMID == mediumRecord.Request.VMID {
+		t.Fatal("shapes reused the same guest")
+	}
+	i, _ = e.Inventory()
+	if i.Used.VMs != 2 || i.Used.MemoryMiB != 12288 {
+		t.Fatal("admission overcommitted while warm target was missing")
+	}
+	f.mu.Lock()
+	f.vms[smallRecord.Request.VMID].complete()
+	f.mu.Unlock()
+	eventually(t, func() bool { i, _ := e.Inventory(); return i.Profiles[0].Ready == 1 })
+	i, _ = e.Inventory()
+	if i.Used.VMs != 2 || i.Used.MemoryMiB != 12288 {
+		t.Fatal("replacement escaped physical budget")
+	}
+}
