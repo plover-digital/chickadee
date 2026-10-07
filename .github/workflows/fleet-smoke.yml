@@ -20,6 +20,7 @@ on:
         options:
           - '0'
           - '90'
+          - '300'
 permissions:
   contents: read
 jobs:
@@ -62,4 +63,4 @@ jobs:
         env:
           HOLD_SECONDS: ${{ inputs.hold_seconds }}
         run: |
-          case "$HOLD_SECONDS" in 0|90) sleep "$HOLD_SECONDS" ;; *) exit 1 ;; esac
+          case "$HOLD_SECONDS" in 0|90|300) sleep "$HOLD_SECONDS" ;; *) exit 1 ;; esac

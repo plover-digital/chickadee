@@ -124,3 +124,21 @@ func TestThreeSmallWorkerBudgetAndTapSlotLimit(t *testing.T) {
 		t.Fatal("more TAP slots than available accepted")
 	}
 }
+
+func TestConfiguredCPUPoolIsOptionalBoundedUniqueAndCoversBudget(t *testing.T) {
+	c := engineConfig(t)
+	if err := c.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	for _, ids := range [][]int{{1, 2, 3}, {1, 1, 2, 3}, {-1, 1, 2, 3}, {0, 1, 2, 8192}} {
+		bad := c
+		bad.CPUIDs = ids
+		if err := bad.Validate(); err == nil {
+			t.Fatal("invalid CPU pool accepted")
+		}
+	}
+	c.CPUIDs = []int{30, 10, 50, 20}
+	if err := c.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}

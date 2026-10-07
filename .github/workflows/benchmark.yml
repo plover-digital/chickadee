@@ -1,6 +1,27 @@
 name: Runner performance comparison
 on:
   workflow_dispatch:
+    inputs:
+      benchmark:
+        description: Separate synthetic resource tests from real build/test
+        type: choice
+        default: performance
+        options: [performance, build]
+      runner_label:
+        description: Chickadee resource profile
+        type: choice
+        default: chickadee-medium-ubuntu-2604
+        options: [chickadee-small-ubuntu-2604, chickadee-medium-ubuntu-2604]
+      comparison:
+        description: Operator comparison marker (not a scheduling policy)
+        type: choice
+        default: baseline
+        options: [baseline, candidate]
+      samples:
+        description: Samples per provider
+        type: choice
+        default: '3'
+        options: ['1', '3']
 permissions:
   contents: read
 jobs:
@@ -10,30 +31,36 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        include:
-          - {runner: chickadee, sample: 1}
-          - {runner: ubuntu-24.04, sample: 1}
-          - {runner: chickadee, sample: 2}
-          - {runner: ubuntu-24.04, sample: 2}
-          - {runner: chickadee, sample: 3}
-          - {runner: ubuntu-24.04, sample: 3}
-    runs-on: ${{ matrix.runner }}
+        runner: [chickadee, ubuntu-24.04]
+        sample: ${{ fromJSON(inputs.samples == '1' && '[1]' || '[1,2,3]') }}
+    runs-on: ${{ matrix.runner == 'chickadee' && inputs.runner_label || matrix.runner }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # Keep the build/test workload fixed across host tuning experiments.
+          ref: ${{ inputs.benchmark == 'build' && 'a83e952aecd4a7df1983e321974ad48e94b0a2da' || github.sha }}
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        if: inputs.benchmark == 'build'
         with:
           go-version: '1.26.3'
           cache: false
       - name: Measure build and test
-        run: python3 scripts/benchmark.py
+        if: inputs.benchmark == 'build'
+        run: GITHUB_SHA="$(git rev-parse HEAD)" python3 scripts/benchmark.py
         env:
-          BENCH_PLATFORM: ${{ matrix.runner }}
+          BENCH_PLATFORM: ${{ matrix.runner == 'chickadee' && inputs.runner_label || matrix.runner }}
           BENCH_SAMPLE: ${{ matrix.sample }}
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - name: Measure CPU and filesystem work
+        if: inputs.benchmark == 'performance'
+        run: python3 scripts/performance-benchmark.py --output benchmark.json --comparison "$BENCH_COMPARISON" --sample "$BENCH_SAMPLE"
+        env:
+          BENCH_COMPARISON: ${{ matrix.runner == 'chickadee' && inputs.comparison || 'hosted' }}
+          BENCH_SAMPLE: ${{ matrix.sample }}
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: benchmark-${{ matrix.runner }}-${{ matrix.sample }}
+          name: benchmark-${{ inputs.benchmark }}-${{ inputs.runner_label }}-${{ inputs.comparison }}-${{ matrix.runner }}-${{ matrix.sample }}
           path: benchmark.json
           retention-days: 7

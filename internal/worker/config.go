@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/plover-digital/chickadee/internal/host"
 	"io"
 	"os"
 	"path/filepath"
@@ -30,6 +31,7 @@ type Profile struct {
 	Warm      int    `json:"warm_pool"`
 }
 type Config struct {
+	CPUIDs                    []int     `json:"cpu_ids,omitempty"`
 	Version                   int       `json:"version"`
 	Identity                  Identity  `json:"identity"`
 	StateDir                  string    `json:"state_dir"`
@@ -73,6 +75,18 @@ func (c Config) Validate() error {
 	if len(c.Profiles) < 1 || len(c.Profiles) > 32 {
 		return fmt.Errorf("invalid profile catalog size")
 	}
+	if len(c.CPUIDs) > 0 {
+		if len(c.CPUIDs) > 256 || len(c.CPUIDs) < c.Budget.MaxCPUs {
+			return fmt.Errorf("CPU pool must cover the worker CPU budget")
+		}
+		seenCPUs := map[int]bool{}
+		for _, id := range c.CPUIDs {
+			if id < 0 || id > host.MaxAffinityCPU || seenCPUs[id] {
+				return fmt.Errorf("invalid or duplicate CPU pool ID")
+			}
+			seenCPUs[id] = true
+		}
+	}
 	seen := map[string]bool{}
 	warms, cpus, memory := 0, 0, 0
 	for _, p := range c.Profiles {
@@ -100,6 +114,9 @@ func (c Config) Validate() error {
 // reaping VMs, or starting execution. Use for installation validation.
 func CheckConfig(c Config) error {
 	if err := c.Validate(); err != nil {
+		return err
+	}
+	if err := host.ValidateCPUSet(c.CPUIDs); err != nil {
 		return err
 	}
 	if err := verifyImages(c); err != nil {

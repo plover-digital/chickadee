@@ -7,6 +7,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -16,14 +17,17 @@ import (
 )
 
 type fakeMachine struct {
-	dir          string
-	exit         chan struct{}
-	finish       chan struct{}
-	once         sync.Once
-	finishOnce   sync.Once
-	mu           sync.Mutex
-	runs         int
-	cleanupError bool
+	dir            string
+	exit           chan struct{}
+	finish         chan struct{}
+	once           sync.Once
+	finishOnce     sync.Once
+	mu             sync.Mutex
+	runs           int
+	cleanupError   bool
+	cleanupGate    <-chan struct{}
+	cleanupStarted chan struct{}
+	cleanupOnce    sync.Once
 }
 
 func (f *fakeMachine) Run(_ string, timeout time.Duration, _ string) error {
@@ -41,7 +45,14 @@ func (f *fakeMachine) Exited() <-chan struct{} { return f.exit }
 func (f *fakeMachine) Cleanup() error {
 	f.mu.Lock()
 	bad := f.cleanupError
+	gate, started := f.cleanupGate, f.cleanupStarted
 	f.mu.Unlock()
+	if started != nil {
+		f.cleanupOnce.Do(func() { close(started) })
+	}
+	if gate != nil {
+		<-gate
+	}
 	if bad {
 		return errors.New("unconfirmed exit")
 	}
@@ -55,6 +66,7 @@ type fakeFactory struct {
 	vms     map[string]*fakeMachine
 	configs []hostconfig.Config
 	slots   map[string]int
+	cpuSets map[string][]int
 }
 
 func (f *fakeFactory) start(_ context.Context, c hostconfig.Config, slot int, id string) (machine, error) {
@@ -71,6 +83,10 @@ func (f *fakeFactory) start(_ context.Context, c hostconfig.Config, slot int, id
 		f.slots = map[string]int{}
 	}
 	f.slots[id] = slot
+	if f.cpuSets == nil {
+		f.cpuSets = map[string][]int{}
+	}
+	f.cpuSets[id] = append([]int(nil), c.AssignedCPUs...)
 	f.configs = append(f.configs, c)
 	return vm, nil
 }
@@ -648,4 +664,172 @@ func TestEngineWarmSmallAndMediumWithinPhysicalBudget(t *testing.T) {
 	if i.Used.VMs != 2 || i.Used.MemoryMiB != 12288 {
 		t.Fatal("replacement escaped physical budget")
 	}
+}
+
+func TestAffinitySmallAndMediumUseDisjointOrderedCPUSetAndReplacementReuses(t *testing.T) {
+	c := engineConfig(t)
+	c.Budget = Budget{MaxVMs: 3, MaxCPUs: 6, MaxMemoryMiB: 12288}
+	c.CPUIDs = []int{30, 10, 50, 20, 60, 40}
+	c.Profiles[0].Warm = 0
+	c.Profiles[0].CPUs = 4
+	c.Profiles[0].MemoryMiB = 8192
+	small := c.Profiles[0]
+	small.ID = "small"
+	small.CPUs = 2
+	small.MemoryMiB = 4096
+	c.Profiles = append(c.Profiles, small)
+	e, f := testEngine(t, c)
+	smallRecord := reserveEngine(t, e, c.Identity, "small", "small")
+	mediumRecord := reserveEngine(t, e, c.Identity, "medium", "medium")
+	for _, id := range []string{"small", "medium"} {
+		if _, err := e.Seal(c.Identity, id); err != nil {
+			t.Fatal(err)
+		}
+		if err := e.Deliver(c.Identity, id, "e30="); err != nil {
+			t.Fatal(err)
+		}
+	}
+	f.mu.Lock()
+	smallSet := append([]int(nil), f.cpuSets[smallRecord.Request.VMID]...)
+	mediumSet := append([]int(nil), f.cpuSets[mediumRecord.Request.VMID]...)
+	old := f.vms[smallRecord.Request.VMID]
+	f.mu.Unlock()
+	if !reflect.DeepEqual(smallSet, []int{30, 10}) || !reflect.DeepEqual(mediumSet, []int{50, 20, 60, 40}) {
+		t.Fatalf("CPU pool order not respected: %v %v", smallSet, mediumSet)
+	}
+	old.complete()
+	eventually(t, func() bool {
+		record, err := e.Status(c.Identity, "small")
+		return err == nil && record.State == Terminal
+	})
+	replacement := reserveEngine(t, e, c.Identity, "replacement", "small")
+	f.mu.Lock()
+	replacementSet := f.cpuSets[replacement.Request.VMID]
+	f.mu.Unlock()
+	if !reflect.DeepEqual(replacementSet, smallSet) || replacement.Request.VMID == smallRecord.Request.VMID {
+		t.Fatal("confirmed-cleanup replacement did not reuse CPU slots with fresh VM")
+	}
+	if _, err := e.Seal(c.Identity, "replacement"); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.Deliver(c.Identity, "replacement", "e30="); err != nil {
+		t.Fatal(err)
+	}
+}
+func TestAffinityRetiringVMRetainsCPUsUntilConfirmedCleanup(t *testing.T) {
+	c := engineConfig(t)
+	c.CPUIDs = []int{10, 20, 30, 40}
+	c.Profiles[0].Warm = 0
+	e, f := testEngine(t, c)
+	first := reserveEngine(t, e, c.Identity, "first", "medium")
+	if _, err := e.Seal(c.Identity, "first"); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.Deliver(c.Identity, "first", "e30="); err != nil {
+		t.Fatal(err)
+	}
+	gate := make(chan struct{})
+	started := make(chan struct{})
+	f.mu.Lock()
+	old := f.vms[first.Request.VMID]
+	f.mu.Unlock()
+	old.mu.Lock()
+	old.cleanupGate = gate
+	old.cleanupStarted = started
+	old.mu.Unlock()
+	defer close(gate)
+	old.complete()
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Fatal("cleanup did not start")
+	}
+	second := reserveEngine(t, e, c.Identity, "second", "medium")
+	f.mu.Lock()
+	firstSet := f.cpuSets[first.Request.VMID]
+	secondSet := f.cpuSets[second.Request.VMID]
+	f.mu.Unlock()
+	if !reflect.DeepEqual(firstSet, []int{10, 20}) || !reflect.DeepEqual(secondSet, []int{30, 40}) {
+		t.Fatal("retiring guest CPU allocation was reused")
+	}
+	record, err := e.Status(c.Identity, "first")
+	if err != nil || record.State == Terminal {
+		t.Fatal("blocked cleanup marked terminal")
+	}
+	if _, err := e.Seal(c.Identity, "second"); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.Deliver(c.Identity, "second", "e30="); err != nil {
+		t.Fatal(err)
+	}
+}
+func TestAffinityBootingVMsHaveDisjointCPUs(t *testing.T) {
+	c := engineConfig(t)
+	c.CPUIDs = []int{10, 20, 30, 40}
+	c.Profiles[0].Warm = 2
+	f := &fakeFactory{vms: map[string]*fakeMachine{}}
+	e, err := openEngine(c, func(ctx context.Context, conf hostconfig.Config, slot int, id string) (machine, error) {
+		vm, err := f.start(ctx, conf, slot, id)
+		if err != nil {
+			return vm, err
+		}
+		<-ctx.Done()
+		return vm, ctx.Err()
+	}, func(string) error { return nil }, func(Config) error { return nil }, unlimitedTestSpace)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.mu.Lock()
+	seen := map[int]bool{}
+	for _, v := range e.entries {
+		if len(v.cpuIDs) != 2 {
+			t.Fatal("boot did not allocate CPU set")
+		}
+		for _, id := range v.cpuIDs {
+			if seen[id] {
+				t.Fatal("booting guests share CPU")
+			}
+			seen[id] = true
+		}
+	}
+	count := len(e.entries)
+	e.mu.Unlock()
+	if count != 2 || len(seen) != 4 {
+		t.Fatal("boot capacity wrong")
+	}
+	e.Drain(c.Identity)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := e.Wait(ctx); err != nil {
+		t.Fatal(err)
+	}
+}
+func TestAffinityCleanupFailureRetainsCPUOwnership(t *testing.T) {
+	c := engineConfig(t)
+	c.CPUIDs = []int{10, 20, 30, 40}
+	c.Profiles[0].Warm = 0
+	e, f := testEngine(t, c)
+	record := reserveEngine(t, e, c.Identity, "uncertain", "medium")
+	f.mu.Lock()
+	vm := f.vms[record.Request.VMID]
+	f.mu.Unlock()
+	vm.mu.Lock()
+	vm.cleanupError = true
+	vm.mu.Unlock()
+	eventually(t, func() bool { e.mu.Lock(); defer e.mu.Unlock(); return e.fatal != nil })
+	e.mu.Lock()
+	v := e.entries[record.Request.VMID]
+	retained := v != nil && v.failedCleanup && reflect.DeepEqual(v.cpuIDs, []int{10, 20})
+	e.mu.Unlock()
+	if !retained {
+		t.Fatal("uncertain VM released assigned CPUs")
+	}
+	if _, err := e.Reserve(context.Background(), c.Identity, "new", "medium"); err == nil {
+		t.Fatal("failed cleanup allowed CPU reuse")
+	}
+	vm.mu.Lock()
+	vm.cleanupError = false
+	vm.mu.Unlock()
+	vm.Cleanup()
+	e.journal.Close()
 }

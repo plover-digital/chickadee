@@ -110,7 +110,13 @@ func start(ctx context.Context, c config.Config, slot int, id string, offline bo
 			break
 		}
 	}
-	v.cmd = exec.Command("prlimit", args...)
+	if len(c.AssignedCPUs) > 0 && len(c.AssignedCPUs) != c.CPUs {
+		return v, fmt.Errorf("assigned CPU set must match VM CPU count")
+	}
+	v.cmd, e = AffinityCommand("prlimit", args, c.AssignedCPUs)
+	if e != nil {
+		return v, e
+	}
 	if tap != nil {
 		v.cmd.ExtraFiles = []*os.File{tap, infoWrite}
 	}

@@ -58,6 +58,7 @@ type instance struct {
 	request       *Request
 	cancel        context.CancelFunc
 	failedCleanup bool
+	cpuIDs        []int
 }
 type Engine struct {
 	mu         sync.Mutex
@@ -83,10 +84,16 @@ func startHost(ctx context.Context, conf hostconfig.Config, slot int, id string)
 	return vm, err
 }
 func OpenEngine(c Config) (*Engine, error) {
-	return openEngine(c, startHost, host.ReapOwned, verifyImages, checkDiskSpace)
+	return openEngine(c, startHost, host.ReapOwned, func(c Config) error {
+		if err := host.ValidateCPUSet(c.CPUIDs); err != nil {
+			return err
+		}
+		return verifyImages(c)
+	}, checkDiskSpace)
 }
 func openEngine(c Config, start startMachine, reap func(string) error, check func(Config) error, spaceCheck func(Config, int64) error) (*Engine, error) {
 	c.Profiles = append([]Profile(nil), c.Profiles...)
+	c.CPUIDs = append([]int(nil), c.CPUIDs...)
 	if err := c.Validate(); err != nil {
 		return nil, err
 	}
@@ -198,6 +205,27 @@ func (e *Engine) bootLocked(p Profile) {
 		e.failLocked(err)
 		return
 	}
+	var cpuIDs []int
+	if len(e.config.CPUIDs) > 0 {
+		usedCPUs := map[int]bool{}
+		for _, other := range e.entries {
+			for _, id := range other.cpuIDs {
+				usedCPUs[id] = true
+			}
+		}
+		for _, id := range e.config.CPUIDs {
+			if !usedCPUs[id] {
+				cpuIDs = append(cpuIDs, id)
+				if len(cpuIDs) == p.CPUs {
+					break
+				}
+			}
+		}
+		if len(cpuIDs) != p.CPUs {
+			e.failLocked(fmt.Errorf("configured CPU pool capacity unavailable"))
+			return
+		}
+	}
 	used := map[int]bool{}
 	for _, v := range e.entries {
 		used[v.slot] = true
@@ -207,14 +235,14 @@ func (e *Engine) bootLocked(p Profile) {
 		slot++
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(e.config.BootTimeoutSeconds)*time.Second)
-	v := &instance{id: host.NewID(), slot: slot, profile: p, state: "booting", cancel: cancel}
+	v := &instance{id: host.NewID(), slot: slot, profile: p, state: "booting", cancel: cancel, cpuIDs: cpuIDs}
 	e.entries[v.id] = v
 	e.notifyLocked()
 	go e.boot(ctx, v)
 }
 func (e *Engine) boot(ctx context.Context, v *instance) {
 	started := time.Now()
-	c := hostconfig.Config{StateDir: e.config.StateDir, ImageDir: v.profile.ImageDir, Machine: v.profile.Machine, CPUs: v.profile.CPUs, MemoryMiB: v.profile.MemoryMiB, DiskGiB: v.profile.DiskGiB, BootSeconds: e.config.BootTimeoutSeconds, JobSeconds: e.config.JobTimeoutSeconds}
+	c := hostconfig.Config{AssignedCPUs: append([]int(nil), v.cpuIDs...), StateDir: e.config.StateDir, ImageDir: v.profile.ImageDir, Machine: v.profile.Machine, CPUs: v.profile.CPUs, MemoryMiB: v.profile.MemoryMiB, DiskGiB: v.profile.DiskGiB, BootSeconds: e.config.BootTimeoutSeconds, JobSeconds: e.config.JobTimeoutSeconds}
 	vm, err := e.start(ctx, c, v.slot, v.id)
 	if vm == nil && err == nil {
 		err = fmt.Errorf("missing VM lifecycle handle")

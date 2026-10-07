@@ -43,9 +43,11 @@ type Scope struct {
 	Profiles       map[string]Profile `json:"profiles"`
 }
 type Config struct {
-	Scopes    map[string]Scope `json:"scopes,omitempty"`
-	scopePool bool
-	scopeMax  int
+	// AssignedCPUs is local execution metadata, never accepted from JSON.
+	AssignedCPUs []int            `json:"-"`
+	Scopes       map[string]Scope `json:"scopes,omitempty"`
+	scopePool    bool
+	scopeMax     int
 
 	Machine         string               `json:"machine,omitempty"`
 	Images          map[string]Image     `json:"images,omitempty"`
