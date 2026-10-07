@@ -92,3 +92,34 @@ Record each case with image/binary revision, policy hash, control outcome,
 blocked attempt, counter delta, bounded capture outcome and pass/inconclusive/
 fail decision. Do not claim hostile multi-tenant acceptance until every required
 case and an independent security review pass. See [isolation](isolation.md).
+
+## Isolated kernel policy reproduction
+
+A separate root-only suite creates synthetic WAN/guest **veth** networks inside
+private network and mount namespaces. It refuses shared namespaces, hides `/run`
+with private tmpfs before creating netns handles, and applies the canonical
+`network.sh plan eth0` output only in that synthetic network. It does not attach
+host TAPs, touch host interfaces/routes/firewall objects or run a VM.
+
+```sh
+sudo unshare --net --mount --propagation private \
+  python3 scripts/network-namespace-acceptance.py
+```
+
+The suite is bounded to 55 seconds plus process cleanup. Controlled TCP listeners
+and before/after positive controls exercise host input, cross-guest, private
+IPv4, link-local, routed IPv6 in both directions and unsolicited inbound drops.
+One valid-checksummed spoofed-source TCP SYN exercises source filtering. A
+public-address fixture verifies allowed IPv4 NAT. Drop counters must increase
+in the expected canonical chain; no ambient network traffic exists in these
+private namespaces. Addresses are synthetic documentation/private ranges.
+JSON distinguishes `policy_reproduction` from `live_host_acceptance:not_tested`.
+
+Unit tests check refusal of shared namespaces and nonsemantic counter insertion.
+The actual privileged kernel test runs only with explicit operator opt-in:
+`CHICKADEE_NETWORK_NS_TEST=1 python3 -m unittest discover -s scripts -p
+ test_network_namespace_acceptance.py` (requires passwordless sudo and namespace,
+iproute2, nftables and mount support). A skipped kernel test is not acceptance.
+This verifies the canonical policy with the executing kernel, not the deployed
+firewalld rules, physical routing, TAP/QEMU backend, production IPv6 topology or
+KVM tenant boundaries. Continue the live acceptance matrix above separately.

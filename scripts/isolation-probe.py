@@ -80,6 +80,10 @@ def audit_snapshot(text):
     """Review exported canonical nft rules, not live packet acceptance."""
     if len(text) > 262144:
         raise ValueError('snapshot exceeds limit')
+    # Only anonymous nft counter statements are non-semantic annotations here.
+    # Preserve quoted strings and every predicate/verdict; named counters remain unsupported.
+    text = re.sub(r'"(?:[^"\\]|\\.)*"|\bcounter\s+packets\s+[0-9]+\s+bytes\s+[0-9]+\b',
+                  lambda match: match.group() if match.group().startswith('"') else '', text)
     def block_after(pattern, value):
         match = re.search(pattern, value)
         if match is None:

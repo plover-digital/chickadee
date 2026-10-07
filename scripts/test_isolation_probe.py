@@ -36,6 +36,13 @@ class ProbeTests(unittest.TestCase):
         formatted = text.replace('chain input { type filter hook input priority -10; policy accept; iifname "ck*" drop; }',
                                  'chain input {\n type filter hook input priority filter - 10; policy accept;\n iifname "ck*" drop\n}')
         self.assertEqual(probe.audit_snapshot(formatted)['snapshot_policy_checks'], 'passed')
+        counted = formatted.replace(' drop', ' counter packets 12 bytes 840 drop').replace(' accept\n', ' counter packets 0 bytes 0 accept\n')
+        self.assertEqual(probe.audit_snapshot(counted)['snapshot_policy_checks'], 'passed')
+        for bad in [counted.replace('iifname "ck*" counter packets 12 bytes 840 drop\n}',
+                                    'iifname "ck*" counter packets 12 bytes 840 accept\n}', 1),
+                    counted.replace('iifname "ck*" counter packets 12 bytes 840 drop\n}',
+                                    'iifname "ck*" ip saddr 10.203.31.2 counter packets 12 bytes 840 drop\n}', 1)]:
+            with self.assertRaises(ValueError):probe.audit_snapshot(bad)
         # The forward chain still contains the same fallback drop: not sufficient.
         missing_input = formatted.replace(' iifname "ck*" drop\n}', '\n}', 1)
         with self.assertRaises(ValueError):
