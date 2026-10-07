@@ -57,6 +57,18 @@ func start(ctx context.Context, c config.Config, slot int, id string, offline bo
 	if err = os.Mkdir(v.Dir, 0700); err != nil {
 		return nil, err
 	}
+	// Only the newly owned directory can be reclaimed. Before cmd.Start has
+	// produced a process, no guardian/QEMU exists and exit is already proven.
+	// Once started, only awaitSandboxExit's actual child proof may close exited.
+	defer func() {
+		if err != nil && (v.cmd == nil || v.cmd.Process == nil) {
+			select {
+			case <-v.exited:
+			default:
+				close(v.exited)
+			}
+		}
+	}()
 	// Keep directory on any failure; restart reconciliation removes it safely.
 	disk := filepath.Join(v.Dir, "disk.qcow2")
 	create := exec.CommandContext(ctx, "qemu-img", "create", "-q", "-f", "qcow2", "-F", "qcow2", "-b", filepath.Join(c.ImageDir, "base.qcow2"), disk, fmt.Sprintf("%dG", c.DiskGiB))

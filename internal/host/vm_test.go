@@ -6,6 +6,7 @@ import (
 	"context"
 	"github.com/plover-digital/chickadee/internal/config"
 	"github.com/plover-digital/chickadee/internal/protocol"
+	"io"
 	"net"
 	"os"
 	"os/exec"
@@ -145,5 +146,117 @@ func TestMachineDeviceFamilies(t *testing.T) {
 		} else if !strings.HasPrefix(machine, "microvm,") || disk != "virtio-blk-device" || network != "virtio-net-device" || rng != "virtio-rng-device" {
 			t.Fatal("legacy microvm device family changed")
 		}
+	}
+}
+
+func TestPrelaunchFailuresConfirmExitAndAllowOwnedDiskCleanup(t *testing.T) {
+	if os.Geteuid() != 0 {
+		exercisePrelaunchFailures(t)
+		return
+	}
+	// Start forbids root. Exercise the real path in an unprivileged child rather
+	// than skipping the availability regression in root-run test environments.
+	dir, err := os.MkdirTemp("", "chickadee-unpriv-start-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(dir)
+	if err = os.Chmod(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	input, err := os.Open(os.Args[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer input.Close()
+	binary := filepath.Join(dir, "host.test")
+	output, err := os.OpenFile(binary, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0755)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, copyErr := io.Copy(output, input)
+	closeErr := output.Close()
+	if copyErr != nil || closeErr != nil {
+		t.Fatal("could not prepare unprivileged helper")
+	}
+	cmd := exec.Command(binary, "-test.run=^TestPrelaunchFailureUnprivilegedHelper$")
+	cmd.Env = []string{"PATH=" + os.Getenv("PATH"), "CHICKADEE_PRELAUNCH_HELPER=1"}
+	cmd.SysProcAttr = &syscall.SysProcAttr{Credential: &syscall.Credential{Uid: 65534, Gid: 65534, Groups: []uint32{65534}}}
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("unprivileged Start regression: %v %s", err, output)
+	}
+}
+func TestPrelaunchFailureUnprivilegedHelper(t *testing.T) {
+	if os.Getenv("CHICKADEE_PRELAUNCH_HELPER") != "1" {
+		return
+	}
+	if os.Geteuid() == 0 {
+		t.Fatal("Start regression helper remained privileged")
+	}
+	exercisePrelaunchFailures(t)
+}
+func exercisePrelaunchFailures(t *testing.T) {
+	t.Helper()
+	for _, stage := range []string{"invalid-backing", "invalid-affinity", "guardian-start"} {
+		t.Run(stage, func(t *testing.T) {
+			root := t.TempDir()
+			state := filepath.Join(root, "state")
+			image := filepath.Join(root, "image")
+			for _, dir := range []string{filepath.Join(state, "vms"), filepath.Join(state, "logs"), image} {
+				if err := os.MkdirAll(dir, 0700); err != nil {
+					t.Fatal(err)
+				}
+			}
+			c := config.Config{StateDir: state, ImageDir: image, CPUs: 2, MemoryMiB: 512, DiskGiB: 8, BootSeconds: 1, Machine: "q35"}
+			if stage != "invalid-backing" {
+				bin := filepath.Join(root, "bin")
+				if err := os.Mkdir(bin, 0700); err != nil {
+					t.Fatal(err)
+				}
+				// Only overlay creation is simulated. The actual Start function reaches
+				// affinity validation / Cmd.Start without executing any VM or sandbox.
+				commands := map[string]string{"qemu-img": "#!/bin/sh\nfor last; do :; done\n: > \"$last\"\n", "bwrap": "#!/bin/sh\nexit 99\n", "qemu-system-x86_64": "#!/bin/sh\nexit 99\n"}
+				for name, body := range commands {
+					if err := os.WriteFile(filepath.Join(bin, name), []byte(body), 0755); err != nil {
+						t.Fatal(err)
+					}
+				}
+				t.Setenv("PATH", bin)
+				if stage == "invalid-affinity" {
+					c.AssignedCPUs = []int{-1, 0}
+				}
+			}
+			id := "0123456789abcdef"
+			vm, err := StartBootCheck(context.Background(), c, 1, id)
+			if err == nil || vm == nil {
+				t.Fatalf("expected owned prelaunch failure: %v", err)
+			}
+			if stage == "invalid-affinity" && !strings.Contains(err.Error(), "configured CPU") {
+				t.Fatalf("did not reach affinity validation: %v", err)
+			}
+			if stage == "guardian-start" && !strings.Contains(err.Error(), "QEMU start failed") {
+				t.Fatalf("did not reach guardian start: %v", err)
+			}
+			if vm.cmd != nil && vm.cmd.Process != nil {
+				t.Fatal("unexpected guardian launched")
+			}
+			select {
+			case <-vm.Exited():
+			default:
+				t.Fatal("unstarted owned VM exit was left unconfirmed")
+			}
+			if _, err := os.Stat(vm.Dir); err != nil {
+				t.Fatal("owned directory removed before cleanup")
+			}
+			if err := vm.Cleanup(); err != nil {
+				t.Fatal(err)
+			}
+			if err := vm.Cleanup(); err != nil {
+				t.Fatalf("repeated cleanup unsafe: %v", err)
+			}
+			if _, err := os.Stat(vm.Dir); !os.IsNotExist(err) {
+				t.Fatal("prelaunch disk/directory retained")
+			}
+		})
 	}
 }
