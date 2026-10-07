@@ -31,6 +31,13 @@ fi
 install -m 0755 scripts/network.sh scripts/preflight.sh scripts/profile-settings.py /usr/local/lib/chickadee/
 install -m 0644 deploy/chickadee.service deploy/chickadee-network.service /etc/systemd/system/
 mkdir -p /etc/systemd/system/chickadee.service.d
+cgroup_enabled=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("cgroup") is not None)' "$config")
+if [[ $cgroup_enabled == True ]]; then
+  systemd_version=$(systemd --version | head -n1 | awk '{print $2}')
+  [[ $systemd_version -ge 254 ]] || { echo 'Per-VM delegation requires systemd >=254.' >&2; exit 1; }
+  install -m 0644 deploy/chickadee-cgroup.conf /etc/systemd/system/chickadee.service.d/cgroup.conf
+fi
+
 python3 scripts/profile-settings.py resources /etc/chickadee/config.json > /etc/systemd/system/chickadee.service.d/resources.conf
 python3 scripts/profile-settings.py preflight /etc/chickadee/config.json
 systemctl daemon-reload

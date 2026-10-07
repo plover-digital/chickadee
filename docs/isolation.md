@@ -58,7 +58,8 @@ or register a GitHub runner; a real job/network acceptance remains required.
 This is an additional isolation layer, not completed hostile multi-tenant
 release acceptance. KVM, QEMU and host-kernel vulnerabilities remain in scope.
 Runtime-library and firmware trees must be root-owned and contain no secrets.
-Per-VM cgroup limits, storage quotas, broader negative-network testing, log
+Optional [per-VM cgroup limits](cgroups.md) are implemented; actual VM/OOM/I/O
+acceptance, storage quotas, broader negative-network testing, log
 archival and an independent security review remain required before stronger
 production isolation or availability claims.
 
@@ -80,3 +81,30 @@ Sources: [Ubuntu package metadata](https://launchpad.net/ubuntu/noble/+package/b
 [QEMU 8.2 TAP implementation](https://github.com/qemu/qemu/blob/v8.2.0/net/tap.c),
 [bubblewrap policy and limitations](https://github.com/containers/bubblewrap),
 [bubblewrap implementation](https://github.com/containers/bubblewrap/blob/main/bubblewrap.c).
+
+## Storage pressure and filesystem quotas
+
+Experimental workers reserve enough available storage for every allowed VM to
+expand its qcow2 overlay to the largest configured virtual disk, plus 1 GiB per
+VM and 2 GiB for diagnostics/headroom. Existing physical overlay blocks reduce
+remaining growth reservation. Startup and each cold allocation check this;
+warm replenishment uses the same path. Optional `min_free_disk_gib` adds a free
+space floor (zero retains the existing 2 GiB minimum). Low space stops new boots
+and marks the worker unhealthy while existing jobs retain their lifecycle and
+cleanup deadlines; restoring space requires a controlled worker restart.
+This admission check is neither a hard filesystem quota nor protection against
+another host process consuming storage after admission. Virtual disk size alone
+does not impose a host filesystem quota; QEMU's existing file-size limit and
+bounded diagnostic frames address different limits.
+
+For stronger storage isolation, use a dedicated runtime filesystem or volume
+with an operator-chosen aggregate limit and bounded diagnostic retention.
+On XFS, a reviewed project-quota setup can cap each owned VM directory and a
+separate diagnostics project. On Btrfs, dedicated subvolumes and qgroups require
+filesystem-specific accounting validation, including shared backing extents;
+XFS project-quota commands must not be copied onto Btrfs. Keep immutable images
+outside writable VM quota boundaries. Validate exhaustion, cleanup and restart
+before enabling quotas. Chickadee does not configure these volume/quota policies
+automatically; changing host storage layout needs a separate reviewed deployment.
+Per-frame diagnostic bounds do not yet imply bounded aggregate retained history;
+operators must rotate or expire retained diagnostics on their runtime volume.

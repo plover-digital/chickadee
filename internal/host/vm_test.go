@@ -215,7 +215,7 @@ func exercisePrelaunchFailures(t *testing.T) {
 				}
 				// Only overlay creation is simulated. The actual Start function reaches
 				// affinity validation / Cmd.Start without executing any VM or sandbox.
-				commands := map[string]string{"qemu-img": "#!/bin/sh\nfor last; do :; done\n: > \"$last\"\n", "bwrap": "#!/bin/sh\nexit 99\n", "qemu-system-x86_64": "#!/bin/sh\nexit 99\n"}
+				commands := map[string]string{"qemu-img": "#!/bin/sh\nfor arg; do previous=$last; last=$arg; done\n: > \"$previous\"\n", "bwrap": "#!/bin/sh\nexit 99\n", "qemu-system-x86_64": "#!/bin/sh\nexit 99\n"}
 				for name, body := range commands {
 					if err := os.WriteFile(filepath.Join(bin, name), []byte(body), 0755); err != nil {
 						t.Fatal(err)

@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -42,7 +43,23 @@ type Scope struct {
 	RunnerGroupID  int                `json:"runner_group_id"`
 	Profiles       map[string]Profile `json:"profiles"`
 }
+type IOLimit struct {
+	Device    string `json:"device"`
+	ReadBPS   int64  `json:"read_bps,omitempty"`
+	WriteBPS  int64  `json:"write_bps,omitempty"`
+	ReadIOPS  int64  `json:"read_iops,omitempty"`
+	WriteIOPS int64  `json:"write_iops,omitempty"`
+}
+type CgroupConfig struct {
+	IOMax             []IOLimit `json:"io_max,omitempty"`
+	Root              string    `json:"root,omitempty"`
+	MemoryOverheadMiB int       `json:"memory_overhead_mib,omitempty"`
+	PidsMax           int       `json:"pids_max,omitempty"`
+	IOWeight          int       `json:"io_weight,omitempty"`
+}
+
 type Config struct {
+	Cgroup *CgroupConfig `json:"cgroup,omitempty"`
 	// AssignedCPUs is local execution metadata, never accepted from JSON.
 	AssignedCPUs []int            `json:"-"`
 	Scopes       map[string]Scope `json:"scopes,omitempty"`
@@ -172,6 +189,11 @@ func (c Config) HostLimits() Limits {
 	return Limits{Max: c.Max, CPUs: c.Max * c.CPUs, MemoryMiB: c.Max * c.MemoryMiB}
 }
 func (c Config) Validate() error {
+	if c.Cgroup != nil {
+		if err := c.Cgroup.Validate(); err != nil {
+			return err
+		}
+	}
 	if len(c.Scopes) > 0 {
 		return c.validateScopes()
 	}
@@ -346,6 +368,49 @@ func (c Config) validateScopes() error {
 	}
 	if queues > 64 || count > c.Limits.Max || cpu > c.Limits.CPUs || ram > c.Limits.MemoryMiB {
 		return fmt.Errorf("combined scope queue/warm budgets exceeded")
+	}
+	return nil
+}
+
+func (c *CgroupConfig) Validate() error {
+	if c == nil {
+		return nil
+	}
+	n := *c
+	if n.MemoryOverheadMiB == 0 {
+		n.MemoryOverheadMiB = 512
+	}
+	if n.PidsMax == 0 {
+		n.PidsMax = 128
+	}
+	if n.IOWeight == 0 {
+		n.IOWeight = 100
+	}
+	if len(n.IOMax) > 4 {
+		return fmt.Errorf("too many I/O device limits")
+	}
+	devices := map[string]bool{}
+	for _, limit := range n.IOMax {
+		parts := strings.Split(limit.Device, ":")
+		if len(parts) != 2 {
+			return fmt.Errorf("I/O limits require an explicit major:minor block device")
+		}
+		major, e1 := strconv.Atoi(parts[0])
+		minor, e2 := strconv.Atoi(parts[1])
+		if e1 != nil || e2 != nil || major < 0 || major > 4095 || minor < 0 || minor > 1048575 || fmt.Sprintf("%d:%d", major, minor) != limit.Device || devices[limit.Device] {
+			return fmt.Errorf("invalid or duplicate I/O block device")
+		}
+		devices[limit.Device] = true
+		if limit.ReadBPS < 0 || limit.ReadBPS > 1<<40 || limit.WriteBPS < 0 || limit.WriteBPS > 1<<40 || limit.ReadIOPS < 0 || limit.ReadIOPS > 1<<30 || limit.WriteIOPS < 0 || limit.WriteIOPS > 1<<30 || (limit.ReadBPS|limit.WriteBPS|limit.ReadIOPS|limit.WriteIOPS) == 0 {
+			return fmt.Errorf("invalid I/O hard limit")
+		}
+	}
+
+	if n.Root != "" && (!filepath.IsAbs(n.Root) || filepath.Clean(n.Root) != n.Root || !strings.HasPrefix(n.Root, "/sys/fs/cgroup/")) {
+		return fmt.Errorf("cgroup root must be a delegated path below /sys/fs/cgroup")
+	}
+	if n.MemoryOverheadMiB < 128 || n.MemoryOverheadMiB > 2048 || n.PidsMax < 64 || n.PidsMax > 4096 || n.IOWeight < 1 || n.IOWeight > 10000 {
+		return fmt.Errorf("invalid per-VM cgroup resource limits")
 	}
 	return nil
 }

@@ -23,6 +23,7 @@ import (
 )
 
 type VM struct {
+	cgroup  *vmCgroup
 	ID      string
 	Slot    int
 	Dir     string
@@ -137,6 +138,18 @@ func start(ctx context.Context, c config.Config, slot int, id string, offline bo
 	}
 	v.cmd.Env = processEnv()
 	v.cmd.SysProcAttr = &syscall.SysProcAttr{Pdeathsig: syscall.SIGKILL}
+	v.cgroup, e = createCgroup(c.Cgroup, id, c.CPUs, c.MemoryMiB)
+	if v.cgroup != nil {
+		defer v.cgroup.closeFD()
+	}
+	if e != nil {
+		return v, e
+	}
+	if v.cgroup != nil {
+		v.cmd.SysProcAttr.UseCgroupFD = true
+		v.cmd.SysProcAttr.CgroupFD = int(v.cgroup.file.Fd())
+	}
+
 	// Never forward untrusted guest console or QEMU arguments to journald.
 	v.cmd.Stdout = io.Discard
 	qlog, e := os.OpenFile(filepath.Join(c.StateDir, "logs", id+".qemu.log"), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
@@ -236,6 +249,13 @@ func (v *VM) Cleanup() error {
 	}
 	if e := v.Stop(); e != nil {
 		return e
+	}
+	if v.cgroup != nil {
+		v.cgroup.closeFD()
+		if err := removeEmptyCgroup(v.cgroup.path); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+		v.cgroup = nil
 	}
 	return os.RemoveAll(v.Dir)
 }

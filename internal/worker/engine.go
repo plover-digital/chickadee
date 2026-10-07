@@ -93,6 +93,11 @@ func OpenEngine(c Config) (*Engine, error) {
 }
 func openEngine(c Config, start startMachine, reap func(string) error, check func(Config) error, spaceCheck func(Config, int64) error) (*Engine, error) {
 	c.Profiles = append([]Profile(nil), c.Profiles...)
+	if c.Cgroup != nil {
+		copy := *c.Cgroup
+		copy.IOMax = append([]hostconfig.IOLimit(nil), c.Cgroup.IOMax...)
+		c.Cgroup = &copy
+	}
 	c.CPUIDs = append([]int(nil), c.CPUIDs...)
 	if err := c.Validate(); err != nil {
 		return nil, err
@@ -112,6 +117,12 @@ func openEngine(c Config, start startMachine, reap func(string) error, check fun
 			return fail(fmt.Errorf("worker runtime directory must be private and owned"))
 		}
 	}
+	if err = host.CheckCgroupBudget(c.Cgroup, c.Budget.MaxMemoryMiB, c.Budget.MaxVMs); err != nil {
+		return fail(err)
+	}
+	if err = host.PrepareCgroup(c.Cgroup); err != nil {
+		return fail(err)
+	}
 	if err = check(c); err != nil {
 		return fail(err)
 	}
@@ -123,6 +134,9 @@ func openEngine(c Config, start startMachine, reap func(string) error, check fun
 	// Recovery is strictly local. A broker restart never opens/reaps the worker.
 	if err = reap(c.StateDir); err != nil {
 		return fail(fmt.Errorf("owned process exit not confirmed"))
+	}
+	if err = host.ReapCgroups(c.Cgroup); err != nil {
+		return fail(err)
 	}
 	dirs, err := os.ReadDir(filepath.Join(c.StateDir, "vms"))
 	if err != nil {
@@ -155,6 +169,10 @@ func openEngine(c Config, start startMachine, reap func(string) error, check fun
 		e.profiles[profile.ID] = profile
 	}
 	e.mu.Lock()
+	if err = e.pruneLogsLocked(); err != nil {
+		e.mu.Unlock()
+		return fail(err)
+	}
 	e.maintainLocked()
 	e.mu.Unlock()
 	return e, nil
@@ -189,6 +207,10 @@ func (e *Engine) maintainLocked() {
 	}
 }
 func (e *Engine) bootLocked(p Profile) {
+	if err := e.pruneLogsLocked(); err != nil {
+		e.failLocked(err)
+		return
+	}
 	if e.fatal != nil || e.draining {
 		return
 	}
@@ -242,7 +264,7 @@ func (e *Engine) bootLocked(p Profile) {
 }
 func (e *Engine) boot(ctx context.Context, v *instance) {
 	started := time.Now()
-	c := hostconfig.Config{AssignedCPUs: append([]int(nil), v.cpuIDs...), StateDir: e.config.StateDir, ImageDir: v.profile.ImageDir, Machine: v.profile.Machine, CPUs: v.profile.CPUs, MemoryMiB: v.profile.MemoryMiB, DiskGiB: v.profile.DiskGiB, BootSeconds: e.config.BootTimeoutSeconds, JobSeconds: e.config.JobTimeoutSeconds}
+	c := hostconfig.Config{Cgroup: e.config.Cgroup, AssignedCPUs: append([]int(nil), v.cpuIDs...), StateDir: e.config.StateDir, ImageDir: v.profile.ImageDir, Machine: v.profile.Machine, CPUs: v.profile.CPUs, MemoryMiB: v.profile.MemoryMiB, DiskGiB: v.profile.DiskGiB, BootSeconds: e.config.BootTimeoutSeconds, JobSeconds: e.config.JobTimeoutSeconds}
 	vm, err := e.start(ctx, c, v.slot, v.id)
 	if vm == nil && err == nil {
 		err = fmt.Errorf("missing VM lifecycle handle")
@@ -311,6 +333,10 @@ func (e *Engine) cleanup(v *instance) {
 		}
 	}
 	delete(e.entries, v.id)
+	if err := e.pruneLogsLocked(); err != nil {
+		e.failLocked(err)
+		return
+	}
 	e.notifyLocked()
 	e.maintainLocked()
 }

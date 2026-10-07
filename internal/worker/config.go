@@ -31,15 +31,18 @@ type Profile struct {
 	Warm      int    `json:"warm_pool"`
 }
 type Config struct {
-	CPUIDs                    []int     `json:"cpu_ids,omitempty"`
-	Version                   int       `json:"version"`
-	Identity                  Identity  `json:"identity"`
-	StateDir                  string    `json:"state_dir"`
-	Profiles                  []Profile `json:"profiles"`
-	Budget                    Budget    `json:"budget"`
-	BootTimeoutSeconds        int       `json:"boot_timeout_seconds"`
-	JobTimeoutSeconds         int       `json:"job_timeout_seconds"`
-	ReservationTimeoutSeconds int       `json:"reservation_timeout_seconds"`
+	Cgroup                    *host.CgroupConfig `json:"cgroup,omitempty"`
+	LogRetentionMiB           int                `json:"log_retention_mib,omitempty"`
+	MinFreeDiskGiB            int                `json:"min_free_disk_gib,omitempty"`
+	CPUIDs                    []int              `json:"cpu_ids,omitempty"`
+	Version                   int                `json:"version"`
+	Identity                  Identity           `json:"identity"`
+	StateDir                  string             `json:"state_dir"`
+	Profiles                  []Profile          `json:"profiles"`
+	Budget                    Budget             `json:"budget"`
+	BootTimeoutSeconds        int                `json:"boot_timeout_seconds"`
+	JobTimeoutSeconds         int                `json:"job_timeout_seconds"`
+	ReservationTimeoutSeconds int                `json:"reservation_timeout_seconds"`
 }
 
 func LoadConfig(path string) (Config, error) {
@@ -60,11 +63,20 @@ func LoadConfig(path string) (Config, error) {
 	return c, c.Validate()
 }
 func (c Config) Validate() error {
+	if err := host.ValidateCgroupConfig(c.Cgroup); err != nil {
+		return err
+	}
 	if c.Version != Version || !validIdentity(c.Identity) {
 		return fmt.Errorf("invalid worker version/identity")
 	}
 	if !filepath.IsAbs(c.StateDir) || filepath.Clean(c.StateDir) != c.StateDir || c.StateDir == "/" {
 		return fmt.Errorf("private absolute worker state directory required")
+	}
+	if c.LogRetentionMiB < 0 || c.LogRetentionMiB > 65536 {
+		return fmt.Errorf("invalid diagnostic retention budget")
+	}
+	if c.MinFreeDiskGiB < 0 || c.MinFreeDiskGiB > 1048576 {
+		return fmt.Errorf("invalid free disk reserve")
 	}
 	if c.Budget.MaxVMs < 1 || c.Budget.MaxVMs > 32 || c.Budget.MaxCPUs < 1 || c.Budget.MaxCPUs > 256 || c.Budget.MaxMemoryMiB < 1 || c.Budget.MaxMemoryMiB > 1<<20 {
 		return fmt.Errorf("invalid worker budget")
@@ -114,6 +126,12 @@ func (c Config) Validate() error {
 // reaping VMs, or starting execution. Use for installation validation.
 func CheckConfig(c Config) error {
 	if err := c.Validate(); err != nil {
+		return err
+	}
+	if err := host.CheckCgroupBudget(c.Cgroup, c.Budget.MaxMemoryMiB, c.Budget.MaxVMs); err != nil {
+		return err
+	}
+	if err := host.CheckCgroup(c.Cgroup); err != nil {
 		return err
 	}
 	if err := host.ValidateCPUSet(c.CPUIDs); err != nil {
@@ -235,9 +253,15 @@ func checkDiskSpace(c Config, allocated int64) error {
 }
 
 func checkDiskCapacity(c Config, allocated, available int64) error {
+	if allocated < 0 || available < 0 {
+		return fmt.Errorf("invalid disk capacity")
+	}
 	required := diskReservation(c) - allocated
 	if required < 2<<30 {
 		required = 2 << 30
+	}
+	if floor := int64(c.MinFreeDiskGiB) << 30; floor > required {
+		required = floor
 	}
 	if available < required {
 		return fmt.Errorf("insufficient disk space for reserved VM capacity and diagnostics")

@@ -93,7 +93,17 @@ func Acquire(c config.Config) (owner *Ownership, err error) {
 			return nil, e
 		}
 	}
+	limits := c.HostLimits()
+	if e = host.CheckCgroupBudget(c.Cgroup, limits.MemoryMiB, limits.Max); e != nil {
+		return nil, e
+	}
+	if e = host.PrepareCgroup(c.Cgroup); e != nil {
+		return nil, e
+	}
 	if e = host.ReapOwned(c.StateDir); e != nil {
+		return nil, e
+	}
+	if e = host.ReapCgroups(c.Cgroup); e != nil {
 		return nil, e
 	}
 	dirs, e := os.ReadDir(filepath.Join(c.StateDir, "vms"))

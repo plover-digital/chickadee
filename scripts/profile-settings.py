@@ -15,14 +15,18 @@ def settings(c):
     return profiles, count, cpu, memory
 
 def main():
-    c=json.load(open(sys.argv[2])); profiles,count,cpu,memory=settings(c)
+    with open(sys.argv[2]) as config_file: c=json.load(config_file)
+    profiles,count,cpu,memory=settings(c)
+    overhead=(c.get('cgroup') or {}).get('memory_overhead_mib') or 512
+    pids=(c.get('cgroup') or {}).get('pids_max') or 128
+    tasks=64+count*pids if c.get('cgroup') is not None else 64+count*(max(p['cpus'] for p in profiles)+160)
     if sys.argv[1]=='resources':
-        print(f'[Service]\nMemoryMax={memory+count*512+512}M\nMemorySwapMax=0\nCPUQuota={cpu*100}%\nTasksMax={64+count*(max(p["cpus"] for p in profiles)+160)}')
+        print(f'[Service]\nMemoryMax={memory+count*overhead+512}M\nMemorySwapMax=0\nCPUQuota={cpu*100}%\nTasksMax={tasks}')
         return
     assert sys.argv[1]=='preflight'
     assert c['state_dir']=='/var/lib/chickadee', 'installer uses a fixed state directory'
     total=int(next(line.split()[1] for line in pathlib.Path('/proc/meminfo').read_text().splitlines() if line.startswith('MemTotal:')))//1024
-    assert memory+count*512+512 <= total-1024, 'guest budget plus overhead must leave at least 1 GiB for host'
+    assert memory+count*overhead+512 <= total-1024, 'guest budget plus overhead must leave at least 1 GiB for host'
     flags=set(next(line.split(':',1)[1].split() for line in pathlib.Path('/proc/cpuinfo').read_text().splitlines() if line.startswith('flags')))
     checked=set()
     for p in profiles:

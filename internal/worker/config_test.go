@@ -142,3 +142,30 @@ func TestConfiguredCPUPoolIsOptionalBoundedUniqueAndCoversBudget(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestConfiguredFreeDiskFloorAndConservativeGrowth(t *testing.T) {
+	c := engineConfig(t)
+	c.MinFreeDiskGiB = 20
+	// Existing allocated blocks never remove the operator free-space floor.
+	if err := checkDiskCapacity(c, 1<<40, 19<<30); err == nil {
+		t.Fatal("floor bypassed by allocated disks")
+	}
+	if err := checkDiskCapacity(c, 1<<40, 20<<30); err != nil {
+		t.Fatal(err)
+	}
+	// Returning capacity to a warm pool does not reduce full growth reservation.
+	if err := checkDiskCapacity(c, 0, diskReservation(c)-1); err == nil {
+		t.Fatal("thin overlay growth underreserved")
+	}
+	c.MinFreeDiskGiB = -1
+	if c.Validate() == nil {
+		t.Fatal("negative floor accepted")
+	}
+	c.MinFreeDiskGiB = 1048577
+	if c.Validate() == nil {
+		t.Fatal("unbounded floor accepted")
+	}
+	if checkDiskCapacity(c, -1, 1<<40) == nil {
+		t.Fatal("invalid accounting accepted")
+	}
+}

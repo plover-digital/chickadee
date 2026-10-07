@@ -10,3 +10,19 @@ class ProfileBudgets(unittest.TestCase):
   c={'max_vms':2,'cpus':2,'memory_mib':2048,'image_dir':'/images'}
   _,count,cpu,ram=m.settings(c)
   self.assertEqual((count,cpu,ram),(2,4,4096))
+ def test_resources_include_explicit_cgroup_overhead_and_task_budget(self):
+  import contextlib,io,json,tempfile
+  from unittest.mock import patch
+  c={'max_vms':2,'cpus':2,'memory_mib':2048,'image_dir':'/images','cgroup':{'memory_overhead_mib':768,'pids_max':200}}
+  with tempfile.TemporaryDirectory() as tmp:
+   path=pathlib.Path(tmp)/'config.json';path.write_text(json.dumps(c));out=io.StringIO()
+   with patch.object(m.sys,'argv',['settings','resources',str(path)]),contextlib.redirect_stdout(out):m.main()
+  self.assertIn('MemoryMax=6144M',out.getvalue());self.assertIn('TasksMax=464',out.getvalue());self.assertIn('CPUQuota=400%',out.getvalue())
+ def test_empty_cgroup_object_enables_default_limits(self):
+  import contextlib,io,json,tempfile
+  from unittest.mock import patch
+  c={'max_vms':2,'cpus':2,'memory_mib':2048,'image_dir':'/images','cgroup':{}}
+  with tempfile.TemporaryDirectory() as tmp:
+   path=pathlib.Path(tmp)/'config.json';path.write_text(json.dumps(c));out=io.StringIO()
+   with patch.object(m.sys,'argv',['settings','resources',str(path)]),contextlib.redirect_stdout(out):m.main()
+  self.assertIn('MemoryMax=5632M',out.getvalue());self.assertIn('TasksMax=320',out.getvalue())
