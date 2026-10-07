@@ -1,0 +1,32 @@
+name: Controlled network isolation acceptance
+on:
+  workflow_dispatch:
+    inputs:
+      runner_label:
+        description: Operator test queue (host listener and counters must be prepared first)
+        required: true
+        default: chickadee
+        type: choice
+        options:
+          - chickadee
+          - chickadee-medium-ubuntu-2604
+          - chickadee-small-ubuntu-2604
+      public_canary_host:
+        description: Operator-owned public TLS endpoint for a positive control and one spoofed-source SYN
+        required: true
+        default: chickadee.run
+        type: string
+permissions:
+  contents: read
+jobs:
+  controlled-probe:
+    runs-on: ${{ inputs.runner_label }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Collect bounded guest isolation evidence
+        run: python3 scripts/isolation-probe.py
+      - name: Probe controlled host listener and source guard
+        env:
+          PUBLIC_CANARY_HOST: ${{ inputs.public_canary_host }}
+        run: sudo python3 scripts/network-canary-probe.py --public-host "$PUBLIC_CANARY_HOST"

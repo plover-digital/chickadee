@@ -37,16 +37,10 @@ jobs:
           curl --fail --silent --show-error https://api.github.com/zen
           docker version
           docker run --rm hello-world
-      - name: Verify host and private network traffic is dropped
-        run: |
-          set -euo pipefail
-          gateway=$(ip -4 route show default | awk '{print $3; exit}')
-          test -n "$gateway"
-          for address in "$gateway" 10.0.0.1 192.168.0.1; do
-            result=0
-            curl --noproxy '*' --silent --output /dev/null --connect-timeout 2 --max-time 3 "http://$address:18443" || result=$?
-            test "$result" = 28
-          done
+      - name: Collect bounded guest isolation evidence
+        run: python3 scripts/isolation-probe.py
+        # Guest-only observations do not prove firewall acceptance.
+        # Controlled listener/counter checks: docs/network-acceptance.md.
       - name: Verify guest disk reclamation
         run: |
           set -euo pipefail

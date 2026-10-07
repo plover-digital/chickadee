@@ -90,6 +90,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Verify guest isolation evidence and allocation
+        env:
+          EXPECT_CPUS: ${{ matrix.cpus }}
+          EXPECT_MEMORY_MIB: ${{ matrix.memory_mib }}
+        run: python3 scripts/isolation-probe.py --cpus "$EXPECT_CPUS" --memory-mib "$EXPECT_MEMORY_MIB"
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: '1.26.3'
