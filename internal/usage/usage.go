@@ -4,6 +4,7 @@ package usage
 import (
 	"encoding/json"
 	"errors"
+	"github.com/plover-digital/chickadee/workerapi"
 	"io"
 	"os"
 	"path/filepath"
@@ -12,11 +13,14 @@ import (
 )
 
 type Record struct {
-	ID        string    `json:"id"`
-	Scope     string    `json:"github_url"`
-	Label     string    `json:"label"`
-	Reserved  time.Time `json:"reserved_at"`
-	Completed time.Time `json:"completed_at"`
+	Resources *workerapi.ResourceSummary `json:"resources,omitempty"`
+	CPUs      int                        `json:"cpus,omitempty"`
+	MemoryMiB int                        `json:"memory_mib,omitempty"`
+	ID        string                     `json:"id"`
+	Scope     string                     `json:"github_url"`
+	Label     string                     `json:"label"`
+	Reserved  time.Time                  `json:"reserved_at"`
+	Completed time.Time                  `json:"completed_at"`
 }
 type Day struct {
 	Date      string  `json:"date"`
@@ -44,6 +48,9 @@ func Load(dir string) ([]Record, error) {
 	return records, nil
 }
 func Append(dir string, record Record) error {
+	if !record.Resources.Valid() {
+		return errors.New("invalid resource summary")
+	}
 	if record.ID == "" || record.Scope == "" || record.Label == "" || record.Reserved.IsZero() || record.Completed.Before(record.Reserved) || record.Completed.Sub(record.Reserved) > 25*time.Hour {
 		return errors.New("invalid usage interval")
 	}
@@ -68,6 +75,9 @@ func Append(dir string, record Record) error {
 	b, err := json.Marshal(kept)
 	if err != nil {
 		return err
+	}
+	if len(b) > 8<<20 {
+		return errors.New("usage store exceeds limit")
 	}
 	file, err := os.CreateTemp(dir, ".usage-")
 	if err != nil {

@@ -164,7 +164,7 @@ func translate(err error) error {
 }
 func wireRecord(r worker.Record) workerapi.Record {
 	q := r.Request
-	return workerapi.Record{Request: workerapi.Request{Identity: wireIdentity(q.Identity), AssignmentID: q.AssignmentID, VMID: q.VMID, ProfileDigest: q.ProfileDigest, CPUs: q.CPUs, MemoryMiB: q.MemoryMiB, DiskGiB: q.DiskGiB}, State: string(r.State), CompletedAt: r.CompletedAt}
+	return workerapi.Record{Request: workerapi.Request{Identity: wireIdentity(q.Identity), AssignmentID: q.AssignmentID, VMID: q.VMID, ProfileDigest: q.ProfileDigest, CPUs: q.CPUs, MemoryMiB: q.MemoryMiB, DiskGiB: q.DiskGiB}, State: string(r.State), CompletedAt: r.CompletedAt, Resources: r.Resources}
 }
 func (a *engineAdapter) Inventory() (workerapi.Inventory, error) {
 	v, e := a.engine.Inventory()

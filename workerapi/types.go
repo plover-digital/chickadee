@@ -14,7 +14,7 @@ const (
 	Version          = 1
 	MaxJIT           = 48 * 1024
 	MaxRequestBytes  = 64 * 1024
-	MaxResponseBytes = 1 << 20
+	MaxResponseBytes = 2 << 20
 )
 
 var idPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$`)
@@ -62,9 +62,10 @@ type Request struct {
 	DiskGiB       int      `json:"disk_gib"`
 }
 type Record struct {
-	Request     Request   `json:"request"`
-	State       string    `json:"state"`
-	CompletedAt time.Time `json:"completed_at,omitempty"`
+	Resources   *ResourceSummary `json:"resources,omitempty"`
+	Request     Request          `json:"request"`
+	State       string           `json:"state"`
+	CompletedAt time.Time        `json:"completed_at,omitempty"`
 }
 type CapacityUsed struct {
 	VMs       int `json:"vms"`
@@ -128,6 +129,9 @@ func (c command) valid(op string, identity Identity) bool {
 
 func (r Record) valid() bool {
 	q := r.Request
+	if !r.Resources.Valid() || r.Resources != nil && r.State != "terminal" {
+		return false
+	}
 	if !q.Identity.Valid() || !idPattern.MatchString(q.AssignmentID) || !idPattern.MatchString(q.VMID) || !digestPattern.MatchString(q.ProfileDigest) || q.CPUs < 1 || q.CPUs > 256 || q.MemoryMiB < 512 || q.MemoryMiB > 1<<20 || q.DiskGiB < 8 || q.DiskGiB > 1024 {
 		return false
 	}

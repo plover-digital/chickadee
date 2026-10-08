@@ -8,6 +8,7 @@ import (
 	"github.com/plover-digital/chickadee/internal/config"
 	"github.com/plover-digital/chickadee/internal/host"
 	"github.com/plover-digital/chickadee/internal/usage"
+	"github.com/plover-digital/chickadee/workerapi"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -22,9 +23,10 @@ type Backend interface {
 	Remove(context.Context, string) error
 }
 type Event struct {
-	ID   string
-	Kind string
-	Err  error
+	Resources *workerapi.ResourceSummary
+	ID        string
+	Kind      string
+	Err       error
 }
 type entry struct {
 	profile    string
@@ -380,7 +382,7 @@ func runProfilesWithUpdates(ctx context.Context, c config.Config, backends map[s
 			case "done":
 				if !v.reservedAt.IsZero() {
 					p := configs[v.profile]
-					if err := usage.Append(c.StateDir, usage.Record{ID: v.state.ID, Scope: p.GitHubURL, Label: p.ScaleSet, Reserved: v.reservedAt, Completed: time.Now().UTC()}); err != nil {
+					if err := usage.Append(c.StateDir, usage.Record{ID: v.state.ID, Scope: p.GitHubURL, Label: p.ScaleSet, Reserved: v.reservedAt, Completed: time.Now().UTC(), Resources: ev.Resources, CPUs: p.CPUs, MemoryMiB: p.MemoryMiB}); err != nil {
 						slog.Warn("usage recording failed")
 					}
 				}
@@ -659,8 +661,16 @@ func worker(ctx context.Context, c config.Config, v *entry, events chan<- Event,
 	bootStarted := time.Now()
 	vm, e := start(ctx, c, v.slot, v.state.ID)
 	report := func(kind string, e error) {
+		var resources *workerapi.ResourceSummary
+		if kind == "done" {
+			if measured, ok := vm.(interface {
+				ResourceSummary() *workerapi.ResourceSummary
+			}); ok {
+				resources = measured.ResourceSummary()
+			}
+		}
 		select {
-		case events <- Event{ID: v.state.ID, Kind: kind, Err: e}:
+		case events <- Event{ID: v.state.ID, Kind: kind, Err: e, Resources: resources}:
 		case <-ctx.Done():
 		}
 	}

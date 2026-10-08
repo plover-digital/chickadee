@@ -20,18 +20,23 @@ import (
 
 	"github.com/plover-digital/chickadee/internal/config"
 	"github.com/plover-digital/chickadee/internal/protocol"
+	"github.com/plover-digital/chickadee/workerapi"
 )
 
 type VM struct {
-	cgroup  *vmCgroup
-	ID      string
-	Slot    int
-	Dir     string
-	cmd     *exec.Cmd
-	exited  chan struct{}
-	exitErr error
-	Conn    net.Conn
-	Reader  *protocol.Reader
+	resources       *resourceSampler
+	resourceSummary *workerapi.ResourceSummary
+	ioDevice        string
+	resourceCPUs    int
+	cgroup          *vmCgroup
+	ID              string
+	Slot            int
+	Dir             string
+	cmd             *exec.Cmd
+	exited          chan struct{}
+	exitErr         error
+	Conn            net.Conn
+	Reader          *protocol.Reader
 }
 
 func NewID() string {
@@ -138,6 +143,10 @@ func start(ctx context.Context, c config.Config, slot int, id string, offline bo
 	}
 	v.cmd.Env = processEnv()
 	v.cmd.SysProcAttr = &syscall.SysProcAttr{Pdeathsig: syscall.SIGKILL}
+	v.resourceCPUs = c.CPUs
+	if c.Cgroup != nil && len(c.Cgroup.IOMax) == 1 {
+		v.ioDevice = c.Cgroup.IOMax[0].Device
+	}
 	v.cgroup, e = createCgroup(c.Cgroup, id, c.CPUs, c.MemoryMiB)
 	if v.cgroup != nil {
 		defer v.cgroup.closeFD()
@@ -250,6 +259,10 @@ func (v *VM) Cleanup() error {
 	if e := v.Stop(); e != nil {
 		return e
 	}
+	if v.resources != nil {
+		v.resourceSummary = v.resources.finish()
+		v.resources = nil
+	}
 	if v.cgroup != nil {
 		v.cgroup.closeFD()
 		if err := removeEmptyCgroup(v.cgroup.path); err != nil && !os.IsNotExist(err) {
@@ -261,6 +274,7 @@ func (v *VM) Cleanup() error {
 }
 func (v *VM) Exited() <-chan struct{} { return v.exited }
 func (v *VM) Run(jit string, timeout time.Duration, logPath string) error {
+	v.StartResourceSampling()
 	deliveryStarted := time.Now()
 	_ = v.Conn.SetDeadline(time.Now().Add(15 * time.Second))
 	if e := protocol.Write(v.Conn, protocol.Frame{V: 1, Type: "CONFIG", JIT: jit}); e != nil {

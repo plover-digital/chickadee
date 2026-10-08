@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/plover-digital/chickadee/workerapi"
 	"io"
 	"os"
 	"path/filepath"
@@ -63,9 +64,10 @@ const (
 )
 
 type Record struct {
-	Request     Request   `json:"request"`
-	State       State     `json:"state"`
-	CompletedAt time.Time `json:"completed_at,omitempty"`
+	Resources   *workerapi.ResourceSummary `json:"resources,omitempty"`
+	Request     Request                    `json:"request"`
+	State       State                      `json:"state"`
+	CompletedAt time.Time                  `json:"completed_at,omitempty"`
 }
 
 // ExitProof contains facts the host integration MUST independently establish.
@@ -75,6 +77,7 @@ type Record struct {
 type ExitProof struct {
 	VMID              string
 	QEMUExitConfirmed bool
+	Resources         *workerapi.ResourceSummary
 	DiskRemoved       bool
 }
 
@@ -185,6 +188,9 @@ func (j *Journal) validate() error {
 	for id, r := range j.data.Records {
 		if !validRequest(r.Request) || id != r.Request.AssignmentID || r.Request.Identity.WorkerID != j.data.Identity.WorkerID || r.Request.Identity.BrokerID != j.data.Identity.BrokerID || r.Request.Identity.Generation > j.data.Identity.Generation || vms[r.Request.VMID] {
 			return fmt.Errorf("invalid worker reservation identity")
+		}
+		if !r.Resources.Valid() || r.Resources != nil && r.State != Terminal {
+			return fmt.Errorf("invalid resource summary")
 		}
 		if r.State != Terminal && !r.CompletedAt.IsZero() {
 			return fmt.Errorf("completion timestamp before terminal state")
@@ -378,6 +384,10 @@ func (j *Journal) terminal(request Request, proof ExitProof) (Record, error) {
 	if record.State == Terminal {
 		return record, nil
 	}
+	if !proof.Resources.Valid() {
+		return Record{}, ErrTransition
+	}
+	record.Resources = proof.Resources
 	record.State = Terminal
 	record.CompletedAt = time.Now().UTC()
 	next := j.clone()

@@ -17,6 +17,7 @@ import (
 	hostconfig "github.com/plover-digital/chickadee/internal/config"
 	"github.com/plover-digital/chickadee/internal/host"
 	"github.com/plover-digital/chickadee/internal/protocol"
+	"github.com/plover-digital/chickadee/workerapi"
 )
 
 type machine interface {
@@ -326,7 +327,13 @@ func (e *Engine) cleanup(v *instance) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	if v.request != nil {
-		if _, err := e.journal.RecoverTerminal(v.request.AssignmentID, ExitProof{VMID: v.id, QEMUExitConfirmed: true, DiskRemoved: true}); err != nil {
+		var resources *workerapi.ResourceSummary
+		if measured, ok := v.vm.(interface {
+			ResourceSummary() *workerapi.ResourceSummary
+		}); ok {
+			resources = measured.ResourceSummary()
+		}
+		if _, err := e.journal.RecoverTerminal(v.request.AssignmentID, ExitProof{VMID: v.id, QEMUExitConfirmed: true, DiskRemoved: true, Resources: resources}); err != nil {
 			v.failedCleanup = true
 			e.failLocked(err)
 			return

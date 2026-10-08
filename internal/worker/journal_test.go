@@ -5,6 +5,7 @@ package worker
 import (
 	"errors"
 	"fmt"
+	"github.com/plover-digital/chickadee/workerapi"
 	"os"
 	"path/filepath"
 	"strings"
@@ -312,5 +313,34 @@ func TestCompletionTimestampIsDurableAndIdempotent(t *testing.T) {
 	records, err := j.Records()
 	if err != nil || !records[0].CompletedAt.Equal(record.CompletedAt) {
 		t.Fatal("completion time not durable")
+	}
+}
+
+func TestTerminalResourceSummarySurvivesRecovery(t *testing.T) {
+	dir := t.TempDir()
+	os.Chmod(dir, 0700)
+	identity := Identity{WorkerID: "worker", BrokerID: "broker", Generation: 1}
+	j, err := Open(dir, identity)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := Request{Identity: identity, AssignmentID: "metrics", VMID: "metrics-vm", ProfileDigest: strings.Repeat("a", 64), CPUs: 2, MemoryMiB: 4096, DiskGiB: 20}
+	if _, err = j.Reserve(request); err != nil {
+		t.Fatal(err)
+	}
+	summary := &workerapi.ResourceSummary{Version: 1, Samples: 2, DurationMillis: 2000, CPUUsec: 1000000, MemoryLimitBytes: 1 << 30, PeakMemoryBytes: 123456}
+	got, err := j.RecoverTerminal(request.AssignmentID, ExitProof{VMID: request.VMID, QEMUExitConfirmed: true, DiskRemoved: true, Resources: summary})
+	if err != nil || got.Resources == nil {
+		t.Fatal(err)
+	}
+	j.Close()
+	j, err = Open(dir, identity)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer j.Close()
+	rows, err := j.Records()
+	if err != nil || len(rows) != 1 || rows[0].Resources == nil || rows[0].Resources.CPUUsec != 1000000 {
+		t.Fatalf("metrics not durable: %v %+v", err, rows)
 	}
 }
