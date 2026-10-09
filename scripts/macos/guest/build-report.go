@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -116,7 +117,13 @@ func report(status string) error {
 	if _, err = selected.WriteAt(page, 4096); err != nil {
 		return err
 	}
-	return selected.Sync()
+	// DKIOCSYNCHRONIZECACHE, from the stock macOS sys/disk.h. fsync is not
+	// the flush operation for raw character disks.
+	_, _, errno := syscall.Syscall(syscall.SYS_IOCTL, selected.Fd(), 0x20006416, 0)
+	if errno != 0 {
+		return errno
+	}
+	return nil
 }
 
 func main() {
