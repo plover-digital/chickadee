@@ -5,11 +5,17 @@ umask 077
 state=/var/db/chickadee-build
 mkdir -p "$state"
 if [ -f "$state/status" ] && [ "$(cat "$state/status")" = PROVISIONED_OFFLINE ]; then
+    if [ -x /usr/local/libexec/chickadee-build-report ]; then
+        /usr/local/libexec/chickadee-build-report PROVISIONED_OFFLINE
+    fi
     exit 0
 fi
 exec >"$state/provision.log" 2>&1
 trap 'printf "FAILED\n" > "$state/status"' ERR
 printf 'PROVISIONING\n' > "$state/status"
+if [ -x /usr/local/libexec/chickadee-build-report ]; then
+    /usr/local/libexec/chickadee-build-report PROVISIONING
+fi
 if ! /usr/bin/id runner >/dev/null 2>&1; then
     password=$(/usr/bin/openssl rand -hex 24)
     /usr/sbin/sysadminctl -addUser runner -fullName 'Actions Runner' -UID 501 -GID 20 -home /Users/runner -shell /bin/bash -password "$password" -admin >/dev/null 2>&1
@@ -25,4 +31,7 @@ export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 /usr/bin/xcodebuild -showsdks > "$state/xcode-sdks"
 /usr/bin/sw_vers > "$state/os-version"
 printf 'PROVISIONED_OFFLINE\n' > "$state/status"
+if [ -x /usr/local/libexec/chickadee-build-report ]; then
+    /usr/local/libexec/chickadee-build-report PROVISIONED_OFFLINE
+fi
 # This marker is not runner READY: network, runner and remaining tools are absent.

@@ -93,6 +93,38 @@ before build-only diagnostics were inspected. A concurrent attempt to attach the
 image was refused by the process lock. This does not verify GUI/simulator execution,
 the complete GitHub software manifest, runner registration or customer isolation.
 
+### Build-only live status channel
+
+The native helper optionally attaches an owned/private 1 MiB `build-control.raw`
+as a dedicated Virtio block device. It exposes no host directory or network
+service. This experimental build transport is separate from the runner serial
+protocol and worker API; Linux workers and the v1 worker contract are unchanged.
+It supports only `PROVISIONING` and `PROVISIONED_OFFLINE`, not READY or credentials.
+
+```sh
+CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -trimpath \
+  -o /private/staging/chickadee-build-report scripts/macos/guest/build-report.go
+codesign --force --sign - /private/staging/chickadee-build-report
+python3 scripts/macos/control-device.py create /private/new-vm-state
+python3 scripts/macos/provision-offline.py /private/new-vm-state \
+  /private/staging/Xcode.app --trusted-never-credentialed-build-image \
+  --reporter /private/staging/chickadee-build-report
+```
+
+During a bounded offline boot, `control-device.py read /private/new-vm-state`
+reads one fixed 4096-byte response page. The parser rejects malformed JSON,
+duplicate/extra fields, invalid status, stale nonce, unsafe file ownership and
+symlinks. The expected nonce lives in host-only `build-control.json`, outside the
+guest device. A nonce is session correlation, not proof of guest honesty.
+Every new test needs a newly created control pair; create refuses existing files.
+Never accept an old response page as evidence that a new guest boot succeeded.
+Remove/replace the build-control pair only after confirmed VM exit. This is not
+a production credential transport or restart-reconciliation implementation.
+
+A fresh-channel native acceptance boot reported `PROVISIONED_OFFLINE` in about
+14.5 seconds and then confirmed VM stop, without mounting the guest filesystem
+while running. This measures this build-service test, not job startup latency.
+
 ## GitHub software target
 
 The guest targets GitHub's macOS 26 ARM64 image. `scripts/macos/baseline.lock.json`

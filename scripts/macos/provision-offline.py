@@ -29,6 +29,8 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('state', type=Path)
     p.add_argument('xcode', type=Path)
+    p.add_argument('--reporter', type=Path, help='Optional Darwin arm64 build-report binary')
+    p.add_argument('--skip-xcode-copy', action='store_true', help='Require matching previously copied Xcode version metadata')
     p.add_argument('--trusted-never-credentialed-build-image', action='store_true', required=True)
     a = p.parse_args()
     if os.uname().sysname != 'Darwin':
@@ -70,12 +72,20 @@ def main():
                 run('sudo', '-n', 'chmod', '755', str(mount / relative))
             script = mount / 'usr/local/libexec/chickadee-provision'
             run('sudo', '-n', 'install', '-o', 'root', '-g', 'wheel', '-m', '700', str(source), str(script))
+            if a.reporter:
+                run('sudo', '-n', 'install', '-o', 'root', '-g', 'wheel', '-m', '700', str(a.reporter),
+                    str(mount / 'usr/local/libexec/chickadee-build-report'))
             daemon = {'Label': 'run.chickadee.image-provision', 'ProgramArguments': ['/usr/local/libexec/chickadee-provision'], 'RunAtLoad': True}
             with tempfile.NamedTemporaryFile() as f:
                 f.write(plistlib.dumps(daemon)); f.flush()
                 run('sudo', '-n', 'install', '-o', 'root', '-g', 'wheel', '-m', '644', f.name,
                     str(mount / 'Library/LaunchDaemons/run.chickadee.image-provision.plist'))
-            run('sudo', '-n', 'ditto', '--noqtn', str(a.xcode), str(mount / 'Applications/Xcode.app'))
+            if a.skip_xcode_copy:
+                version = 'Contents/version.plist'
+                if (a.xcode / version).read_bytes() != (mount / 'Applications/Xcode.app' / version).read_bytes():
+                    raise ValueError('Existing Xcode version metadata differs')
+            else:
+                run('sudo', '-n', 'ditto', '--noqtn', str(a.xcode), str(mount / 'Applications/Xcode.app'))
             run('sudo', '-n', 'touch', str(mount / 'private/var/db/.AppleSetupDone'))
             for relative in ['usr/local/libexec/chickadee-provision',
                              'Library/LaunchDaemons/run.chickadee.image-provision.plist',

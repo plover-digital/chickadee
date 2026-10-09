@@ -79,6 +79,17 @@ func configure(_ root: URL) -> VZVirtualMachineConfiguration {
         guard lstat(diskPath,&diskInfo)==0,diskInfo.st_mode & S_IFMT == S_IFREG,diskInfo.st_uid==geteuid(),diskInfo.st_mode & 0o077==0,diskInfo.st_size==diskBytes else {fail("Invalid private guest disk")}
         let disk = try VZDiskImageStorageDeviceAttachment(url: root.appendingPathComponent("disk.raw"), readOnly: false)
         config.storageDevices = [VZVirtioBlockDeviceConfiguration(attachment: disk)]
+        let controlURL = root.appendingPathComponent("build-control.raw")
+        if FileManager.default.fileExists(atPath: controlURL.path) {
+            var controlInfo = stat()
+            guard lstat(controlURL.path, &controlInfo) == 0,
+                  controlInfo.st_mode & S_IFMT == S_IFREG, controlInfo.st_uid == geteuid(),
+                  controlInfo.st_mode & 0o077 == 0, controlInfo.st_size == 1024 * 1024 else { fail("Invalid private build control disk") }
+            let attachment = try VZDiskImageStorageDeviceAttachment(url: controlURL, readOnly: false)
+            let device = VZVirtioBlockDeviceConfiguration(attachment: attachment)
+            device.blockDeviceIdentifier = "CHICKADEE_BUILD"
+            config.storageDevices.append(device)
+        }
         try config.validate()
     } catch { fail("Native VM configuration validation failed") }
     return config
