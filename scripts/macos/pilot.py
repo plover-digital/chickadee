@@ -112,6 +112,7 @@ def wait_status(fd, nonce, process, expected, timeout):
 
 
 def run(a):
+    networking = not a.warm_probe or a.network_warm_probe
     private(a.base, True)
     a.runtime.mkdir(mode=0o700, parents=True, exist_ok=True); private(a.runtime, True)
     logs = a.runtime/'logs'; logs.mkdir(mode=0o700, exist_ok=True); private(logs, True)
@@ -122,7 +123,8 @@ def run(a):
     persist(state/'runner-control.json',json.dumps({'v':1,'nonce':nonce}).encode())
     fd = os.open(state/'runner-control.raw',os.O_RDWR|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600)
     os.ftruncate(fd,DISK)
-    header = json.dumps({'v':1,'kind':'chickadee-runner-control','nonce':nonce}).encode()
+    os.pwrite(fd,bytes(DISK),0)
+    header = json.dumps({'v':1,'kind':'chickadee-runner-control','nonce':nonce,'network':networking}).encode()
     os.pwrite(fd,header.ljust(PAGE,b'\0'),0);os.fsync(fd)
     native = proxy = None
     sockets = []
@@ -133,7 +135,7 @@ def run(a):
         native_log = state/'native.log'; persist(native_log,b''); out = native_log.open('ab'); handles.append(out)
         command = [str(a.native),'boot',str(state)]
         pass_fds = ()
-        if not a.warm_probe:
+        if networking:
             if not a.deny or not a.netproxy:
                 raise ValueError('Approved deny config and network proxy required')
             left,right = socket.socketpair(socket.AF_UNIX,socket.SOCK_DGRAM); sockets.extend([left,right])
@@ -151,8 +153,19 @@ def run(a):
         native = subprocess.Popen(command,pass_fds=pass_fds,stdout=out,stderr=out)
         for s in sockets:s.close()
         wait_status(fd,nonce,native,{'READY'},90)
-        emit('READY',vm_id=state.name,boot_seconds=round(time.monotonic()-started,3),network=not a.warm_probe)
+        emit('READY',vm_id=state.name,boot_seconds=round(time.monotonic()-started,3),network=networking)
         if a.warm_probe:
+            deadline=time.monotonic()+5
+            while time.monotonic()<deadline:
+                try:
+                    probe=strict_json(os.pread(fd,PAGE,2*PAGE).rstrip(b'\0'))
+                    if probe.get('v')==1 and probe.get('nonce')==nonce and probe.get('error_code')=='configuration absent or incomplete' and probe.get('commit_read_ok') is True:
+                        emit('CONFIGURATION_WAIT_VERIFIED');break
+                except (ValueError,TypeError):
+                    pass
+                time.sleep(0.1)
+            else:
+                raise RuntimeError('Guest did not remain in configuration wait')
             return 0
         selector = selectors.DefaultSelector(); selector.register(0,selectors.EVENT_READ)
         if not selector.select(120):
@@ -222,8 +235,11 @@ def main():
     p.add_argument('--netproxy',type=Path)
     p.add_argument('--deny')
     p.add_argument('--warm-probe',action='store_true')
+    p.add_argument('--network-warm-probe',action='store_true',help='Verify READY/configuration wait with approved networking, without GitHub credentials')
     p.add_argument('--job-timeout',type=int,default=600)
     a=p.parse_args()
+    if a.network_warm_probe:
+        a.warm_probe=True
     if os.uname().sysname!='Darwin' or not 1 <= a.job_timeout <= 900:
         p.error('Requires macOS and bounded timeout')
     try:

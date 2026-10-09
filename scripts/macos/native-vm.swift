@@ -104,7 +104,7 @@ func configure(_ root: URL) -> VZVirtualMachineConfiguration {
             var info = stat()
             guard lstat(runnerURL.path, &info) == 0, info.st_mode & S_IFMT == S_IFREG,
                   info.st_uid == geteuid(), info.st_mode & 0o077 == 0, info.st_size == 1024 * 1024 else { fail("Invalid runner control disk") }
-            let attachment = try VZDiskImageStorageDeviceAttachment(url: runnerURL, readOnly: false)
+            let attachment = try VZDiskImageStorageDeviceAttachment(url: runnerURL, readOnly: false, cachingMode: .uncached, synchronizationMode: .full)
             let device = VZVirtioBlockDeviceConfiguration(attachment: attachment)
             device.blockDeviceIdentifier = "CHICKADEE_RUNNER"
             config.storageDevices.append(device)

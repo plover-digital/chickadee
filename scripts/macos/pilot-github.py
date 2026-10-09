@@ -72,6 +72,7 @@ def main():
                 before=time.monotonic()
                 jit=api('POST',f'repos/{a.repo}/actions/runners/generate-jitconfig',{'name':name,'runner_group_id':1,'labels':['self-hosted','macOS','ARM64',label],'work_folder':'_work'})
                 runner_id=jit['runner']['id'];result['runner_id']=runner_id;result['jit_api_seconds']=round(time.monotonic()-before,3)
+                result['jit_sent_at']=datetime.now(timezone.utc).isoformat()
                 process.stdin.write(json.dumps({'jit':jit['encoded_jit_config'],'runner_name':name})+'\n');process.stdin.flush();jit.clear()
                 api('POST',f'repos/{a.repo}/actions/workflows/native-macos-smoke.yml/dispatches',{'ref':'main','inputs':{'run_key':key,'runner_label':label}})
                 dispatched=True

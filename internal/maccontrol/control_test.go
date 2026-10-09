@@ -5,8 +5,18 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"testing"
 )
+
+type rawAligned struct{ *bytes.Reader }
+
+func (r rawAligned) ReadAt(p []byte, offset int64) (int, error) {
+	if len(p)%512 != 0 || offset%512 != 0 {
+		return 0, fmt.Errorf("unaligned raw device read")
+	}
+	return r.Reader.ReadAt(p, offset)
+}
 
 func device(payload []byte, nonce string) *bytes.Reader {
 	b := make([]byte, DiskBytes)
@@ -22,6 +32,9 @@ func TestConfigIntegrityAndSession(t *testing.T) {
 	p, _ := json.Marshal(Config{1, n, "CONFIG", "YWJj"})
 	if _, err := ReadConfig(device(p, n), n); err != nil {
 		t.Fatal(err)
+	}
+	if _, err := ReadConfig(rawAligned{device(p, n)}, n); err != nil {
+		t.Fatalf("raw block alignment: %v", err)
 	}
 	if _, err := ReadConfig(device(p, n), "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"); err == nil {
 		t.Fatal("stale session accepted")

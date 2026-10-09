@@ -36,7 +36,7 @@ launchd integration and hosted policy remain work to implement. See Apple's
 ## Native offline installation prototype
 
 `scripts/macos/native-vm.swift` is an experimental Apple-native installer and
-headless boot/stop helper. It is not a fleet worker, runner image or production
+headless boot/stop helper. It is not a fleet worker, complete runner image or production
 sandbox. Build on the Mac with:
 
 ```sh
@@ -52,14 +52,16 @@ It reserves full disk growth plus 20 GiB free storage at installation time. A
 process-held flock in the worker user's private state allows only one prototype
 install/boot at a time for that account, even across different guest directories.
 It does not prevent another administrator or application from running their own
-VM. No NIC, shared host directory, serial port, or GitHub credential is attached.
+VM. The offline commands attach no NIC, shared host directory, serial port or
+GitHub credential. The separate pilot below optionally enables reviewed networking.
 TERM/INT on the boot helper requests VM stop, confirms the stopped state, and
 retains all disks. No automatic destructive cleanup is provided for this offline
 prototype. Keep failed installation state for diagnosis; never reuse a later
 credentialed guest. Startup demonstrates VM running state, not bootstrap READY.
 
 Experimental offline guest account/Xcode provisioning is available below.
-Bootstrap transport, remaining software and fleet API integration remain pending.
+The experimental pilot supplies bootstrap transport; remaining software and fleet
+API integration remain pending.
 macOS setup cannot be assumed complete when the native install callback returns.
 No customer queue is active yet.
 
@@ -183,6 +185,32 @@ or existing customer queue is changed. The test checks checkout, guest OS/Xcode,
 a native Swift executable, public HTTPS and denied gateway/metadata requests.
 Full software/GUI parity, persistent launchd host integration, restart/partition
 reconciliation and platform-aware worker routing are still separate requirements.
+
+### Real workflow acceptance
+
+[The native macOS workflow succeeded](https://github.com/plover-digital/chickadee/actions/runs/37982163061).
+GitHub's job record verified the actual pilot runner name. Checkout, macOS26.6.2,
+Xcode26.6/build17F113, SDK enumeration, native Swift compile/run, public HTTPS and
+denied gateway/metadata requests all passed. The runner exited after one job;
+bounded private diagnostics were saved, native VM stop/process exit confirmed,
+and its writable disk/auxiliary/control state deleted. Registration cleanup was
+verified. A fresh credential-free replacement clone then passed READY and live
+configuration-wait checks with the same filtered network profile and was stopped
+and cleaned up after the test. No persistent Mac fleet service is running yet.
+
+In this single run, cold boot/network-ready took about16s, JIT creation API0.72s,
+and guest runner process launch about0.10s after configuration delivery. Observed
+warm READY to GitHub's first job setup step was about5s, including JIT creation,
+workflow dispatch, connection and matching; GitHub timestamps have one-second
+granularity. The job lasted about32s. These are acceptance observations, not a
+general performance benchmark or isolated authentication timing.
+
+The test caught macOS-specific raw I/O requirements: sector-aligned reads/writes
+and DKIOCSYNCHRONIZECACHE for character-disk flush instead of fsync. Control
+storage is preallocated, uncached and fully synchronized; the warm probe checks
+the guest is actually waiting for configuration after READY. Failed attempts
+were retired without replay/reuse and their queued workflows/registrations
+cleaned up. Customer queue admission remains disabled.
 
 ## GitHub software target
 

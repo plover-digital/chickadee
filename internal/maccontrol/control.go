@@ -25,9 +25,10 @@ const (
 )
 
 type Header struct {
-	V     int    `json:"v"`
-	Kind  string `json:"kind"`
-	Nonce string `json:"nonce"`
+	V       int    `json:"v"`
+	Kind    string `json:"kind"`
+	Nonce   string `json:"nonce"`
+	Network bool   `json:"network"`
 }
 type Commit struct {
 	V      int    `json:"v"`
@@ -102,10 +103,13 @@ func ReadConfig(reader io.ReaderAt, nonce string) (Config, error) {
 	if _, err := reader.ReadAt(page, ConfigOffset); err != nil || Decode(page, &commit) != nil || commit.V != 1 || commit.Nonce != nonce || commit.Length < 1 || commit.Length > MaxPayload || !hashPattern.MatchString(commit.SHA256) {
 		return Config{}, errors.New("configuration absent or incomplete")
 	}
-	payload := make([]byte, commit.Length)
+	// macOS raw block devices require sector-aligned I/O lengths. Read the
+	// complete fixed payload page region, then hash only the committed bytes.
+	payload := make([]byte, MaxPayload)
 	if _, err := reader.ReadAt(payload, PayloadOffset); err != nil {
 		return Config{}, errors.New("incomplete configuration")
 	}
+	payload = payload[:commit.Length]
 	h := sha256.Sum256(payload)
 	if hex.EncodeToString(h[:]) != commit.SHA256 {
 		return Config{}, errors.New("configuration checksum mismatch")
