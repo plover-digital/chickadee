@@ -57,9 +57,41 @@ retains all disks. No automatic destructive cleanup is provided for this offline
 prototype. Keep failed installation state for diagnosis; never reuse a later
 credentialed guest. Startup demonstrates VM running state, not bootstrap READY.
 
-Guest user provisioning, tool installation, bootstrap transport and fleet API
-integration remain pending. In particular, macOS setup cannot be assumed complete
-when the native install callback returns. No customer queue is active yet.
+Experimental offline guest account/Xcode provisioning is available below.
+Bootstrap transport, remaining software and fleet API integration remain pending.
+macOS setup cannot be assumed complete when the native install callback returns.
+No customer queue is active yet.
+
+### Experimental offline image provisioning
+
+`scripts/macos/provision-offline.py` installs an expanded Apple-signed Xcode and
+a build-only first-boot LaunchDaemon into the Data volume of a stopped, trusted
+installation image. It requires Python 3, passwordless sudo for disk operations,
+and an explicit `--trusted-never-credentialed-build-image` assertion. It holds
+the native helper's single-VM lock while attached and selects only a Data volume
+belonging to that attached image. Never run it on a customer/credentialed disk.
+
+```sh
+python3 scripts/macos/provision-offline.py /private/new-vm-state \
+  /private/staging/Xcode.app --trusted-never-credentialed-build-image
+```
+
+Verify the archive with `pkgutil --check-signature` before expansion. This tool
+does not change host Xcode selection or host networking. Guest provisioning
+creates an administrative `runner` account with a randomly generated local
+password, accepts the guest Xcode license, initializes Xcode, and records
+build status/version/SDK files in `/var/db/chickadee-build`. It does not register
+with GitHub. `PROVISIONED_OFFLINE` is a build milestone, not bootstrap READY.
+GUI login, simulator runtimes, remaining software, isolated credential transport,
+and one-job lifecycle are separate acceptance requirements. Remove the image-build
+service from the final immutable runtime image once those build checks complete.
+
+An Apple-native offline acceptance boot created the guest account and reported
+macOS 26.6.2/build25G83, Xcode26.6/build17F113 and working `xcodebuild -showsdks`.
+The guest completed first-launch installation. The VM then stopped successfully
+before build-only diagnostics were inspected. A concurrent attempt to attach the
+image was refused by the process lock. This does not verify GUI/simulator execution,
+the complete GitHub software manifest, runner registration or customer isolation.
 
 ## GitHub software target
 
