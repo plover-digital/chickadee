@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "repository": "actions/runner-images",
+  "commit": "eb6205088206dafccdc24bb2d0821eea8bcb03ba",
+  "manifest_path": "images/macos/macos-26-arm64-Readme.md",
+  "manifest_sha256": "688dc6f11befc470dd78896f4b69f5956dd9cc3986287919a6b912d748b97f21",
+  "os_version": "26.6.2",
+  "architecture": "arm64",
+  "default_xcode": "26.6",
+  "default_xcode_build": "17F113",
+  "status": "target-not-yet-built"
+}

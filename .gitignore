@@ -12,3 +12,8 @@
 .DS_Store
 __pycache__/
 *.pyc
+
+# Generated Apple restore images and Xcode archives
+*.ipsw
+*.xip
+*.asif
