@@ -1,0 +1,53 @@
+name: Native macOS VM acceptance
+run-name: Native macOS acceptance ${{ inputs.run_key }}
+on:
+  workflow_dispatch:
+    inputs:
+      run_key:
+        description: Unique acceptance identifier
+        required: true
+        type: string
+      runner_label:
+        description: Dedicated pilot label (not a customer queue)
+        default: chickadee-macos-native-smoke
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  native-macos:
+    runs-on: ${{ inputs.runner_label }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Validate guest OS and Xcode
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = arm64
+          sw_vers
+          test "$(sw_vers -productVersion)" = 26.6.2
+          xcodebuild -version | tee "$RUNNER_TEMP/xcode-version"
+          /usr/bin/grep -q 'Build version 17F113' "$RUNNER_TEMP/xcode-version"
+          xcodebuild -showsdks
+          git rev-parse HEAD
+      - name: Build and run native Swift executable
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'import Foundation\nprint("Chickadee native macOS workflow passed")\n' > "$RUNNER_TEMP/smoke.swift"
+          xcrun swiftc "$RUNNER_TEMP/smoke.swift" -o "$RUNNER_TEMP/smoke"
+          "$RUNNER_TEMP/smoke"
+      - name: Check public egress and denied gateway/metadata access
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 --fail --silent --show-error --max-time 15 https://api.github.com/zen
+          for destination in http://192.168.127.1/ http://169.254.169.254/latest/meta-data/; do
+            if curl --fail --silent --connect-timeout 2 --max-time 3 "$destination" >/dev/null; then
+              echo 'Protected network destination unexpectedly reachable'
+              exit 1
+            fi
+          done

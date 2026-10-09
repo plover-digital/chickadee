@@ -8,7 +8,7 @@ func fail(_ message: String) -> Never {
     exit(1)
 }
 let arguments = Array(CommandLine.arguments.dropFirst())
-guard arguments.count >= 1 else { fail("Usage: native-vm restore-info | install IPSW STATE | boot STATE") }
+guard arguments.count >= 1 else { fail("Usage: native-vm restore-info | install IPSW STATE | clone BASE STATE | boot STATE [--network-fd FD]") }
 let operation = arguments[0]
 let cpuCount = 2
 let memoryBytes: UInt64 = 4 * 1024 * 1024 * 1024
@@ -18,6 +18,7 @@ var installer: VZMacOSInstaller?
 var guestDelegate: GuestDelegate?
 var signalSources: [DispatchSourceSignal] = []
 var hostLock: Int32 = -1
+var networkHandle: FileHandle?
 
 func safeDirectory(_ url: URL, create: Bool) {
     if create {
@@ -73,6 +74,14 @@ func configure(_ root: URL) -> VZVirtualMachineConfiguration {
     // Deliberately no NIC, shared directories, host sockets, serial or credentials.
     config.networkDevices = []
     config.directorySharingDevices = []
+    if let handle = networkHandle {
+        let device = VZVirtioNetworkDeviceConfiguration()
+        device.macAddress = VZMACAddress(string: "02:cc:aa:00:00:02")!
+        let attachment = VZFileHandleNetworkDeviceAttachment(fileHandle: handle)
+        attachment.maximumTransmissionUnit = 1500
+        device.attachment = attachment
+        config.networkDevices = [device]
+    }
     do {
         var diskInfo=stat()
         let diskPath=root.appendingPathComponent("disk.raw").path
@@ -88,6 +97,16 @@ func configure(_ root: URL) -> VZVirtualMachineConfiguration {
             let attachment = try VZDiskImageStorageDeviceAttachment(url: controlURL, readOnly: false)
             let device = VZVirtioBlockDeviceConfiguration(attachment: attachment)
             device.blockDeviceIdentifier = "CHICKADEE_BUILD"
+            config.storageDevices.append(device)
+        }
+        let runnerURL = root.appendingPathComponent("runner-control.raw")
+        if FileManager.default.fileExists(atPath: runnerURL.path) {
+            var info = stat()
+            guard lstat(runnerURL.path, &info) == 0, info.st_mode & S_IFMT == S_IFREG,
+                  info.st_uid == geteuid(), info.st_mode & 0o077 == 0, info.st_size == 1024 * 1024 else { fail("Invalid runner control disk") }
+            let attachment = try VZDiskImageStorageDeviceAttachment(url: runnerURL, readOnly: false)
+            let device = VZVirtioBlockDeviceConfiguration(attachment: attachment)
+            device.blockDeviceIdentifier = "CHICKADEE_RUNNER"
             config.storageDevices.append(device)
         }
         try config.validate()
@@ -173,8 +192,39 @@ if operation == "restore-info" {
         }
       }
     }
+} else if operation == "clone" {
+    guard arguments.count == 3 else { fail("Usage: native-vm clone BASE STATE") }
+    acquireHostLock()
+    let base = URL(fileURLWithPath: arguments[1], isDirectory: true)
+    let root = URL(fileURLWithPath: arguments[2], isDirectory: true)
+    safeDirectory(base, create: false)
+    guard !FileManager.default.fileExists(atPath: base.appendingPathComponent("credential-intent.json").path),
+          !FileManager.default.fileExists(atPath: root.path) else { fail("Clone requires a credential-free base and new state") }
+    safeDirectory(root, create: true)
+    guard let attributes = try? FileManager.default.attributesOfFileSystem(forPath: root.path),
+          let free = attributes[.systemFreeSize] as? NSNumber,
+          free.uint64Value >= UInt64(diskBytes) + 20 * 1024 * 1024 * 1024 else { fail("Insufficient full-disk growth reserve") }
+    for name in ["disk.raw", "auxiliary-storage"] {
+        let src = base.appendingPathComponent(name)
+        let dst = root.appendingPathComponent(name)
+        var info = stat()
+        guard lstat(src.path, &info) == 0, info.st_mode & S_IFMT == S_IFREG,
+              info.st_uid == geteuid(), info.st_mode & 0o077 == 0,
+              clonefile(src.path, dst.path, 0) == 0, chmod(dst.path, 0o600) == 0 else { fail("Private APFS image clone failed; retain state") }
+    }
+    writePrivate(readPrivate(base.appendingPathComponent("hardware-model")), root.appendingPathComponent("hardware-model"))
+    writePrivate(VZMacMachineIdentifier().dataRepresentation, root.appendingPathComponent("machine-id"))
+    print("VM_CLONED")
+    exit(0)
 } else if operation == "boot" {
-    guard arguments.count == 2 else { fail("Usage: native-vm boot STATE") }
+    guard arguments.count == 2 || arguments.count == 4 else { fail("Usage: native-vm boot STATE [--network-fd FD]") }
+    if arguments.count == 4 {
+        guard arguments[2] == "--network-fd", let fd = Int32(arguments[3]), fd >= 3 else { fail("Invalid network descriptor") }
+        var kind: Int32 = 0
+        var length = socklen_t(MemoryLayout<Int32>.size)
+        guard getsockopt(fd, SOL_SOCKET, SO_TYPE, &kind, &length) == 0, kind == SOCK_DGRAM else { fail("Network descriptor must be a connected datagram socket") }
+        networkHandle = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
+    }
     acquireHostLock()
     let root = URL(fileURLWithPath: arguments[1], isDirectory: true)
     safeDirectory(root, create: false)
@@ -184,7 +234,7 @@ if operation == "restore-info" {
     handleSignals()
     machine!.start { result in
         guard case .success = result else { fail("Native VM failed to boot") }
-        print("VM_RUNNING_OFFLINE")
+        print(networkHandle == nil ? "VM_RUNNING_OFFLINE" : "VM_RUNNING_FILTERED_NETWORK")
     }
 } else { fail("Unknown operation") }
 RunLoop.main.run()

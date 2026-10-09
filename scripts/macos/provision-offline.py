@@ -31,8 +31,14 @@ def main():
     p.add_argument('xcode', type=Path)
     p.add_argument('--reporter', type=Path, help='Optional Darwin arm64 build-report binary')
     p.add_argument('--skip-xcode-copy', action='store_true', help='Require matching previously copied Xcode version metadata')
+    p.add_argument('--runner-dir', type=Path, help='Checksum-verified expanded ARM64 runner directory')
+    p.add_argument('--runner-bootstrap', type=Path, help='Darwin arm64 chickadee-macos-guest binary')
     p.add_argument('--trusted-never-credentialed-build-image', action='store_true', required=True)
     a = p.parse_args()
+    if bool(a.runner_dir) != bool(a.runner_bootstrap):
+        p.error('Runner directory and bootstrap must be supplied together')
+    if a.runner_dir and (not (a.runner_dir / 'run.sh').is_file() or any((a.runner_dir / name).exists() for name in ['.runner', '.credentials', '.credentials_rsaparams'])):
+        p.error('Runner package must be unregistered and credential-free')
     if os.uname().sysname != 'Darwin':
         p.error('Requires macOS')
     private(a.state, True)
@@ -94,6 +100,23 @@ def main():
                 run('sudo', '-n', 'chown', 'root:wheel', str(target))
                 if target.stat().st_uid != 0:
                     raise ValueError('Guest build service must be owned by root')
+            if a.runner_dir:
+                run('sudo', '-n', 'ditto', '--noqtn', str(a.runner_dir), str(mount / 'Users/runner/actions-runner'))
+                run('sudo', '-n', 'chown', '-R', '501:20', str(mount / 'Users/runner/actions-runner'))
+                run('sudo', '-n', 'mkdir', '-p', str(mount / 'Users/runner/hostedtoolcache'), str(mount / 'private/var/db/chickadee-runner'))
+                run('sudo', '-n', 'chown', '501:20', str(mount / 'Users/runner/hostedtoolcache'))
+                run('sudo', '-n', 'chmod', '700', str(mount / 'private/var/db/chickadee-runner'))
+                run('sudo', '-n', 'install', '-o', 'root', '-g', 'wheel', '-m', '700', str(a.runner_bootstrap),
+                    str(mount / 'usr/local/libexec/chickadee-macos-guest'))
+                daemon = {'Label': 'run.chickadee.runner-bootstrap', 'ProgramArguments': ['/usr/local/libexec/chickadee-macos-guest'],
+                          'RunAtLoad': True, 'StandardOutPath': '/var/db/chickadee-runner/bootstrap.log', 'StandardErrorPath': '/var/db/chickadee-runner/bootstrap.log'}
+                with tempfile.NamedTemporaryFile() as f:
+                    f.write(plistlib.dumps(daemon)); f.flush()
+                    target = mount / 'Library/LaunchDaemons/run.chickadee.runner-bootstrap.plist'
+                    run('sudo', '-n', 'install', '-o', 'root', '-g', 'wheel', '-m', '644', f.name, str(target))
+                    if target.stat().st_uid != 0:
+                        raise ValueError('Runner bootstrap daemon must be root-owned')
+                run('sudo', '-n', 'rm', str(mount / 'Library/LaunchDaemons/run.chickadee.image-provision.plist'))
             print('OFFLINE_BUILD_FILES_INSTALLED')
         finally:
             if mounted:

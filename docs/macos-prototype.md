@@ -1,6 +1,7 @@
 # Apple Silicon macOS feasibility
 
-macOS workers are not implemented or admitted to the hosted fleet. The existing
+An experimental native macOS one-job pilot is available below; macOS workers
+are not admitted to the hosted fleet. The existing
 Linux/QEMU worker and v1 machine inventory cannot launch macOS guests. Track
 [the native worker proposal](https://github.com/plover-digital/chickadee/issues/14).
 
@@ -124,6 +125,64 @@ a production credential transport or restart-reconciliation implementation.
 A fresh-channel native acceptance boot reported `PROVISIONED_OFFLINE` in about
 14.5 seconds and then confirmed VM stop, without mounting the guest filesystem
 while running. This measures this build-service test, not job startup latency.
+
+## Experimental one-job workflow pilot
+
+The pilot uses a fresh APFS copy-on-write disk and auxiliary-storage clone,
+a new native machine identifier, and a root guest bootstrap that runs the
+official ARM64 GitHub runner as guest user501. No memory snapshot or suspension
+is used. `runner.lock.json` pins the official archive/version/SHA256. Verify and
+expand that archive outside Git, then extend the stopped trusted image:
+
+```sh
+./scripts/macos/build-pilot.sh /private/staging/pilot-bin
+python3 scripts/macos/provision-offline.py /private/new-vm-state \
+  /private/staging/Xcode.app --trusted-never-credentialed-build-image \
+  --skip-xcode-copy --runner-dir /private/staging/verified-runner \
+  --runner-bootstrap /private/staging/pilot-bin/chickadee-macos-guest
+chmod 400 /private/new-vm-state/disk.raw /private/new-vm-state/auxiliary-storage
+```
+
+The base remains credential-free and read-only. Runtime clones use a fresh
+1 MiB `runner-control.raw` with experimental block protocol version1, distinct
+from build status, serial v1 and worker API v1. READY precedes configuration.
+Host credential intent is durably recorded before any JIT bytes are written;
+configuration payload is bounded, hashed and committed last. Guest also records
+spent state before ACK, clears configuration after acknowledgement, launches
+`run.sh --jitconfig`, and never accepts another configuration. Status and opaque
+compressed diagnostics are bounded; host parsing treats them as untrusted.
+RUNNER_STARTED means process launch, not GitHub connection or job execution.
+
+`scripts/macos/pilot.py` manages one cloned VM and optional userspace NAT. TERM
+requests native stop; process exit and VM_STOPPED must be confirmed before disk
+deletion. Uncertain exit retains state/capacity. Bounded private diagnostics are
+saved outside the disposable directory, never rendered or automatically extracted.
+Never mount a runtime disk after credential intent. Each clone reserves full
+64 GiB growth plus20 GiB free space; the account-wide VM lock enforces one active
+native process. This is a controlled acceptance driver, not a restart-safe daemon.
+
+Networking requires operator approval. The optional `netproxy` Go module pins
+gvisor-tap-vsock v0.9.0, requires Go1.26+, and accepts a connected Unix datagram
+descriptor. It creates no host interfaces, routes, PF rules, port forwards or
+management listeners. A packet gate permits only the fixed guest's ARP/DHCP,
+gateway DNS and public IPv4 TCP80/443. It rejects source spoofing, IPv6, VLANs,
+fragments/options, private/reserved/metadata/other-guest destinations, non-DNS
+gateway access, all host interface IPs, and additional required operator deny
+prefixes (include the host's public egress address to block hairpin access).
+Revalidate that address before each test. Do not use upstream unfiltered defaults
+or an empty deny list. Proxy packet/descriptor/connect limits and a Go soft memory
+target are prototype controls; hostile-tenant resource/isolation acceptance remains.
+
+`pilot-github.py --help` describes the SSH acceptance driver. The authenticated
+`gh` stays on the invoking controller host; only fresh per-runner JIT crosses SSH
+stdin into the Mac. It uses the official repository generate-jitconfig endpoint,
+dispatches the manually triggered `native-macos-smoke.yml`, and independently
+verifies GitHub's job conclusion and actual runner name. It removes stale pilot
+registrations and cancels a failed queued test where possible. No scale-set listener
+or existing customer queue is changed. The test checks checkout, guest OS/Xcode,
+a native Swift executable, public HTTPS and denied gateway/metadata requests.
+Full software/GUI parity, persistent launchd host integration, restart/partition
+reconciliation and platform-aware worker routing are still separate requirements.
 
 ## GitHub software target
 
