@@ -1,8 +1,9 @@
 # Apple Silicon macOS feasibility
 
-An experimental native macOS one-job pilot is available below; macOS workers
-are not admitted to the hosted fleet. The existing
-Linux/QEMU worker and v1 machine inventory cannot launch macOS guests. Track
+An experimental native macOS one-job pilot and keyless native worker are available
+below. Hosted admission requires separate operator validation. The Linux/QEMU
+worker cannot launch macOS guests; worker API v1 now accepts the additive
+`apple-vz` machine capability. Track
 [the native worker proposal](https://github.com/plover-digital/chickadee/issues/14).
 
 On an Apple Silicon Mac with Command Line Tools installed, run:
@@ -236,3 +237,33 @@ Do not send account/keychain passwords in chat, disable SIP, or expose the host
 keychain to guests. A reviewed headless service/keychain strategy remains needed
 for automatic recovery after host reboot. Related upstream
 [Virtualization framework diagnosis](https://github.com/openai/tart/issues/1146).
+
+## Experimental native worker
+
+`cmd/chickadee-macos-worker` builds for Darwin ARM64. It uses worker API v1 with
+`machine: apple-vz`, one shared 2-vCPU/4096-MiB/64-GiB profile and one warm slot.
+It requires private TLS/configuration, approved filtered networking, Python, the
+signed native helper, pilot script and optional-module network proxy. Build with
+`scripts/macos/build-pilot.sh`; validate installation using
+`chickadee-macos-worker -config /private/config.json -check`. Checking starts no
+VM or listener. This is an experimental worker, not a complete installer.
+
+The read-only base directory needs a SHA256SUMS manifest covering exactly
+`disk.raw`, `auxiliary-storage` and `hardware-model`. Its SHA-256 is the profile
+digest. Guest machine identity is newly generated for each APFS disk clone.
+The durable reservation journal precedes credential delivery. Native shutdown
+proof, correlated with the private control nonce, plus an exclusive VM lock
+is required for restart cleanup. Missing proof blocks admission and retains disks.
+A parent-lifetime pipe stops orphan native helpers without trusting recorded PIDs.
+
+Upgrade the broker's Chickadee API dependency before advertising an `apple-vz`
+worker: earlier v1 clients reject unknown machine capabilities. Existing Linux
+workers remain compatible. Then configure the native worker, validate routing
+and one-job cleanup, and only afterward expose an opt-in queue. The native worker
+contains no hosted accounts or GitHub App credentials. Warm time is excluded
+from assignment usage; native resource telemetry is not implemented yet.
+
+Jobs are bounded to ten minutes. Full GitHub software parity, GUI/simulator
+validation, automated image installation and native diagnostic retention across
+large numbers of jobs remain preview limitations. Use trusted workflows while
+these acceptance checks are incomplete.

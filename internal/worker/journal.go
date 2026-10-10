@@ -1,4 +1,4 @@
-//go:build linux
+//go:build linux || darwin
 
 // Package worker implements a local durable reservation boundary. It does not
 // start VMs, authenticate a remote broker, generate JIT, or implement a wire API.
@@ -75,10 +75,11 @@ type Record struct {
 // This journal cannot verify the process itself and must not be exposed directly
 // as an authenticated remote terminal-report endpoint.
 type ExitProof struct {
-	VMID              string
-	QEMUExitConfirmed bool
-	Resources         *workerapi.ResourceSummary
-	DiskRemoved       bool
+	VMID                 string
+	QEMUExitConfirmed    bool
+	ProcessExitConfirmed bool
+	Resources            *workerapi.ResourceSummary
+	DiskRemoved          bool
 }
 
 type snapshot struct {
@@ -348,7 +349,7 @@ func (j *Journal) DeliverIntent(request Request) (Record, error) {
 	return record, nil
 }
 func validProof(request Request, proof ExitProof) bool {
-	return proof.VMID == request.VMID && proof.QEMUExitConfirmed && proof.DiskRemoved
+	return proof.VMID == request.VMID && (proof.QEMUExitConfirmed || proof.ProcessExitConfirmed) && proof.DiskRemoved
 }
 func (j *Journal) Terminal(request Request, proof ExitProof) (Record, error) {
 	j.mu.Lock()

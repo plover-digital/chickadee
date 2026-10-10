@@ -17,6 +17,7 @@ import selectors
 import shutil
 import socket
 import stat
+import signal
 import subprocess
 import time
 
@@ -116,7 +117,10 @@ def run(a):
     private(a.base, True)
     a.runtime.mkdir(mode=0o700, parents=True, exist_ok=True); private(a.runtime, True)
     logs = a.runtime/'logs'; logs.mkdir(mode=0o700, exist_ok=True); private(logs, True)
-    state = a.runtime/('pilot-'+secrets.token_hex(8))
+    vm_id = a.vm_id or ('pilot-'+secrets.token_hex(8))
+    if not re.fullmatch('[A-Za-z0-9][A-Za-z0-9_-]{0,63}', vm_id):
+        raise ValueError('Invalid VM identity')
+    state = a.runtime/vm_id
     subprocess.run([str(a.native),'clone',str(a.base),str(state)], check=True, stdout=subprocess.DEVNULL, timeout=60)
     private(state, True)
     nonce = secrets.token_hex(16)
@@ -130,6 +134,7 @@ def run(a):
     sockets = []
     handles = []
     stopped = False
+    lifetime_read, lifetime_write = os.pipe()
     started = time.monotonic()
     try:
         native_log = state/'native.log'; persist(native_log,b''); out = native_log.open('ab'); handles.append(out)
@@ -150,7 +155,9 @@ def run(a):
             else:
                 raise RuntimeError('Network proxy failed readiness')
             command.extend(['--network-fd',str(right.fileno())]); pass_fds=(right.fileno(),)
-        native = subprocess.Popen(command,pass_fds=pass_fds,stdout=out,stderr=out)
+        command.extend(['--lifetime-fd',str(lifetime_read)])
+        native = subprocess.Popen(command,pass_fds=pass_fds+(lifetime_read,),stdout=out,stderr=out)
+        os.close(lifetime_read); lifetime_read=-1
         for s in sockets:s.close()
         wait_status(fd,nonce,native,{'READY'},90)
         emit('READY',vm_id=state.name,boot_seconds=round(time.monotonic()-started,3),network=networking)
@@ -168,7 +175,12 @@ def run(a):
                 raise RuntimeError('Guest did not remain in configuration wait')
             return 0
         selector = selectors.DefaultSelector(); selector.register(0,selectors.EVENT_READ)
-        if not selector.select(120):
+        if a.service:
+            while not selector.select(1):
+                current=status(fd,nonce)
+                if native.poll() is not None or current and current['type']=='EXIT' or proxy is not None and proxy.poll() is not None:
+                    raise RuntimeError('Warm guest failed')
+        elif not selector.select(120):
             raise RuntimeError('Configuration input timeout')
         line = os.read(0,64*1024+1)
         while not line.endswith(b'\n') and len(line) <= 64*1024:
@@ -201,6 +213,8 @@ def run(a):
                 persist(logs/(state.name+'.log.gz'),data);emit('DIAGNOSTICS_SAVED',bytes=len(data))
         return final['code']
     finally:
+        os.close(lifetime_write)
+        if lifetime_read>=0:os.close(lifetime_read)
         if native is not None:
             if native.poll() is None:native.terminate()
             try:
@@ -218,6 +232,13 @@ def run(a):
         for f in handles:f.close()
         os.close(fd)
         if stopped:
+            if native is not None:
+                proof_path=state/'native-exit.json'
+                private(proof_path)
+                proof=strict_json(proof_path.read_bytes())
+                if proof != {'v':1,'vm_id':state.name,'nonce':nonce,'stopped':True}:
+                    raise RuntimeError('Native exit proof mismatch; retain state')
+                persist(logs/(state.name+'-native-exit.json'),json.dumps(proof).encode())
             # Preserve bounded host lifecycle logs outside the disposable VM state.
             for name in ['native.log','netproxy.log']:
                 if (state/name).exists():persist(logs/(state.name+'-'+name),(state/name).read_bytes()[:8192])
@@ -235,6 +256,8 @@ def main():
     p.add_argument('--netproxy',type=Path)
     p.add_argument('--deny')
     p.add_argument('--warm-probe',action='store_true')
+    p.add_argument('--service',action='store_true',help='Wait indefinitely for one configuration from the local worker')
+    p.add_argument('--vm-id',help='Owned unique VM identity from the local worker')
     p.add_argument('--network-warm-probe',action='store_true',help='Verify READY/configuration wait with approved networking, without GitHub credentials')
     p.add_argument('--job-timeout',type=int,default=600)
     a=p.parse_args()
@@ -243,6 +266,9 @@ def main():
     if os.uname().sysname!='Darwin' or not 1 <= a.job_timeout <= 900:
         p.error('Requires macOS and bounded timeout')
     try:
+        def interrupted(signum, frame):
+            raise InterruptedError('Controlled drain')
+        signal.signal(signal.SIGTERM,interrupted)
         raise SystemExit(run(a))
     except Exception:
         emit('PILOT_FAILED');raise SystemExit(1)

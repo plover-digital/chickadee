@@ -52,6 +52,14 @@ type ProfileInventory struct {
 	Ready     int    `json:"ready"`
 	Booting   int    `json:"booting"`
 }
+
+// SupportedMachine is an additive v1 inventory capability. Older clients reject
+// apple-vz inventories, so upgrade the broker before adding native Mac workers.
+// Machine and immutable digest both participate in placement identity.
+func SupportedMachine(machine string) bool {
+	return machine == "q35" || machine == "microvm" || machine == "apple-vz"
+}
+
 type Request struct {
 	Identity      Identity `json:"identity"`
 	AssignmentID  string   `json:"assignment_id"`
@@ -148,7 +156,7 @@ func (v Inventory) valid() bool {
 	}
 	seen := map[string]bool{}
 	for _, p := range v.Profiles {
-		if !idPattern.MatchString(p.ID) || seen[p.ID] || !digestPattern.MatchString(p.Digest) || (p.Machine != "q35" && p.Machine != "microvm") || p.CPUs < 1 || p.CPUs > b.MaxCPUs || p.MemoryMiB < 512 || p.MemoryMiB > b.MaxMemoryMiB || p.DiskGiB < 8 || p.DiskGiB > 1024 || p.Ready < 0 || p.Ready > b.MaxVMs || p.Booting < 0 || p.Booting > b.MaxVMs {
+		if !idPattern.MatchString(p.ID) || seen[p.ID] || !digestPattern.MatchString(p.Digest) || !SupportedMachine(p.Machine) || p.CPUs < 1 || p.CPUs > b.MaxCPUs || p.MemoryMiB < 512 || p.MemoryMiB > b.MaxMemoryMiB || p.DiskGiB < 8 || p.DiskGiB > 1024 || p.Ready < 0 || p.Ready > b.MaxVMs || p.Booting < 0 || p.Booting > b.MaxVMs {
 			return false
 		}
 		seen[p.ID] = true

@@ -19,6 +19,37 @@ var guestDelegate: GuestDelegate?
 var signalSources: [DispatchSourceSignal] = []
 var hostLock: Int32 = -1
 var networkHandle: FileHandle?
+var lifetimeFD: Int32 = -1
+var lifetimeSource: DispatchSourceRead?
+var activeRoot: URL?
+var stopping = false
+
+@Sendable func finishStopped() -> Never {
+    guard let vm = machine, vm.state == .stopped else { fail("VM stop unconfirmed; retain state") }
+    if let root = activeRoot, FileManager.default.fileExists(atPath: root.appendingPathComponent("runner-control.json").path) {
+        guard let metadata = try? JSONSerialization.jsonObject(with: readPrivate(root.appendingPathComponent("runner-control.json"))) as? [String: Any],
+              let nonce = metadata["nonce"] as? String else { fail("Stop metadata unavailable; retain state") }
+        let proof: [String: Any] = ["v": 1, "vm_id": root.lastPathComponent, "nonce": nonce, "stopped": true]
+        guard let data = try? JSONSerialization.data(withJSONObject: proof, options: [.sortedKeys]) else { fail("Stop proof encoding failed") }
+        writePrivate(data, root.appendingPathComponent("native-exit.json"))
+    }
+    print("VM_STOPPED")
+    exit(0)
+}
+@Sendable func requestStop() {
+    guard !stopping else { return }
+    guard let vm = machine else { fail("Missing VM handle") }
+    if vm.state == .stopped { finishStopped() }
+    if vm.state == .starting {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { requestStop() }
+        return
+    }
+    stopping = true
+    vm.stop { error in
+        guard error == nil else { fail("VM stop unconfirmed; retain all state") }
+        finishStopped()
+    }
+}
 
 func safeDirectory(_ url: URL, create: Bool) {
     if create {
@@ -115,8 +146,7 @@ func configure(_ root: URL) -> VZVirtualMachineConfiguration {
 }
 class GuestDelegate: NSObject, VZVirtualMachineDelegate {
     func guestDidStop(_ virtualMachine: VZVirtualMachine) {
-        print("VM_STOPPED")
-        exit(0)
+        finishStopped()
     }
     func virtualMachine(_ virtualMachine: VZVirtualMachine, didStopWithError error: Error) {
         fail("VM_STOPPED_WITH_ERROR")
@@ -127,13 +157,7 @@ func handleSignals() {
         signal(number, SIG_IGN)
         let source = DispatchSource.makeSignalSource(signal: number, queue: .main)
         source.setEventHandler {
-            guard let vm = machine else { exit(1) }
-            vm.stop { error in
-                if error != nil { fail("VM stop unconfirmed; retain all state") }
-                guard vm.state == .stopped else { fail("VM stop unconfirmed; retain all state") }
-                print("VM_STOPPED")
-                exit(0)
-            }
+            requestStop()
         }
         source.resume()
         signalSources.append(source)
@@ -217,17 +241,26 @@ if operation == "restore-info" {
     print("VM_CLONED")
     exit(0)
 } else if operation == "boot" {
-    guard arguments.count == 2 || arguments.count == 4 else { fail("Usage: native-vm boot STATE [--network-fd FD]") }
-    if arguments.count == 4 {
-        guard arguments[2] == "--network-fd", let fd = Int32(arguments[3]), fd >= 3 else { fail("Invalid network descriptor") }
-        var kind: Int32 = 0
-        var length = socklen_t(MemoryLayout<Int32>.size)
-        guard getsockopt(fd, SOL_SOCKET, SO_TYPE, &kind, &length) == 0, kind == SOCK_DGRAM else { fail("Network descriptor must be a connected datagram socket") }
-        networkHandle = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
+    guard arguments.count >= 2, arguments.count <= 6, arguments.count % 2 == 0 else { fail("Invalid boot arguments") }
+    var index = 2
+    while index < arguments.count {
+        guard let fd = Int32(arguments[index+1]), fd >= 3 else { fail("Invalid inherited descriptor") }
+        if arguments[index] == "--network-fd" && networkHandle == nil {
+            var kind: Int32 = 0
+            var length = socklen_t(MemoryLayout<Int32>.size)
+            guard getsockopt(fd, SOL_SOCKET, SO_TYPE, &kind, &length) == 0, kind == SOCK_DGRAM else { fail("Network descriptor must be a connected datagram socket") }
+            networkHandle = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
+        } else if arguments[index] == "--lifetime-fd" && lifetimeFD < 0 {
+            var info = stat()
+            guard fstat(fd, &info) == 0, info.st_mode & S_IFMT == S_IFIFO else { fail("Lifetime descriptor must be a pipe") }
+            lifetimeFD = fd
+        } else { fail("Unknown or duplicate boot descriptor") }
+        index += 2
     }
     acquireHostLock()
     let root = URL(fileURLWithPath: arguments[1], isDirectory: true)
     safeDirectory(root, create: false)
+    activeRoot = root
     machine = VZVirtualMachine(configuration: configure(root))
     guestDelegate = GuestDelegate()
     machine!.delegate = guestDelegate
@@ -235,6 +268,16 @@ if operation == "restore-info" {
     machine!.start { result in
         guard case .success = result else { fail("Native VM failed to boot") }
         print(networkHandle == nil ? "VM_RUNNING_OFFLINE" : "VM_RUNNING_FILTERED_NETWORK")
+    }
+    if lifetimeFD >= 0 {
+        let source = DispatchSource.makeReadSource(fileDescriptor: lifetimeFD, queue: .main)
+        source.setEventHandler {
+            var byte: UInt8 = 0
+            let count = read(lifetimeFD, &byte, 1)
+            if count == 0 { source.cancel(); requestStop() }
+        }
+        source.resume()
+        lifetimeSource = source
     }
 } else { fail("Unknown operation") }
 RunLoop.main.run()

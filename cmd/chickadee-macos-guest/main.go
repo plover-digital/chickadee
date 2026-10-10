@@ -220,24 +220,27 @@ func bootstrap() error {
 	if err = status("READY", 0, 0, nil); err != nil {
 		return err
 	}
-	deadline := time.Now().Add(10 * time.Minute)
 	var config maccontrol.Config
-	for time.Now().Before(deadline) {
+	lastError := ""
+	for {
 		config, err = maccontrol.ReadConfig(f, h.Nonce)
 		if err == nil {
 			break
 		}
 		// Curated transport errors only: no configuration or credential bytes.
-		page := make([]byte, maccontrol.Page)
-		probe := make([]byte, maccontrol.Page)
-		n, readErr := f.ReadAt(probe, maccontrol.ConfigOffset)
-		var commit maccontrol.Commit
-		decoded := maccontrol.Decode(probe, &commit) == nil
-		message := map[string]any{"v": 1, "nonce": h.Nonce, "error_code": err.Error(), "commit_bytes": n, "commit_read_ok": readErr == nil, "commit_decoded": decoded, "commit_length": commit.Length, "commit_nonce_matches": commit.Nonce == h.Nonce}
-		data, _ := json.Marshal(message)
-		copy(page, data)
-		f.WriteAt(page, 2*maccontrol.Page)
-		flushControl(f)
+		if err.Error() != lastError {
+			lastError = err.Error()
+			page := make([]byte, maccontrol.Page)
+			probe := make([]byte, maccontrol.Page)
+			n, readErr := f.ReadAt(probe, maccontrol.ConfigOffset)
+			var commit maccontrol.Commit
+			decoded := maccontrol.Decode(probe, &commit) == nil
+			message := map[string]any{"v": 1, "nonce": h.Nonce, "error_code": err.Error(), "commit_bytes": n, "commit_read_ok": readErr == nil, "commit_decoded": decoded, "commit_length": commit.Length, "commit_nonce_matches": commit.Nonce == h.Nonce}
+			data, _ := json.Marshal(message)
+			copy(page, data)
+			f.WriteAt(page, 2*maccontrol.Page)
+			flushControl(f)
+		}
 		time.Sleep(200 * time.Millisecond)
 	}
 	if err != nil {
