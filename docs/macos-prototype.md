@@ -64,7 +64,8 @@ Experimental offline guest account/Xcode provisioning is available below.
 The experimental pilot supplies bootstrap transport; remaining software and fleet
 API integration remain pending.
 macOS setup cannot be assumed complete when the native install callback returns.
-No customer queue is active yet.
+The hosted deployment exposes an opt-in ARM64 preview after service-level
+acceptance; this does not enable native workers in other installations automatically.
 
 ### Experimental offline image provisioning
 
@@ -267,3 +268,18 @@ Jobs are bounded to ten minutes. Full GitHub software parity, GUI/simulator
 validation, automated image installation and native diagnostic retention across
 large numbers of jobs remain preview limitations. Use trusted workflows while
 these acceptance checks are incomplete.
+
+### Hosted service acceptance
+
+[The hosted native Mac workflow](https://github.com/plover-digital/chickadee/actions/runs/38271517258)
+passed through Roost's scale-set listener, durable worker reservation and JIT
+delivery. Checkout, OS/Xcode validation, a native Swift build/run, public HTTPS
+and protected gateway/metadata refusal checks passed. The credentialed guest
+then reached terminal cleanup, its writable disk was removed after confirmed
+exit, and a fresh credential-free replacement reached READY. Reserved usage was
+recorded by Roost. This is acceptance of the preview path, not full software
+parity or a comprehensive security audit.
+
+The opt-in hosted label is `chickadee-small-macos-26`: ARM64, two vCPUs,
+4 GiB RAM, Xcode26.6 CLI tooling and ten-minute jobs. Full tool, GUI and
+simulator parity and native resource telemetry remain pending.
