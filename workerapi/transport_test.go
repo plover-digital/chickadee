@@ -9,6 +9,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -52,7 +53,7 @@ func (b *testBackend) Reserve(_ context.Context, i Identity, id, profile, digest
 		}
 		return b.record, nil
 	}
-	b.record = Record{Request: Request{i, id, "0123456789abcdef", digest, 2, 2048, 48}, State: "reserved"}
+	b.record = Record{Request: Request{Identity: i, AssignmentID: id, VMID: "0123456789abcdef", ProfileDigest: digest, CPUs: 2, MemoryMiB: 2048, DiskGiB: 48}, State: "reserved"}
 	return b.record, nil
 }
 func (b *testBackend) Seal(i Identity, id string) (Record, error) {
@@ -278,5 +279,27 @@ func TestMissingAssignmentIsDistinctFromUnavailableAndUnknownRoute(t *testing.T)
 	code, data := f.raw(t, f.broker, `{"version":1,"identity":{"worker_id":"worker-one","broker_id":"broker-one","generation":1}}`, "/v1/terminal")
 	if code != 404 || strings.Contains(data, "not_found") {
 		t.Fatal("unknown route confused with absent assignment", code, data)
+	}
+}
+
+func TestWorkFolderMetadataIsBoundedAndRoundTrips(t *testing.T) {
+	for _, p := range []string{"relative", "/", "/work/../secret", "/work\nsecret", strings.Repeat("x", 4097)} {
+		if ValidWorkFolder(p) {
+			t.Fatal("invalid work-folder metadata accepted")
+		}
+	}
+	q := Request{Identity: Identity{WorkerID: "host", BrokerID: "broker", Generation: 1}, AssignmentID: "assignment", VMID: "0123456789abcdef", ProfileDigest: strings.Repeat("a", 64), CPUs: 1, MemoryMiB: 1024, DiskGiB: 8, WorkFolder: "/shared/work/slot-2"}
+	encoded, err := json.Marshal(Record{Request: q, State: "reserved"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var r Record
+	if json.Unmarshal(encoded, &r) != nil || r.Request.WorkFolder != q.WorkFolder || !r.valid() {
+		t.Fatal("workspace metadata lost")
+	}
+	q.WorkFolder = ""
+	encoded, _ = json.Marshal(q)
+	if bytes.Contains(encoded, []byte("work_folder")) {
+		t.Fatal("legacy records gained a field")
 	}
 }

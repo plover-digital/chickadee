@@ -6,7 +6,9 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"path"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -61,6 +63,7 @@ func SupportedMachine(machine string) bool {
 }
 
 type Request struct {
+	WorkFolder    string   `json:"work_folder,omitempty"`
 	Identity      Identity `json:"identity"`
 	AssignmentID  string   `json:"assignment_id"`
 	VMID          string   `json:"vm_id"`
@@ -140,7 +143,7 @@ func (r Record) valid() bool {
 	if !r.Resources.Valid() || r.Resources != nil && r.State != "terminal" {
 		return false
 	}
-	if !q.Identity.Valid() || !idPattern.MatchString(q.AssignmentID) || !idPattern.MatchString(q.VMID) || !digestPattern.MatchString(q.ProfileDigest) || q.CPUs < 1 || q.CPUs > 256 || q.MemoryMiB < 512 || q.MemoryMiB > 1<<20 || q.DiskGiB < 8 || q.DiskGiB > 1024 {
+	if !ValidWorkFolder(q.WorkFolder) || !q.Identity.Valid() || !idPattern.MatchString(q.AssignmentID) || !idPattern.MatchString(q.VMID) || !digestPattern.MatchString(q.ProfileDigest) || q.CPUs < 1 || q.CPUs > 256 || q.MemoryMiB < 512 || q.MemoryMiB > 1<<20 || q.DiskGiB < 8 || q.DiskGiB > 1024 {
 		return false
 	}
 	switch r.State {
@@ -167,4 +170,9 @@ func (v Inventory) valid() bool {
 		}
 	}
 	return true
+}
+
+// ValidWorkFolder checks worker-selected response metadata, never a remote path request.
+func ValidWorkFolder(p string) bool {
+	return p == "" || (len(p) <= 4096 && path.IsAbs(p) && path.Clean(p) == p && p != "/" && !strings.ContainsAny(p, "\x00\r\n"))
 }

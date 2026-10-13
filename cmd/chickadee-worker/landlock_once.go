@@ -32,8 +32,10 @@ func runJITOnce(path string) error {
 	if err = worker.CheckConfig(c.Config); err != nil {
 		return err
 	}
-	if err = landlockrunner.CheckSandbox(c.Profiles[0].ImageDir, c.Profiles[0].DiskGiB); err != nil {
-		return err
+	if c.Profiles[0].HostAccess == nil {
+		if err = landlockrunner.CheckSandbox(c.Profiles[0].ImageDir, c.Profiles[0].DiskGiB); err != nil {
+			return err
+		}
 	}
 	data, err := io.ReadAll(io.LimitReader(os.Stdin, protocol.MaxJIT+2))
 	if err != nil {

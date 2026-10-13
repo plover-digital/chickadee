@@ -22,16 +22,18 @@ type Budget struct {
 	MaxMemoryMiB int `json:"max_memory_mib"`
 }
 type Profile struct {
-	ID        string `json:"id"`
-	Digest    string `json:"digest"`
-	ImageDir  string `json:"image_dir"`
-	Machine   string `json:"machine"`
-	CPUs      int    `json:"cpus"`
-	MemoryMiB int    `json:"memory_mib"`
-	DiskGiB   int    `json:"disk_gib"`
-	Warm      int    `json:"warm_pool"`
+	HostAccess *landlockrunner.HostAccess `json:"host_access,omitempty"`
+	ID         string                     `json:"id"`
+	Digest     string                     `json:"digest"`
+	ImageDir   string                     `json:"image_dir"`
+	Machine    string                     `json:"machine"`
+	CPUs       int                        `json:"cpus"`
+	MemoryMiB  int                        `json:"memory_mib"`
+	DiskGiB    int                        `json:"disk_gib"`
+	Warm       int                        `json:"warm_pool"`
 }
 type Config struct {
+	ProtectedPaths            []string           `json:"-"`
 	LandlockDenyPrefixes      []string           `json:"landlock_deny_prefixes,omitempty"`
 	Cgroup                    *host.CgroupConfig `json:"cgroup,omitempty"`
 	LogRetentionMiB           int                `json:"log_retention_mib,omitempty"`
@@ -122,8 +124,16 @@ func (c Config) Validate() error {
 		if c.Cgroup == nil {
 			return fmt.Errorf("Landlock runners require delegated cgroups")
 		}
-		if err := landlockrunner.ValidateDenyPrefixes(c.LandlockDenyPrefixes); err != nil {
-			return err
+		needsRelay := false
+		for _, p := range c.Profiles {
+			if p.HostAccess == nil {
+				needsRelay = true
+			}
+		}
+		if needsRelay {
+			if err := landlockrunner.ValidateDenyPrefixes(c.LandlockDenyPrefixes); err != nil {
+				return err
+			}
 		}
 		for _, p := range c.Profiles {
 			if p.Machine != "landlock" {
@@ -132,6 +142,38 @@ func (c Config) Validate() error {
 		}
 	} else if len(c.LandlockDenyPrefixes) > 0 {
 		return fmt.Errorf("Landlock policy on a VM worker")
+	}
+	for _, p := range c.Profiles {
+		if p.HostAccess != nil {
+			if p.Machine != "landlock" {
+				return fmt.Errorf("host_access is only supported by Landlock")
+			}
+			for slot := 1; slot <= c.Budget.MaxVMs; slot++ {
+				if _, err := landlockrunner.NormalizeAccess(p.HostAccess, slot, c.Budget.MaxVMs, c.protectedFor(p.ID, slot)); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	// Different scheduler slots must never alias/nest, even across profiles.
+	for _, a := range c.Profiles {
+		if a.HostAccess == nil {
+			continue
+		}
+		for i := 1; i <= c.Budget.MaxVMs; i++ {
+			ap, _ := a.HostAccess.Workspace(i, c.Budget.MaxVMs)
+			for _, b := range c.Profiles {
+				if b.HostAccess == nil {
+					continue
+				}
+				for j := 1; j <= c.Budget.MaxVMs; j++ {
+					bp, _ := b.HostAccess.Workspace(j, c.Budget.MaxVMs)
+					if (ap == bp && i != j) || (ap != bp && (strings.HasPrefix(ap, bp+"/") || strings.HasPrefix(bp, ap+"/"))) {
+						return fmt.Errorf("host workspaces overlap across slots")
+					}
+				}
+			}
+		}
 	}
 	if warms > c.Budget.MaxVMs || cpus > c.Budget.MaxCPUs || memory > c.Budget.MaxMemoryMiB {
 		return fmt.Errorf("warm capacity exceeds worker budget")
@@ -158,8 +200,17 @@ func CheckConfig(c Config) error {
 	if err := host.CheckCgroupBudget(c.Cgroup, c.Budget.MaxMemoryMiB, c.Budget.MaxVMs); err != nil {
 		return err
 	}
-	if err := host.CheckCgroup(c.Cgroup); err != nil {
+	if err := host.CheckCgroup(c.ResourceCgroup()); err != nil {
 		return err
+	}
+	if c.IsLandlock() {
+		hasCPU, err := host.HasCPUController(c.Cgroup)
+		if err != nil {
+			return err
+		}
+		if !hasCPU && len(c.CPUIDs) == 0 {
+			return fmt.Errorf("host_access without CPU quota requires cpu_ids affinity")
+		}
 	}
 	if err := host.ValidateCPUSet(c.CPUIDs); err != nil {
 		return err
@@ -173,9 +224,11 @@ func CheckConfig(c Config) error {
 // Digest identifies the trusted SHA256SUMS content; all execution inputs are
 // verified locally before serving. Remote requests cannot supply image paths.
 func verifyImages(c Config) error {
-	if c.IsLandlock() {
-		if err := landlockrunner.CheckPolicy(); err != nil {
-			return err
+	for _, p := range c.Profiles {
+		if p.Machine == "landlock" {
+			if err := landlockrunner.CheckPolicyFor(p.HostAccess != nil); err != nil {
+				return err
+			}
 		}
 	}
 	seen := map[string]bool{}
@@ -305,6 +358,64 @@ func checkDiskCapacity(c Config, allocated, available int64) error {
 	}
 	if available < required {
 		return fmt.Errorf("insufficient disk space for reserved VM capacity and diagnostics")
+	}
+	return nil
+}
+
+func (c Config) ProfileCgroup(p Profile) *host.CgroupConfig {
+	if c.Cgroup == nil {
+		return nil
+	}
+	v := *c.Cgroup
+	v.AllowMissingCPUAndIO = p.HostAccess != nil
+	return &v
+}
+func (c Config) ResourceCgroup() *host.CgroupConfig {
+	if c.Cgroup == nil {
+		return nil
+	}
+	v := *c.Cgroup
+	v.AllowMissingCPUAndIO = true
+	for _, p := range c.Profiles {
+		if p.HostAccess == nil {
+			v.AllowMissingCPUAndIO = false
+		}
+	}
+	return &v
+}
+
+func (c Config) protectedFor(id string, slot int) []string {
+	paths := append(append([]string(nil), c.ProtectedPaths...), c.StateDir)
+	selected := ""
+	for _, p := range c.Profiles {
+		if p.ID == id && p.HostAccess != nil {
+			selected, _ = p.HostAccess.Workspace(slot, c.Budget.MaxVMs)
+		}
+	}
+	for _, p := range c.Profiles {
+		paths = append(paths, p.ImageDir)
+		if p.HostAccess != nil {
+			for i := 1; i <= c.Budget.MaxVMs; i++ {
+				work, _ := p.HostAccess.Workspace(i, c.Budget.MaxVMs)
+				if work != selected {
+					paths = append(paths, work)
+				}
+			}
+		}
+	}
+	return paths
+}
+
+// CheckLandlockSandboxes probes every configured policy without credentials or cleanup.
+// Slot paths are all validated by Config.Validate; the child probe uses slot one.
+func CheckLandlockSandboxes(c Config) error {
+	for _, p := range c.Profiles {
+		if p.Machine != "landlock" {
+			return fmt.Errorf("Landlock configuration required")
+		}
+		if err := landlockrunner.CheckSandboxWithAccess(p.ImageDir, p.DiskGiB, p.HostAccess, 1, c.Budget.MaxVMs, c.protectedFor(p.ID, 1)); err != nil {
+			return err
+		}
 	}
 	return nil
 }

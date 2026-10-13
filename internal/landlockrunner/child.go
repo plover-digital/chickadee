@@ -6,6 +6,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -21,7 +22,8 @@ import (
 	"github.com/plover-digital/chickadee/internal/protocol"
 )
 
-func restrict() error {
+func restrict() error { return restrictWithAccess(nil) }
+func restrictWithAccess(plan *AccessPlan) error {
 	// Runner path validation lists every ancestor. Permit directory metadata only
 	// in the already-private mount tree, without broad file read/write rights.
 	rules := []landlock.Rule{landlock.PathAccess(landlock.AccessFSSet(ll.AccessFSReadDir), "/"), landlock.RWDirs("/job").WithRefer(), landlock.RODirs("/proc", "/etc", "/image"), landlock.ROFiles("/engine"), landlock.RWFiles("/dev/null"), landlock.ROFiles("/dev/zero", "/dev/random", "/dev/urandom")}
@@ -35,6 +37,22 @@ func restrict() error {
 	// constrained by the empty network namespace and the public-only relay,
 	// since Landlock port rules cannot distinguish host/private IP destinations.
 	policy := landlock.V6
+	if plan != nil {
+		policy = landlock.V5
+		rules = append(rules, landlock.RWDirs(plan.WorkDir).WithRefer())
+		for _, mount := range plan.Mounts {
+			switch mount.Kind {
+			case "dir":
+				rules = append(rules, landlock.RODirs(mount.Target))
+			case "file":
+				rules = append(rules, landlock.ROFiles(mount.Target))
+			case "socket":
+				rules = append(rules, landlock.RWFiles(mount.Target))
+			default:
+				return fmt.Errorf("invalid host mount kind")
+			}
+		}
+	}
 	policy.HandledAccessNet = 0
 	return policy.Restrict(rules...)
 }
@@ -45,11 +63,18 @@ func Child(probe bool) error {
 	if os.Getpid() != 1 {
 		return fmt.Errorf("private PID namespace required")
 	}
-	if err := restrict(); err != nil {
+	plan, err := childAccess()
+	if err != nil {
+		return err
+	}
+	if plan != nil {
+		closeMountFDs(plan)
+	}
+	if err := restrictWithAccess(plan); err != nil {
 		return fmt.Errorf("required Landlock policy unavailable")
 	}
 	if probe {
-		return probeIsolation()
+		return probeIsolationWithAccess(plan)
 	}
 	if err := extractRunner("/image/runner.tar.gz", "/job/runner"); err != nil {
 		return err
@@ -59,11 +84,17 @@ func Child(probe bool) error {
 			return err
 		}
 	}
-	server, err := childProxy(os.NewFile(3, "private-relay"))
-	if err != nil {
-		return err
+	if plan == nil {
+		server, err := childProxy(os.NewFile(3, "private-relay"))
+		if err != nil {
+			return err
+		}
+		defer server.Close()
+	} else {
+		if err = probeHostAccess(plan); err != nil {
+			return err
+		}
 	}
-	defer server.Close()
 	if err = protocol.Write(os.Stdout, protocol.Frame{V: 1, Type: "READY"}); err != nil {
 		return err
 	}
@@ -78,6 +109,28 @@ func Child(probe bool) error {
 	command := exec.Command("/job/runner/run.sh")
 	command.Dir = "/job/runner"
 	command.Env = []string{"PATH=/usr/local/bin:/usr/bin:/bin", "HOME=/home/runner", "TMPDIR=/tmp", "LANG=C.UTF-8", "RUNNER_TOOL_CACHE=/job/tools", "https_proxy=http://127.0.0.1:3128", "http_proxy=http://127.0.0.1:3128", "HTTPS_PROXY=http://127.0.0.1:3128", "HTTP_PROXY=http://127.0.0.1:3128", "NO_PROXY=localhost,127.0.0.1,::1", "no_proxy=localhost,127.0.0.1,::1", "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt", "CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt", "GIT_SSL_CAINFO=/etc/ssl/certs/ca-certificates.crt", "NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt", "ACTIONS_RUNNER_INPUT_JITCONFIG=" + frame.JIT}
+	if plan != nil {
+		environment := make(map[string]string, len(plan.Env)+len(command.Env))
+		for k, v := range plan.Env {
+			environment[k] = v
+		}
+		for _, entry := range command.Env {
+			key, value, _ := strings.Cut(entry, "=")
+			if strings.Contains(strings.ToLower(key), "proxy") {
+				continue
+			}
+			if key == "PATH" {
+				if _, ok := environment[key]; ok {
+					continue
+				}
+			}
+			environment[key] = value
+		}
+		command.Env = nil
+		for key, value := range environment {
+			command.Env = append(command.Env, key+"="+value)
+		}
+	}
 	frame.JIT = ""
 	command.Stdout = io.Discard
 	command.Stderr = io.Discard
@@ -223,7 +276,8 @@ func diagnostics() {
 		file.Close()
 	}
 }
-func probeIsolation() error {
+func probeIsolation() error { return probeIsolationWithAccess(nil) }
+func probeIsolationWithAccess(plan *AccessPlan) error {
 	for _, directory := range []string{"/", "/job", "/job/home"} {
 		if _, err := os.ReadDir(directory); err != nil {
 			return fmt.Errorf("runner ancestor directory enumeration denied")
@@ -240,13 +294,15 @@ func probeIsolation() error {
 	if err := os.WriteFile("/usr/chickadee-denied", nil, 0600); err == nil {
 		return fmt.Errorf("host runtime writable")
 	}
-	data, err := os.ReadFile("/proc/net/dev")
-	if err != nil {
-		return err
-	}
-	for _, line := range strings.Split(string(data), "\n") {
-		if strings.Contains(line, ":") && !strings.HasPrefix(strings.TrimSpace(line), "lo:") {
-			return fmt.Errorf("host network interface visible")
+	if plan == nil {
+		data, err := os.ReadFile("/proc/net/dev")
+		if err != nil {
+			return err
+		}
+		for _, line := range strings.Split(string(data), "\n") {
+			if strings.Contains(line, ":") && !strings.HasPrefix(strings.TrimSpace(line), "lo:") {
+				return fmt.Errorf("host network interface visible")
+			}
 		}
 	}
 	listener, err := net.Listen("tcp4", "127.0.0.1:0")
@@ -259,12 +315,96 @@ func probeIsolation() error {
 		return fmt.Errorf("private loopback unavailable")
 	}
 	conn.Close()
-	if conn, err = net.DialTimeout("tcp4", "1.1.1.1:443", time.Second); err == nil {
-		conn.Close()
-		return fmt.Errorf("direct outbound network reachable")
+	if plan == nil {
+		if conn, err = net.DialTimeout("tcp4", "1.1.1.1:443", time.Second); err == nil {
+			conn.Close()
+			return fmt.Errorf("direct outbound network reachable")
+		}
+	} else {
+		if err = probeHostAccess(plan); err != nil {
+			return err
+		}
 	}
 	if err := protocol.Write(os.Stdout, protocol.Frame{V: 1, Type: "READY"}); err != nil {
 		return err
 	}
 	return nil
+}
+
+func childAccess() (*AccessPlan, error) {
+	raw := os.Getenv("CHICKADEE_HOST_ACCESS")
+	os.Unsetenv("CHICKADEE_HOST_ACCESS")
+	if raw == "" {
+		return nil, nil
+	}
+	if len(raw) > MaxAccessJSON {
+		return nil, fmt.Errorf("host access payload exceeds bounds")
+	}
+	var p AccessPlan
+	d := json.NewDecoder(strings.NewReader(raw))
+	d.DisallowUnknownFields()
+	if d.Decode(&p) != nil || d.Decode(new(any)) != io.EOF || !cleanPath(p.WorkDir) || p.UID != os.Geteuid() || p.GID != os.Getegid() || len(p.Mounts) > 96 || len(p.Env) > 128 {
+		return nil, fmt.Errorf("invalid host access payload")
+	}
+	for k, v := range p.Env {
+		if !envName.MatchString(k) || protectedEnv(k) || len(v) > 8192 || strings.ContainsRune(v, 0) {
+			return nil, fmt.Errorf("invalid host environment")
+		}
+	}
+	for _, m := range p.Mounts {
+		if !cleanPath(m.Source) || !cleanPath(m.Target) {
+			return nil, fmt.Errorf("invalid host mount")
+		}
+	}
+	return &p, nil
+}
+func probeHostAccess(p *AccessPlan) error {
+	netNS, err := os.Readlink("/proc/self/ns/net")
+	if err != nil || netNS != p.NetworkNamespace {
+		return fmt.Errorf("host network namespace mismatch")
+	}
+	if os.Geteuid() != p.UID || os.Getegid() != p.GID {
+		return fmt.Errorf("host identity mismatch")
+	}
+	file, err := os.CreateTemp(p.WorkDir, ".chickadee-probe-")
+	if err != nil {
+		return fmt.Errorf("host workspace is not writable")
+	}
+	name := file.Name()
+	file.Close()
+	defer os.Remove(name)
+	for _, m := range p.Mounts {
+		if m.Kind != "socket" {
+			continue
+		}
+		conn, err := net.DialTimeout("unix", m.Target, 2*time.Second)
+		if err != nil {
+			return fmt.Errorf("host authentication endpoint unavailable")
+		}
+		conn.Close()
+	}
+	return nil
+}
+
+// bwrap can consume source FDs before exec; do not close a number that the Go
+// runtime may since have reused. Close only still-inherited matching objects.
+func closeMountFDs(p *AccessPlan) {
+	targets := []string{p.WorkDir}
+	for _, m := range p.Mounts {
+		targets = append(targets, m.Target)
+	}
+	for i, target := range targets {
+		var st syscall.Stat_t
+		if syscall.Fstat(3+i, &st) != nil {
+			continue
+		}
+		info, err := os.Stat(target)
+		if err != nil {
+			continue
+		}
+		expected := info.Sys().(*syscall.Stat_t)
+		if st.Dev == expected.Dev && st.Ino == expected.Ino {
+			syscall.Close(3 + i)
+		}
+	}
 }

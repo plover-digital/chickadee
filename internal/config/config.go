@@ -51,15 +51,18 @@ type IOLimit struct {
 	WriteIOPS int64  `json:"write_iops,omitempty"`
 }
 type CgroupConfig struct {
-	IOMax             []IOLimit `json:"io_max,omitempty"`
-	Root              string    `json:"root,omitempty"`
-	MemoryOverheadMiB int       `json:"memory_overhead_mib,omitempty"`
-	PidsMax           int       `json:"pids_max,omitempty"`
-	IOWeight          int       `json:"io_weight,omitempty"`
+	// Internal resource policy; never accepted from JSON.
+	AllowMissingCPUAndIO bool      `json:"-"`
+	IOMax                []IOLimit `json:"io_max,omitempty"`
+	Root                 string    `json:"root,omitempty"`
+	MemoryOverheadMiB    int       `json:"memory_overhead_mib,omitempty"`
+	PidsMax              int       `json:"pids_max,omitempty"`
+	IOWeight             int       `json:"io_weight,omitempty"`
 }
 
 type Config struct {
-	Cgroup *CgroupConfig `json:"cgroup,omitempty"`
+	WorkerProfileID string        `json:"-"`
+	Cgroup          *CgroupConfig `json:"cgroup,omitempty"`
 	// AssignedCPUs is local execution metadata, never accepted from JSON.
 	AssignedCPUs []int            `json:"-"`
 	Scopes       map[string]Scope `json:"scopes,omitempty"`

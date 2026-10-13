@@ -184,10 +184,14 @@ security certification.
 The test creates only its own execution cgroups in that transient unit. Normal
 cleanup checks `populated 0` before removal; recovery kills surviving descendants
 and requires the same kernel empty-group proof before removal. This does not
-replace full controller-crash acceptance. A real Actions job and deployment
-restart checks are required before relying on this backend.
+replace full controller-crash acceptance. Deployment-restart checks remain
+required before relying on this backend in deployment; real one-job acceptance
+is verified above.
 
 Sources: [Landlock kernel documentation](https://docs.kernel.org/userspace-api/landlock.html),
 [Go API](https://pkg.go.dev/github.com/landlock-lsm/go-landlock/landlock),
 [GitHub proxy configuration](https://docs.github.com/en/actions/how-tos/manage-runners/use-proxy-servers),
 [pinned runner environment input handling](https://github.com/actions/runner/blob/v2.338.0/src/Runner.Listener/CommandSettings.cs).
+
+For trusted site tools, auth sockets and ABI5 hosts, see the optional
+[self-hosted host-access mode](host-access-runners.md). Sealed defaults remain unchanged.
