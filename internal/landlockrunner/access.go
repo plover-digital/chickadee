@@ -58,7 +58,7 @@ func cleanPath(p string) bool {
 	return len(p) <= 4096 && filepath.IsAbs(p) && filepath.Clean(p) == p && p != "/" && !strings.ContainsAny(p, "\x00\r\n")
 }
 func overlaps(a, b string) bool {
-	return a == b || strings.HasPrefix(a, b+"/") || strings.HasPrefix(b, a+"/")
+	return a == "/" || b == "/" || a == b || strings.HasPrefix(a, b+"/") || strings.HasPrefix(b, a+"/")
 }
 func protectedEnv(k string) bool {
 	upper := strings.ToUpper(k)
@@ -105,7 +105,15 @@ func NormalizeAccess(a *HostAccess, slot, maxSlots int, protected []string) (*Ac
 		if err != nil {
 			return nil, fmt.Errorf("protected host path unavailable")
 		}
-		canonical, err := canonicalProtectedPath(absolute)
+		rawAbsolute := path
+		if !filepath.IsAbs(path) {
+			cwd, err := os.Getwd()
+			if err != nil {
+				return nil, fmt.Errorf("protected host path unavailable")
+			}
+			rawAbsolute = cwd + "/" + path
+		}
+		canonical, err := canonicalProtectedPath(rawAbsolute)
 		if err != nil {
 			return nil, err
 		}
@@ -243,11 +251,21 @@ func canonicalProtectedPath(path string) (string, error) {
 		} else if !os.IsNotExist(err) {
 			return "", fmt.Errorf("protected host path cannot be resolved safely")
 		}
-		parent := filepath.Dir(candidate)
-		if parent == candidate {
+		// Preserve symlink/.. traversal semantics while finding an existing
+		// ancestor; filepath.Dir would clean before resolving the symlink.
+		candidate = strings.TrimRight(candidate, "/")
+		separator := strings.LastIndex(candidate, "/")
+		if separator < 0 || candidate == "" {
 			return "", fmt.Errorf("protected host path unavailable")
 		}
-		missing = append([]string{filepath.Base(candidate)}, missing...)
-		candidate = parent
+		leaf := candidate[separator+1:]
+		if leaf == "." || leaf == ".." {
+			return "", fmt.Errorf("unresolved protected traversal")
+		}
+		missing = append([]string{leaf}, missing...)
+		candidate = candidate[:separator]
+		if candidate == "" {
+			candidate = "/"
+		}
 	}
 }
