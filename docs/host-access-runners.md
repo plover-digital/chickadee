@@ -98,7 +98,8 @@ The target systemd252 path still needs target acceptance. Memory, pids, swap-zer
 and OOM-group controls are mandatory. If cpu is not delegated, configure the
 existing `cpu_ids` pool covering the CPU budget. Allocation is disjoint within
 this worker and inherited by descendants; it is not CPU quota or exclusive host
-CPU ownership. Configure parent memory/tasks budgets to cover all executions,
+CPU ownership. Trusted jobs can change their affinity within the host's cpuset
+permissions; this is starting placement, not a hostile-job CPU ceiling. Configure parent memory/tasks budgets to cover all executions,
 per-execution overhead and controller headroom. Any explicitly requested I/O
 weight/limits require a usable io controller.
 
@@ -197,6 +198,17 @@ removed the execution runtime, left the workspace empty and retained, and remove
 the ephemeral GitHub registration. This used a newer ABI6 kernel enforcing V5;
 it does not replace target-host acceptance. A preceding attempt failed because
 the fixture used an occupied host port; the workflow now allocates its own port.
+
+A separate [controlled crash run 38465917203](https://github.com/plover-digital/chickadee/actions/runs/38465917203)
+was interrupted after checkout/build wrote an owned workspace file. The dedicated
+controller was killed, its delegated cgroup disappeared, and dirty contents/private
+marker were retained. Restart in the same delegated unit with a nonsecret invalid
+JIT fixture reclaimed the old execution, cleared the contents and retired the new
+fixture execution; the workspace directory survived. This tests local restart,
+not remote scheduler cancellation. GitHub cancellation/owned registration removal
+is the trusted caller's separate responsibility; a dead runner may require
+[force cancellation](https://docs.github.com/en/rest/actions/workflow-runs#force-cancel-a-workflow-run)
+when ordinary cancellation cannot complete.
 
 Target-owner acceptance remains required: real fresh-JIT checkout/build on ABI5,
 Munge UID match, same-path srun/sbatch --wait/MPI, local path denials, OOM/PID
