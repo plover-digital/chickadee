@@ -204,7 +204,7 @@ func TestProtectedPathCanonicalizationAndMissingLeaves(t *testing.T) {
 		t.Fatal(err)
 	}
 	access := &HostAccess{WorkDir: work, ROPaths: []string{parent}}
-	for _, protected := range []string{filepath.Join(alias, "private-key"), relative, filepath.Join(alias, "future-state", "journal")} {
+	for _, protected := range []string{filepath.Join(alias, "private-key"), relative, "/", filepath.Join(alias, "future-state", "journal")} {
 		if _, err := NormalizeAccess(access, 1, 1, []string{protected}); err == nil {
 			t.Fatal("protected ancestor exposed", protected)
 		}
@@ -215,5 +215,25 @@ func TestProtectedPathCanonicalizationAndMissingLeaves(t *testing.T) {
 	}
 	if _, err := NormalizeAccess(&HostAccess{WorkDir: work}, 1, 1, []string{broken}); err == nil {
 		t.Fatal("unresolvable protected alias ignored")
+	}
+}
+
+func TestProtectedSymlinkTraversalPreservesActualPath(t *testing.T) {
+	work := workspaceFixture(t)
+	parent := hostTemp(t)
+	nested := filepath.Join(parent, "nested")
+	if err := os.Mkdir(nested, 0700); err != nil {
+		t.Fatal(err)
+	}
+	alias := filepath.Join(hostTemp(t), "alias")
+	if err := os.Symlink(nested, alias); err != nil {
+		t.Fatal(err)
+	}
+	for _, leaf := range []string{"key", "pending/key"} {
+		access := &HostAccess{WorkDir: work, ROPaths: []string{parent}}
+		// Keep literal /../: joining here would erase the behavior under test.
+		if _, err := NormalizeAccess(access, 1, 1, []string{alias + "/../" + leaf}); err == nil {
+			t.Fatal("protected traversal exposed", leaf)
+		}
 	}
 }
