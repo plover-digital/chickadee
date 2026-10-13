@@ -1,0 +1,71 @@
+name: Landlock process runner acceptance
+run-name: Landlock acceptance ${{ inputs.run_key }}
+on:
+  workflow_dispatch:
+    inputs:
+      run_key:
+        description: Unique operator acceptance identifier
+        required: true
+        type: string
+      runner_label:
+        description: Dedicated opt-in process runner label
+        default: chickadee-landlock-smoke
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  process-runner:
+    runs-on: ${{ inputs.runner_label }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Check private writable state and absent host management paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(id -u)" = 1000
+          test -z "${ACTIONS_RUNNER_INPUT_JITCONFIG+x}"
+          for path in /etc/chickadee /var/lib/chickadee /run/docker.sock /dev/kvm /sys; do
+            test ! -e "$path"
+          done
+          if touch /usr/chickadee-write-probe 2>/dev/null; then
+            echo 'Read-only runtime unexpectedly writable'
+            exit 1
+          fi
+          printf 'private workspace\n' > "$RUNNER_TEMP/private-write"
+          test -f "$RUNNER_TEMP/private-write"
+      - name: Compile and execute a native program
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '#include <stdio.h>\nint main(void){puts("Chickadee Landlock runner passed");return 0;}\n' > "$RUNNER_TEMP/smoke.c"
+          cc "$RUNNER_TEMP/smoke.c" -o "$RUNNER_TEMP/smoke"
+          "$RUNNER_TEMP/smoke"
+      - name: Verify filtered HTTPS and private loopback test services
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --fail --silent --show-error --max-time 20 https://api.github.com/zen
+          for target in https://169.254.169.254/ https://127.0.0.1/; do
+            if curl --proxy http://127.0.0.1:3128 --noproxy '' --insecure --fail --silent --connect-timeout 2 --max-time 4 "$target" >/dev/null; then
+              echo 'Protected proxy destination unexpectedly reachable'
+              exit 1
+            fi
+          done
+          if curl --noproxy '*' --insecure --fail --silent --connect-timeout 2 --max-time 4 https://1.1.1.1/ >/dev/null; then
+            echo 'Direct outbound networking unexpectedly available'
+            exit 1
+          fi
+          python3 -m http.server 8080 --bind 127.0.0.1 --directory "$RUNNER_TEMP" >/dev/null 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          curl --fail --silent --retry 3 --retry-connrefused --retry-delay 1 http://127.0.0.1:8080/private-write
+      - name: Leave a descendant for whole-sandbox cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          env -u RUNNER_TRACKING_ID sleep 300 >/dev/null 2>&1 </dev/null &
+          disown

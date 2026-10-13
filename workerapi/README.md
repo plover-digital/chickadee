@@ -78,3 +78,12 @@ ambiguous and never authorize credential replay. Canceled calls retire idle
 connections and abandoned dials without interrupting other active RPCs.
 See [example policy](../examples/worker.json) and [VM isolation](../docs/isolation.md).
 This prototype is not completed hostile multi-tenant release acceptance.
+
+Optional process profiles use `machine: landlock`. This is an additive v1 enum;
+older clients reject it and must upgrade before placement. Profile/digest/resource
+matching must preserve this trust boundary. Legacy `vm_id`/VM count fields identify
+execution slots for this backend; they do not assert a guest VM exists. Terminal
+still requires complete process-tree exit and writable-state cleanup.
+
+Landlock is exclusive to independent self-hosted deployments. chickadee.run and
+Roost service routing accept VM backends only.

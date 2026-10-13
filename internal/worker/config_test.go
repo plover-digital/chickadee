@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/plover-digital/chickadee/internal/host"
 	"os"
 	"path/filepath"
 	"strings"
@@ -167,5 +168,59 @@ func TestConfiguredFreeDiskFloorAndConservativeGrowth(t *testing.T) {
 	}
 	if checkDiskCapacity(c, -1, 1<<40) == nil {
 		t.Fatal("invalid accounting accepted")
+	}
+}
+
+func TestLandlockModeRequiresResourceAndNetworkPolicyAndDedicatedWorker(t *testing.T) {
+	c := engineConfig(t)
+	c.Profiles[0].Machine = "landlock"
+	if c.Validate() == nil {
+		t.Fatal("process runner accepted without mandatory controls")
+	}
+	c.Cgroup = &host.CgroupConfig{PidsMax: 256}
+	c.LandlockDenyPrefixes = []string{"203.0.113.10/32"}
+	if err := c.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	other := c.Profiles[0]
+	other.ID = "vm"
+	other.Machine = "q35"
+	other.Warm = 0
+	c.Profiles = append(c.Profiles, other)
+	if c.Validate() == nil {
+		t.Fatal("shared process/VM worker accepted")
+	}
+	c.Profiles = c.Profiles[:1]
+	c.LandlockDenyPrefixes = []string{"invalid"}
+	if c.Validate() == nil {
+		t.Fatal("invalid network policy accepted")
+	}
+}
+
+func TestSharedBundleStillValidatesEachProfileManifest(t *testing.T) {
+	for _, machine := range []string{"q35", "microvm"} {
+		c := imageFixture(t)
+		other := c.Profiles[0]
+		other.ID = "other"
+		other.Machine = machine
+		if machine == "q35" {
+			other.DiskGiB++
+		}
+		c.Profiles = append(c.Profiles, other)
+		if err := verifyImages(c); err == nil {
+			t.Fatal("shared bundle bypassed per-profile resource/backend validation")
+		}
+	}
+}
+
+func TestConfigCloneOwnsNetworkPolicyAndCgroup(t *testing.T) {
+	c := engineConfig(t)
+	c.LandlockDenyPrefixes = []string{"8.8.8.8/32"}
+	c.Cgroup = &host.CgroupConfig{PidsMax: 256}
+	cloned := cloneConfig(c)
+	c.LandlockDenyPrefixes[0] = "1.1.1.1/32"
+	c.Cgroup.PidsMax = 512
+	if cloned.LandlockDenyPrefixes[0] != "8.8.8.8/32" || cloned.Cgroup.PidsMax != 256 {
+		t.Fatal("caller mutation changed owned policy")
 	}
 }

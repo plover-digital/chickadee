@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "identity": {"worker_id": "landlock-host", "broker_id": "local", "generation": 1},
+  "state_dir": "/var/lib/chickadee-landlock",
+  "landlock_deny_prefixes": ["203.0.113.10/32"],
+  "cgroup": {"pids_max": 512},
+  "profiles": [{
+    "id": "landlock-small",
+    "digest": "REPLACE_WITH_BUNDLE_SHA256SUMS_DIGEST",
+    "image_dir": "/var/lib/chickadee-landlock-images/runner-2.338.0",
+    "machine": "landlock",
+    "cpus": 2,
+    "memory_mib": 4096,
+    "disk_gib": 8,
+    "warm_pool": 1
+  }],
+  "budget": {"max_vms": 1, "max_cpus": 2, "max_memory_mib": 4096},
+  "boot_timeout_seconds": 60,
+  "job_timeout_seconds": 600,
+  "reservation_timeout_seconds": 120,
+  "log_retention_mib": 64,
+  "listen": "127.0.0.1:18443",
+  "tls": {
+    "certificate_file": "/etc/chickadee-landlock/tls/worker.crt",
+    "key_file": "/etc/chickadee-landlock/tls/worker.key",
+    "ca_file": "/etc/chickadee-landlock/tls/ca.crt"
+  }
+}

@@ -16,6 +16,7 @@ import (
 
 	hostconfig "github.com/plover-digital/chickadee/internal/config"
 	"github.com/plover-digital/chickadee/internal/host"
+	"github.com/plover-digital/chickadee/internal/landlockrunner"
 	"github.com/plover-digital/chickadee/internal/protocol"
 	"github.com/plover-digital/chickadee/workerapi"
 )
@@ -85,6 +86,17 @@ func startHost(ctx context.Context, conf hostconfig.Config, slot int, id string)
 	return vm, err
 }
 func OpenEngine(c Config) (*Engine, error) {
+	c = cloneConfig(c)
+	if c.IsLandlock() {
+		return openEngine(c, func(ctx context.Context, conf hostconfig.Config, slot int, id string) (machine, error) {
+			m, err := landlockrunner.Start(ctx, conf, id, c.LandlockDenyPrefixes)
+			if m == nil {
+				return nil, err
+			}
+			return m, err
+		}, func(state string) error { return landlockrunner.Reap(state, c.Cgroup) }, verifyImages, checkDiskSpace)
+	}
+
 	return openEngine(c, startHost, host.ReapOwned, func(c Config) error {
 		if err := host.ValidateCPUSet(c.CPUIDs); err != nil {
 			return err
@@ -92,7 +104,7 @@ func OpenEngine(c Config) (*Engine, error) {
 		return verifyImages(c)
 	}, checkDiskSpace)
 }
-func openEngine(c Config, start startMachine, reap func(string) error, check func(Config) error, spaceCheck func(Config, int64) error) (*Engine, error) {
+func cloneConfig(c Config) Config {
 	c.Profiles = append([]Profile(nil), c.Profiles...)
 	if c.Cgroup != nil {
 		copy := *c.Cgroup
@@ -100,6 +112,12 @@ func openEngine(c Config, start startMachine, reap func(string) error, check fun
 		c.Cgroup = &copy
 	}
 	c.CPUIDs = append([]int(nil), c.CPUIDs...)
+	c.LandlockDenyPrefixes = append([]string(nil), c.LandlockDenyPrefixes...)
+	return c
+}
+
+func openEngine(c Config, start startMachine, reap func(string) error, check func(Config) error, spaceCheck func(Config, int64) error) (*Engine, error) {
+	c = cloneConfig(c)
 	if err := c.Validate(); err != nil {
 		return nil, err
 	}
@@ -157,7 +175,7 @@ func openEngine(c Config, start startMachine, reap func(string) error, check fun
 	}
 	for _, record := range records {
 		if record.State != Terminal {
-			if _, err = j.RecoverTerminal(record.Request.AssignmentID, ExitProof{VMID: record.Request.VMID, QEMUExitConfirmed: true, DiskRemoved: true}); err != nil {
+			if _, err = j.RecoverTerminal(record.Request.AssignmentID, ExitProof{VMID: record.Request.VMID, ProcessExitConfirmed: true, QEMUExitConfirmed: !c.IsLandlock(), DiskRemoved: true}); err != nil {
 				return fail(err)
 			}
 		}
@@ -333,7 +351,7 @@ func (e *Engine) cleanup(v *instance) {
 		}); ok {
 			resources = measured.ResourceSummary()
 		}
-		if _, err := e.journal.RecoverTerminal(v.request.AssignmentID, ExitProof{VMID: v.id, QEMUExitConfirmed: true, DiskRemoved: true, Resources: resources}); err != nil {
+		if _, err := e.journal.RecoverTerminal(v.request.AssignmentID, ExitProof{VMID: v.id, ProcessExitConfirmed: true, QEMUExitConfirmed: v.profile.Machine != "landlock", DiskRemoved: true, Resources: resources}); err != nil {
 			v.failedCleanup = true
 			e.failLocked(err)
 			return
