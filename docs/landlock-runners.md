@@ -73,6 +73,8 @@ that input from its environment, and runs at most one job. JIT is absent from
 process arguments and controller logs. The runner receives no App/OAuth keys.
 Job output remains in GitHub; bounded opaque diagnostic chunks are retained
 privately as 0600 files and must be treated as sensitive, untrusted data.
+Collection inspects at most 64 entries and copies at most 256 KiB. Opened files
+are verified as regular files without following symlinks or blocking on FIFOs.
 
 On completion, failure or timeout, the manager kills the entire execution
 cgroup, waits for kernel-confirmed `populated 0` and guardian exit, closes relay

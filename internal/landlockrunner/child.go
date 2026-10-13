@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -167,11 +166,34 @@ func extractRunner(archive, destination string) error {
 	}
 }
 
+// Open nonblocking first, then verify the opened inode: the job can replace a
+// directory entry between ReadDir and open with a FIFO, device or symlink.
+func openDiagnostic(directory *os.File, name string) (*os.File, error) {
+	fd, err := syscall.Openat(int(directory.Fd()), name, syscall.O_RDONLY|syscall.O_NONBLOCK|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0)
+	if err != nil {
+		return nil, err
+	}
+	file := os.NewFile(uintptr(fd), "diagnostic")
+	info, err := file.Stat()
+	if err != nil || !info.Mode().IsRegular() {
+		file.Close()
+		return nil, fmt.Errorf("diagnostic is not a regular file")
+	}
+	return file, nil
+}
+
 func diagnostics() {
 	// Copy only bounded regular files, never follow workflow-created symlinks or
 	// render their contents. Chunks remain opaque private protocol diagnostics.
-	entries, err := os.ReadDir("/job/runner/_diag")
+	fd, err := syscall.Open("/job/runner/_diag", syscall.O_RDONLY|syscall.O_DIRECTORY|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0)
 	if err != nil {
+		return
+	}
+	directory := os.NewFile(uintptr(fd), "diagnostic-directory")
+	defer directory.Close()
+	// Bound directory work as well as copied bytes; job-created entries are untrusted.
+	entries, err := directory.ReadDir(64)
+	if err != nil && err != io.EOF {
 		return
 	}
 	remaining := int64(256 * 1024)
@@ -179,11 +201,10 @@ func diagnostics() {
 		if !entry.Type().IsRegular() || remaining == 0 {
 			continue
 		}
-		fd, err := syscall.Open(filepath.Join("/job/runner/_diag", entry.Name()), syscall.O_RDONLY|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0)
+		file, err := openDiagnostic(directory, entry.Name())
 		if err != nil {
 			continue
 		}
-		file := os.NewFile(uintptr(fd), "diagnostic")
 		buf := make([]byte, 4096)
 		for remaining > 0 {
 			n, _ := file.Read(buf[:min(int64(len(buf)), remaining)])

@@ -115,6 +115,7 @@ type Runner struct {
 	dir                     string
 	cmd                     *exec.Cmd
 	input                   io.WriteCloser
+	output                  io.ReadCloser
 	reader                  *protocol.Reader
 	group                   *host.ExecutionGroup
 	relay                   *relay
@@ -191,6 +192,7 @@ func Start(ctx context.Context, c config.Config, id string, denied []string) (*R
 	if err != nil {
 		return fail(err)
 	}
+	m.output = out
 	m.reader = protocol.NewReader(out)
 	m.group, err = host.NewExecutionGroup(c.Cgroup, id, c.CPUs, c.MemoryMiB)
 	if err != nil {
@@ -287,6 +289,9 @@ func (m *Runner) Run(jit string, timeout time.Duration, logPath string) error {
 	case err = <-result:
 		return err
 	case <-time.After(timeout):
+		// Interrupt the protocol read and join it before closing its log file.
+		m.output.Close()
+		<-result
 		return fmt.Errorf("sandbox job deadline reached")
 	}
 }
@@ -333,6 +338,9 @@ func (m *Runner) Cleanup() error {
 		case <-time.After(30 * time.Second):
 			return fmt.Errorf("sandbox guardian exit unconfirmed")
 		}
+	}
+	if m.output != nil {
+		m.output.Close()
 	}
 	if m.relay != nil {
 		m.relay.Close()
