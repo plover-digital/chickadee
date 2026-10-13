@@ -54,10 +54,22 @@ jobs:
           test "$(findmnt -n -o FSTYPE --target "$GITHUB_WORKSPACE")" != ramfs
           curl --proto '=https' --fail --silent --show-error --max-time 20 https://api.github.com/zen
           printf 'workspace output\n' > "$GITHUB_WORKSPACE/host-access-result"
-          python3 -m http.server 8080 --bind 127.0.0.1 --directory "$GITHUB_WORKSPACE" >/dev/null 2>&1 &
+          python3 - "$GITHUB_WORKSPACE" "$RUNNER_TEMP/http-port" <<'PY' &
+          import functools, http.server, pathlib, sys
+          handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=sys.argv[1])
+          server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+          pathlib.Path(sys.argv[2]).write_text(str(server.server_port))
+          server.serve_forever()
+          PY
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
-          curl --fail --silent --retry 3 --retry-connrefused --retry-delay 1 http://127.0.0.1:8080/host-access-result
+          for attempt in {1..50}; do
+            test -s "$RUNNER_TEMP/http-port" && break
+            sleep 0.1
+          done
+          test -s "$RUNNER_TEMP/http-port"
+          port=$(cat "$RUNNER_TEMP/http-port")
+          curl --fail --silent "http://127.0.0.1:$port/host-access-result"
       - name: Leave a descendant for whole-sandbox cleanup
         shell: bash
         run: |
