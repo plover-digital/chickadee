@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/plover-digital/chickadee/internal/host"
+	"github.com/plover-digital/chickadee/internal/landlockrunner"
 	"github.com/plover-digital/chickadee/internal/worker"
 	"github.com/plover-digital/chickadee/workerapi"
 	"io"
@@ -30,7 +31,45 @@ func main() {
 	path := flag.String("config", "/etc/chickadee-worker/config.json", "private worker configuration")
 	check := flag.Bool("check", false, "validate local worker identity, resources, TLS and isolation without starting VMs or a listener")
 	probe := flag.String("sandbox-probe", "", "internal isolation preflight child")
+	landlockCheck := flag.Bool("check-landlock", false, "validate process-runner configuration and isolation without TLS or credentials")
+	jitStdin := flag.Bool("jit-stdin", false, "standalone one-job Landlock runner; read fresh JIT from stdin")
+	child := flag.Bool("landlock-child", false, "internal Landlock sandbox child")
+	childProbe := flag.Bool("landlock-probe", false, "internal Landlock negative-isolation probe")
 	flag.Parse()
+	if *child {
+		if err := landlockrunner.Child(*childProbe); err != nil {
+			if *childProbe {
+				fmt.Fprintln(os.Stderr, err.Error())
+			}
+			os.Exit(1)
+		}
+		return
+	}
+	if *landlockCheck {
+		c, err := load(*path)
+		if err == nil && !c.IsLandlock() {
+			err = fmt.Errorf("Landlock configuration required")
+		}
+		if err == nil {
+			err = worker.CheckConfig(c.Config)
+		}
+		if err == nil {
+			err = landlockrunner.CheckSandbox(c.Profiles[0].ImageDir, c.Profiles[0].DiskGiB)
+		}
+		if err != nil {
+			slog.Error("Landlock preflight failed", "reason", err.Error())
+			os.Exit(1)
+		}
+		fmt.Println("LANDLOCK_SANDBOX_VERIFIED")
+		return
+	}
+	if *jitStdin {
+		if runJITOnce(*path) != nil {
+			slog.Error("one-job runner failed; inspect private state and GitHub job result")
+			os.Exit(1)
+		}
+		return
+	}
 	if *probe != "" {
 		if host.SandboxProbe(*probe) != nil {
 			os.Exit(1)
@@ -78,7 +117,14 @@ func run(path string, check bool) error {
 	if err = workerapi.ValidateServerConfig(sc); err != nil {
 		return err
 	}
-	if err = host.CheckSandbox(); err != nil {
+	if c.IsLandlock() {
+		if err = worker.CheckConfig(c.Config); err != nil {
+			return err
+		}
+		if err = landlockrunner.CheckSandbox(c.Profiles[0].ImageDir, c.Profiles[0].DiskGiB); err != nil {
+			return err
+		}
+	} else if err = host.CheckSandbox(); err != nil {
 		return err
 	}
 	if check {

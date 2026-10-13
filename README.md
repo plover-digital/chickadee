@@ -93,3 +93,14 @@ and a trusted local image/resource catalog; [Chickadee Roost](https://github.com
 Standalone installation remains independent of Roost. See
 [isolation](docs/isolation.md) and [fleet design and limitations](docs/multi-host.md)
 before deploying untrusted jobs.
+
+## Optional process runners
+
+An experimental [Landlock runner mode](docs/landlock-runners.md) uses private
+Linux namespaces and mandatory cgroup limits to run one disposable runner
+process per job. Select `machine: landlock` on a dedicated keyless worker, or
+use its standalone `-jit-stdin` command. It requires strict Landlock ABI6 and
+shares the host kernel/read-only userland; it does not replace VM profiles.
+
+Landlock is a self-hosted option only. The chickadee.run hosted service provides
+disposable VM runners and does not offer process sandboxes.

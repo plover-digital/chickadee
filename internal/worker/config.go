@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/plover-digital/chickadee/internal/host"
+	"github.com/plover-digital/chickadee/internal/landlockrunner"
 	"io"
 	"os"
 	"path/filepath"
@@ -31,6 +32,7 @@ type Profile struct {
 	Warm      int    `json:"warm_pool"`
 }
 type Config struct {
+	LandlockDenyPrefixes      []string           `json:"landlock_deny_prefixes,omitempty"`
 	Cgroup                    *host.CgroupConfig `json:"cgroup,omitempty"`
 	LogRetentionMiB           int                `json:"log_retention_mib,omitempty"`
 	MinFreeDiskGiB            int                `json:"min_free_disk_gib,omitempty"`
@@ -106,7 +108,7 @@ func (c Config) Validate() error {
 			return fmt.Errorf("invalid trusted profile identity/path")
 		}
 		seen[p.ID] = true
-		if p.Machine != "microvm" && p.Machine != "q35" {
+		if p.Machine != "microvm" && p.Machine != "q35" && p.Machine != "landlock" {
 			return fmt.Errorf("invalid profile machine")
 		}
 		if p.CPUs < 1 || p.CPUs > c.Budget.MaxCPUs || p.MemoryMiB < 512 || p.MemoryMiB > c.Budget.MaxMemoryMiB || p.DiskGiB < 8 || p.DiskGiB > 1024 || p.Warm < 0 || p.Warm > c.Budget.MaxVMs {
@@ -116,10 +118,35 @@ func (c Config) Validate() error {
 		cpus += p.Warm * p.CPUs
 		memory += p.Warm * p.MemoryMiB
 	}
+	if c.IsLandlock() {
+		if c.Cgroup == nil {
+			return fmt.Errorf("Landlock runners require delegated cgroups")
+		}
+		if err := landlockrunner.ValidateDenyPrefixes(c.LandlockDenyPrefixes); err != nil {
+			return err
+		}
+		for _, p := range c.Profiles {
+			if p.Machine != "landlock" {
+				return fmt.Errorf("VM and process profiles require separate workers")
+			}
+		}
+	} else if len(c.LandlockDenyPrefixes) > 0 {
+		return fmt.Errorf("Landlock policy on a VM worker")
+	}
 	if warms > c.Budget.MaxVMs || cpus > c.Budget.MaxCPUs || memory > c.Budget.MaxMemoryMiB {
 		return fmt.Errorf("warm capacity exceeds worker budget")
 	}
 	return nil
+}
+
+// IsLandlock selects a homogeneous process worker, never an implicit VM fallback.
+func (c Config) IsLandlock() bool {
+	for _, p := range c.Profiles {
+		if p.Machine == "landlock" {
+			return true
+		}
+	}
+	return false
 }
 
 // CheckConfig verifies the trusted local catalog without taking ownership,
@@ -146,6 +173,11 @@ func CheckConfig(c Config) error {
 // Digest identifies the trusted SHA256SUMS content; all execution inputs are
 // verified locally before serving. Remote requests cannot supply image paths.
 func verifyImages(c Config) error {
+	if c.IsLandlock() {
+		if err := landlockrunner.CheckPolicy(); err != nil {
+			return err
+		}
+	}
 	seen := map[string]bool{}
 	for _, p := range c.Profiles {
 		if seen[p.ImageDir+"|"+p.Digest] {
@@ -179,7 +211,11 @@ func verifyImages(c Config) error {
 		if err != nil {
 			return fmt.Errorf("image directory unavailable")
 		}
-		for _, name := range []string{"base.qcow2", "vmlinuz", "initrd", "manifest.json"} {
+		inputs := []string{"base.qcow2", "vmlinuz", "initrd", "manifest.json"}
+		if p.Machine == "landlock" {
+			inputs = []string{"runner.tar.gz", "manifest.json"}
+		}
+		for _, name := range inputs {
 			realPath, err := filepath.EvalSymlinks(filepath.Join(p.ImageDir, name))
 			if err != nil || filepath.Dir(realPath) != realDir || wanted[filepath.Base(realPath)] == "" {
 				return fmt.Errorf("missing verified execution input")
@@ -214,6 +250,9 @@ func verifyImages(c Config) error {
 }
 
 func diskReservation(c Config) int64 {
+	if c.IsLandlock() {
+		return 2 << 30
+	} // Writable job storage is bounded tmpfs charged to its cgroup.
 	largest := 0
 	for _, p := range c.Profiles {
 		if p.DiskGiB > largest {

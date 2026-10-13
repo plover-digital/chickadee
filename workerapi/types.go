@@ -57,7 +57,7 @@ type ProfileInventory struct {
 // apple-vz inventories, so upgrade the broker before adding native Mac workers.
 // Machine and immutable digest both participate in placement identity.
 func SupportedMachine(machine string) bool {
-	return machine == "q35" || machine == "microvm" || machine == "apple-vz"
+	return machine == "q35" || machine == "microvm" || machine == "apple-vz" || machine == "landlock"
 }
 
 type Request struct {

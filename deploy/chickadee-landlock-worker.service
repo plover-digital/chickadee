@@ -1,0 +1,35 @@
+[Unit]
+Description=Chickadee optional keyless Landlock process worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=chickadee-landlock
+Group=chickadee-landlock
+ExecStart=/usr/local/bin/chickadee-worker -config /etc/chickadee-landlock/config.json
+Restart=on-failure
+RestartSec=10
+KillMode=mixed
+TimeoutStopSec=900
+UMask=0077
+StateDirectory=chickadee-landlock
+StateDirectoryMode=0700
+Delegate=cpu memory pids io
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelModules=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+ReadOnlyPaths=/var/lib/chickadee-landlock-images
+ReadWritePaths=/var/lib/chickadee-landlock
+MemoryMax=5G
+MemorySwapMax=0
+CPUQuota=200%
+TasksMax=640
+LimitNOFILE=1024
+
+[Install]
+WantedBy=multi-user.target

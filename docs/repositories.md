@@ -40,3 +40,9 @@ Public issues describe implementation and generic acceptance. Private issues and
 Notion describe deployment/customer specifics. Never store secret values in
 either tracker. State which version was built and actually deployed; distinguish
 planned interfaces from working code.
+
+## Runner backend policy
+
+The core may expose optional self-hosted execution backends, including Landlock
+process sandboxes. Chickadee Roost/chickadee.run offers disposable VM runners
+only; do not add Landlock to hosted admission, routing or dashboard queues.
