@@ -89,7 +89,9 @@ Unknown nonempty directories require operator inspection, not guessed deletion.
 After terminal exit proof, `work_folder` is removed from the private journal;
 assignment/VM tombstones remain. Existing terminal metadata is scrubbed atomically
 when the new worker opens it. This permits rollback to the preceding worker after
-a full drain/recovery; active host records remain intentionally incompatible.
+a full drain/recovery **and restoration of the old compatible configuration/unit**;
+active host records remain intentionally incompatible. An older binary cannot run
+host_access on an ABI5/memory-pids-only host.
 Do not delete tombstones to downgrade.
 
 ## Prerequisites and checking
