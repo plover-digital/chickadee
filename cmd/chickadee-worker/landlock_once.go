@@ -76,5 +76,5 @@ func runJITOnce(path string) error {
 	}
 	// Cleanup completion is not an assertion that the GitHub job passed.
 	fmt.Println("RUNNER_RETIRED")
-	return nil
+	return engine.CompletionError(c.Identity, assignment)
 }

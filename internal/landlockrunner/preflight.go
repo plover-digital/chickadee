@@ -72,7 +72,11 @@ func CheckSandboxWithAccess(image string, diskGiB int, access *HostAccess, slot,
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "bwrap", args...)
+	bwrap, err := BubblewrapPath()
+	if err != nil {
+		return err
+	}
+	cmd := exec.CommandContext(ctx, bwrap, args...)
 	cmd.ExtraFiles = extra
 	cmd.Env = []string{"PATH=/usr/bin:/bin", "LANG=C.UTF-8"}
 	cmd.Stdout = io.Discard

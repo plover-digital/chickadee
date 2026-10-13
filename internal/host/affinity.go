@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -115,6 +116,15 @@ func AffinityCommand(command string, args []string, ids []int) (*exec.Cmd, error
 	if err := ValidateCPUSet(ids); err != nil {
 		return nil, err
 	}
+	resolved, err := exec.LookPath(command)
+	if err != nil {
+		return nil, fmt.Errorf("affinity executable unavailable")
+	}
+	resolved, err = filepath.Abs(resolved)
+	if err != nil {
+		return nil, err
+	}
+	command = resolved
 	parts := make([]string, len(ids))
 	for i, id := range ids {
 		parts[i] = strconv.Itoa(id)

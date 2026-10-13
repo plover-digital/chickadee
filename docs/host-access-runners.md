@@ -44,7 +44,10 @@ aliases and canonical targets share one normalized mount/Landlock plan. Broad
 host roots, management/image/workspace overlaps, conflicting mounts and special
 files are rejected. Socket endpoints must be direct Unix sockets; only the
 individual endpoint is mounted. `/var/run` aliases the sandbox's `/run`.
-Public CAs and selected resolver/NSS files are mounted; private keys and unrelated
+Both requested aliases and resolved targets are mounted, including symlinked
+site prefixes. `/etc/slurm` is only an example: if `slurm.conf` is under the site's
+installation prefix, expose that configuration path instead; no `/etc` Slurm bind
+is required. Public CAs and selected resolver/NSS files are mounted; private keys and unrelated
 home directories are absent. Exposed runtime trees must be free of secrets.
 Host userland is mutable: policy identity does not certify every runtime file.
 
@@ -83,14 +86,38 @@ requiring emptiness for a replacement; read-only checks never delete data.
 Drain before policy changes/upgrades. Version1 sealed markers remain recoverable;
 version2 host markers require the original policy, workspace and delegated unit.
 Unknown nonempty directories require operator inspection, not guessed deletion.
+After terminal exit proof, `work_folder` is removed from the private journal;
+assignment/VM tombstones remain. Existing terminal metadata is scrubbed atomically
+when the new worker opens it. This permits rollback to the preceding worker after
+a full drain/recovery; active host records remain intentionally incompatible.
+Do not delete tombstones to downgrade.
 
 ## Prerequisites and checking
 
 Build the pinned runner bundle as in [Landlock setup](landlock-runners.md).
 Use a pinned modern bubblewrap supporting all used flags, including `--bind-fd`,
 `--ro-bind-fd`, `--disable-userns` and `--assert-userns-disabled`. An old installed
-binary is not used as a fallback; put the selected binary on the worker's host
-PATH. Unprivileged user namespaces, openat2 no-symlink resolution and delegated
+binary is not used as a fallback. Bubblewrap is resolved to an absolute path from
+**the worker's PATH**, shared by preflight and launch; affinity cannot select a
+second binary from the sandbox's minimal PATH. Preflight prints that path.
+
+If the site package is too old, build unprivileged with GCC, pkg-config and Ninja
+already available. This uses the official 0.11.0 source commit; no sudo/setuid install:
+
+```sh
+python3 -m pip install --user meson
+export PATH="$HOME/.local/bin:$PATH"
+git clone https://github.com/containers/bubblewrap.git bubblewrap-0.11.0
+cd bubblewrap-0.11.0
+git checkout --detach 9ca3b05ec787acfb4b17bed37db5719fa777834f
+meson setup build --prefix="$HOME/.local" -Dman=disabled -Dbash_completion=disabled -Dzsh_completion=disabled
+ninja -C build
+ninja -C build install
+bwrap --version
+```
+
+See the [upstream build instructions](https://github.com/containers/bubblewrap/blob/v0.11.0/README.md#installation).
+Set that PATH in the actual worker service/scope, not just an interactive shell. Unprivileged user namespaces, openat2 no-symlink resolution and delegated
 cgroup-v2 controls must work on the actual distribution/backported kernel.
 
 The existing controller-leaf implementation avoids requiring DelegateSubgroup.
@@ -157,7 +184,10 @@ os.execv("/usr/local/bin/chickadee-worker",
 ```
 
 Use a unique name every attempt. Check the result in GitHub: RUNNER_RETIRED only
-confirms local retirement. If caller/runner fails before ephemeral deregistration,
+confirms local retirement. Standalone mode exits nonzero when local Run returns
+without a valid DONE sequence (EOF, protocol error or deadline), even if cleanup
+succeeds; the host emits a credential-free warning with the execution ID.
+A DONE frame, including the runner's exit code, is not a GitHub job-success assertion. If caller/runner fails before ephemeral deregistration,
 reconcile local exit and remove only the exact owned GitHub runner registration.
 The actual checkout/build path must be disk-backed, not a default `_work` in tmpfs.
 
@@ -210,7 +240,16 @@ is the trusted caller's separate responsibility; a dead runner may require
 [force cancellation](https://docs.github.com/en/rest/actions/workflow-runs#force-cancel-a-workflow-run)
 when ordinary cancellation cannot complete.
 
-Target-owner acceptance remains required: real fresh-JIT checkout/build on ABI5,
+The target owner subsequently reported an ABI5 fixture run of this lifecycle
+([PR review](https://github.com/plover-digital/chickadee/pull/19#issuecomment-6156403356)):
+memory/pids-only delegation, Lustre same-path storage, Munge authentication,
+interactive/batch Slurm, four-rank launch, orphan cleanup and whole-group OOM
+cleanup passed after resolving the selected bubblewrap before affinity wrapping.
+That report uses a substitute run.sh workload, not the actual GitHub runner/JIT
+connection to GHE. The affinity, completion-reporting and drained-journal fixes
+now have regression coverage; real local DONE/interrupted CLI fixtures also pass.
+
+Target-owner real-runner/GHE acceptance remains outstanding: real fresh-JIT checkout/build on ABI5,
 Munge UID match, same-path srun/sbatch --wait/MPI, local path denials, OOM/PID
 containment, cancellation, socket replacement, controller restart, workspace
 cleanup and an observed remote-boundary/cancellation result. Prototype kernel
