@@ -86,6 +86,7 @@ func startHost(ctx context.Context, conf hostconfig.Config, slot int, id string)
 	return vm, err
 }
 func OpenEngine(c Config) (*Engine, error) {
+	c = cloneConfig(c)
 	if c.IsLandlock() {
 		return openEngine(c, func(ctx context.Context, conf hostconfig.Config, slot int, id string) (machine, error) {
 			m, err := landlockrunner.Start(ctx, conf, id, c.LandlockDenyPrefixes)
@@ -103,7 +104,7 @@ func OpenEngine(c Config) (*Engine, error) {
 		return verifyImages(c)
 	}, checkDiskSpace)
 }
-func openEngine(c Config, start startMachine, reap func(string) error, check func(Config) error, spaceCheck func(Config, int64) error) (*Engine, error) {
+func cloneConfig(c Config) Config {
 	c.Profiles = append([]Profile(nil), c.Profiles...)
 	if c.Cgroup != nil {
 		copy := *c.Cgroup
@@ -111,6 +112,12 @@ func openEngine(c Config, start startMachine, reap func(string) error, check fun
 		c.Cgroup = &copy
 	}
 	c.CPUIDs = append([]int(nil), c.CPUIDs...)
+	c.LandlockDenyPrefixes = append([]string(nil), c.LandlockDenyPrefixes...)
+	return c
+}
+
+func openEngine(c Config, start startMachine, reap func(string) error, check func(Config) error, spaceCheck func(Config, int64) error) (*Engine, error) {
+	c = cloneConfig(c)
 	if err := c.Validate(); err != nil {
 		return nil, err
 	}

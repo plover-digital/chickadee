@@ -3,20 +3,23 @@
 package landlockrunner
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/netip"
+	"os"
 	"strings"
 	"sync/atomic"
+	"syscall"
 	"testing"
 	"time"
 )
 
 func TestPublicAddressPolicy(t *testing.T) {
-	for _, text := range []string{"127.0.0.1", "10.1.2.3", "172.16.0.2", "192.168.9.184", "169.254.169.254", "100.64.1.2", "198.18.0.1", "203.0.113.1", "224.0.0.1", "::1", "2001:4860:4860::8888", "::ffff:192.168.0.1"} {
+	for _, text := range []string{"127.0.0.1", "10.1.2.3", "172.16.0.2", "192.168.42.17", "169.254.169.254", "100.64.1.2", "198.18.0.1", "203.0.113.1", "224.0.0.1", "::1", "2001:4860:4860::8888", "::ffff:192.168.0.1"} {
 		if publicAddress(netip.MustParseAddr(text), nil) {
 			t.Fatalf("protected address allowed: %s", text)
 		}
@@ -38,7 +41,7 @@ func relayClient(t *testing.T, r *relay, c net.Conn) *http.Client {
 }
 func TestRelayDeniesPrivateWrongPortAndOwnEgressBeforeDial(t *testing.T) {
 	var calls atomic.Int32
-	for _, target := range []string{"127.0.0.1:443", "169.254.169.254:443", "192.168.9.184:443", "8.8.8.8:443", "1.1.1.1:80", "1.1.1.1:8443", "[::1]:443"} {
+	for _, target := range []string{"127.0.0.1:443", "169.254.169.254:443", "192.168.42.17:443", "8.8.8.8:443", "1.1.1.1:80", "1.1.1.1:8443", "[::1]:443"} {
 		t.Run(target, func(t *testing.T) {
 			parent, child := net.Pipe()
 			r := newRelayWithDial(parent, mustPrefixes([]string{"8.8.8.8/32"}), func(context.Context, string, string) (net.Conn, error) {
@@ -120,5 +123,99 @@ func TestSandboxMountPolicy(t *testing.T) {
 		if strings.Contains(text, forbidden) {
 			t.Fatalf("host resource exposed %s", forbidden)
 		}
+	}
+}
+
+func TestRelayRefreshesHostAddressesAfterWarmStartup(t *testing.T) {
+	parent, child := net.Pipe()
+	var changed atomic.Bool
+	var calls atomic.Int32
+	r := newRelayWithInterfaces(parent, nil, func(context.Context, string, string) (net.Conn, error) {
+		calls.Add(1)
+		return nil, fmt.Errorf("no actual dial")
+	}, func() ([]net.Addr, error) {
+		if changed.Load() {
+			return []net.Addr{&net.IPNet{IP: net.ParseIP("1.1.1.1"), Mask: net.CIDRMask(24, 32)}}, nil
+		}
+		return nil, nil
+	})
+	client := relayClient(t, r, child)
+	for _, want := range []int{502, 403} {
+		req, _ := http.NewRequest("POST", "http://relay/connect", nil)
+		req.Header.Set("X-Target", "1.1.1.1:443")
+		resp, err := client.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != want {
+			t.Fatalf("status %d want %d", resp.StatusCode, want)
+		}
+		changed.Store(true)
+	}
+	if calls.Load() != 1 {
+		t.Fatal("new host address reached dialer")
+	}
+}
+
+func TestCONNECTProxySocketBridgeAndDenial(t *testing.T) {
+	pair, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM|syscall.SOCK_CLOEXEC, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parentFile := os.NewFile(uintptr(pair[0]), "relay")
+	parent, err := net.FileConn(parentFile)
+	parentFile.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var calls atomic.Int32
+	r := newRelayWithDial(parent, nil, func(context.Context, string, string) (net.Conn, error) {
+		calls.Add(1)
+		local, remote := net.Pipe()
+		go func() {
+			defer remote.Close()
+			buf := make([]byte, 4)
+			if _, err := io.ReadFull(remote, buf); err == nil {
+				remote.Write(buf)
+			}
+		}()
+		return local, nil
+	})
+	defer r.Close()
+	p, err := childProxy(os.NewFile(uintptr(pair[1]), "child-relay"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+	for _, target := range []string{"1.1.1.1:443", "169.254.169.254:443"} {
+		local, err := net.DialTimeout("tcp4", "127.0.0.1:3128", time.Second)
+		if err != nil {
+			t.Fatal(err)
+		}
+		local.SetDeadline(time.Now().Add(3 * time.Second))
+		fmt.Fprintf(local, "CONNECT %s HTTP/1.1\r\nHost: %s\r\n\r\n", target, target)
+		reader := bufio.NewReader(local)
+		resp, err := http.ReadResponse(reader, &http.Request{Method: "CONNECT"})
+		if err != nil {
+			local.Close()
+			t.Fatal(err)
+		}
+		if target == "1.1.1.1:443" {
+			if resp.StatusCode != 200 {
+				t.Fatal("CONNECT rejected", resp.StatusCode)
+			}
+			local.Write([]byte("ping"))
+			got := make([]byte, 4)
+			if _, err := io.ReadFull(reader, got); err != nil || string(got) != "ping" {
+				t.Fatalf("bridge failed %q %v", got, err)
+			}
+		} else if resp.StatusCode != 403 {
+			t.Fatal("denial did not propagate", resp.StatusCode)
+		}
+		local.Close()
+	}
+	if calls.Load() != 1 {
+		t.Fatal("protected CONNECT reached dialer")
 	}
 }

@@ -51,18 +51,7 @@ func deniedAddresses(values []string) ([]netip.Prefix, error) {
 	if err := ValidateDenyPrefixes(values); err != nil {
 		return nil, err
 	}
-	out := mustPrefixes(values)
-	addrs, err := net.InterfaceAddrs()
-	if err != nil {
-		return nil, err
-	}
-	for _, a := range addrs {
-		p, err := netip.ParsePrefix(a.String())
-		if err == nil && p.Addr().Is4() {
-			out = append(out, netip.PrefixFrom(p.Addr(), 32))
-		}
-	}
-	return out, nil
+	return mustPrefixes(values), nil
 }
 
 func sandboxArgs(image, exe, runtime string, diskGiB int, probe bool) ([]string, error) {

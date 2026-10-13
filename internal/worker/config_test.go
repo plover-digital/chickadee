@@ -212,3 +212,15 @@ func TestSharedBundleStillValidatesEachProfileManifest(t *testing.T) {
 		}
 	}
 }
+
+func TestConfigCloneOwnsNetworkPolicyAndCgroup(t *testing.T) {
+	c := engineConfig(t)
+	c.LandlockDenyPrefixes = []string{"8.8.8.8/32"}
+	c.Cgroup = &host.CgroupConfig{PidsMax: 256}
+	cloned := cloneConfig(c)
+	c.LandlockDenyPrefixes[0] = "1.1.1.1/32"
+	c.Cgroup.PidsMax = 512
+	if cloned.LandlockDenyPrefixes[0] != "8.8.8.8/32" || cloned.Cgroup.PidsMax != 256 {
+		t.Fatal("caller mutation changed owned policy")
+	}
+}

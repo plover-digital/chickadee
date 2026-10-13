@@ -78,6 +78,10 @@ func newRelay(conn net.Conn, denied []netip.Prefix) *relay {
 	return newRelayWithDial(conn, denied, (&net.Dialer{}).DialContext)
 }
 func newRelayWithDial(conn net.Conn, denied []netip.Prefix, dial func(context.Context, string, string) (net.Conn, error)) *relay {
+	return newRelayWithInterfaces(conn, denied, dial, net.InterfaceAddrs)
+}
+
+func newRelayWithInterfaces(conn net.Conn, denied []netip.Prefix, dial func(context.Context, string, string) (net.Conn, error), interfaces func() ([]net.Addr, error)) *relay {
 	ctx, cancel := context.WithCancel(context.Background())
 	r := &relay{listener: &oneListener{Conn: conn, done: make(chan struct{})}, cancel: cancel, conns: map[net.Conn]bool{}}
 	slots := make(chan struct{}, 32)
@@ -107,8 +111,22 @@ func newRelayWithDial(conn net.Conn, denied []netip.Prefix, dial func(context.Co
 		}
 		// Resolve exactly once; reject mixed public/private answers and dial the
 		// validated numerical address rather than re-resolving a rebinding hostname.
+		// Warm sandboxes can outlive interface changes. Refresh host addresses for
+		// every connection, and fail closed if the current inventory is unavailable.
+		addresses, err := interfaces()
+		if err != nil {
+			http.Error(w, "denied", 403)
+			return
+		}
+		currentDenied := append([]netip.Prefix(nil), denied...)
+		for _, address := range addresses {
+			p, err := netip.ParsePrefix(address.String())
+			if err == nil && p.Addr().Unmap().Is4() {
+				currentDenied = append(currentDenied, netip.PrefixFrom(p.Addr().Unmap(), 32))
+			}
+		}
 		for _, ip := range ips {
-			if !publicAddress(ip, denied) {
+			if !publicAddress(ip, currentDenied) {
 				http.Error(w, "denied", 403)
 				return
 			}
@@ -177,7 +195,19 @@ func (r *relay) Close() {
 	}
 }
 
-func childProxy(file *os.File) (*http.Server, error) {
+type proxy struct {
+	server    *http.Server
+	transport *http.Transport
+	conn      net.Conn
+}
+
+func (p *proxy) Close() error {
+	p.server.Close()
+	p.transport.CloseIdleConnections()
+	return p.conn.Close()
+}
+
+func childProxy(file *os.File) (*proxy, error) {
 	conn, err := net.FileConn(file)
 	file.Close()
 	if err != nil {
@@ -243,5 +273,5 @@ func childProxy(file *os.File) (*http.Server, error) {
 	go server.Serve(listener)
 	// The sandbox process lifetime closes its inherited relay connection. Never
 	// export a listener or management socket to the host namespace.
-	return server, nil
+	return &proxy{server: server, transport: transport, conn: conn}, nil
 }

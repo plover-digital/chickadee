@@ -46,7 +46,9 @@ rejects private/loopback/link-local/metadata/reserved and host addresses, and di
 only validated public IPv4 on 443. It never exposes a host listener or mounted
 host socket. Set `landlock_deny_prefixes` to every host **public NAT/egress** address
 as well as any additional restricted networks; local interface addresses are
-also blocked automatically. Keep these addresses current. IPv6, direct DNS,
+also refreshed and blocked for every connection, including after a sandbox has
+become warm. Interface inventory errors fail closed. Keep configured public NAT
+addresses current. IPv6, direct DNS,
 SSH, arbitrary outbound ports and ordinary outbound HTTP are unsupported.
 Proxy-aware HTTPS clients work; clients ignoring proxy variables have no direct
 network route. Landlock port rules do not enforce IP destination policy, so this
@@ -151,8 +153,26 @@ network/port refusals before dialing, private HTTP/2 relay streaming, mandatory
 resource/network configuration and mixed-backend rejection, plus existing
 reservation/replay/drain/uncertain-cleanup lifecycle tests. Real-kernel preflight
 checks private writable storage, hidden management paths, immutable runtime,
-private loopback and absence of direct external networking. A real Actions job
-and restart/cgroup-exit checks are required before deployment.
+private loopback and absence of direct external networking. Relay tests also
+cover the complete CONNECT/socket bridge, denial propagation and host-address
+changes after warm startup. A delegated opt-in kernel test leaves descendants
+running and verifies both normal cleanup and recovery after guardian loss:
+
+```sh
+go test -race -c -o /tmp/chickadee-host-cgroup-tests ./internal/host
+sudo systemd-run --unit=chickadee-cgroup-test --wait --collect \
+  --property="User=$(id -un)" --property=Delegate=yes \
+  --property=MemoryMax=2G --property=MemorySwapMax=0 \
+  --property=TasksMax=640 --setenv=CHICKADEE_CGROUP_SMOKE=1 \
+  /tmp/chickadee-host-cgroup-tests -test.v \
+  -test.run '^TestRealExecutionGroupKillsDescendantsAndRecovers$'
+```
+
+The test creates only its own execution cgroups in that transient unit. Normal
+cleanup checks `populated 0` before removal; recovery kills surviving descendants
+and requires the same kernel empty-group proof before removal. This does not
+replace full controller-crash acceptance. A real Actions job and deployment
+restart checks are required before relying on this backend.
 
 Sources: [Landlock kernel documentation](https://docs.kernel.org/userspace-api/landlock.html),
 [Go API](https://pkg.go.dev/github.com/landlock-lsm/go-landlock/landlock),
