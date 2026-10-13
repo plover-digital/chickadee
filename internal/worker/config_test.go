@@ -196,3 +196,19 @@ func TestLandlockModeRequiresResourceAndNetworkPolicyAndDedicatedWorker(t *testi
 		t.Fatal("invalid network policy accepted")
 	}
 }
+
+func TestSharedBundleStillValidatesEachProfileManifest(t *testing.T) {
+	for _, machine := range []string{"q35", "microvm"} {
+		c := imageFixture(t)
+		other := c.Profiles[0]
+		other.ID = "other"
+		other.Machine = machine
+		if machine == "q35" {
+			other.DiskGiB++
+		}
+		c.Profiles = append(c.Profiles, other)
+		if err := verifyImages(c); err == nil {
+			t.Fatal("shared bundle bypassed per-profile resource/backend validation")
+		}
+	}
+}

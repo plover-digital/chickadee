@@ -180,10 +180,11 @@ func verifyImages(c Config) error {
 	}
 	seen := map[string]bool{}
 	for _, p := range c.Profiles {
-		if seen[p.ImageDir+"|"+p.Digest] {
+		key := fmt.Sprintf("%s|%s|%s|%d", p.ImageDir, p.Digest, p.Machine, p.DiskGiB)
+		if seen[key] {
 			continue
 		}
-		seen[p.ImageDir+"|"+p.Digest] = true
+		seen[key] = true
 		sums, err := os.ReadFile(filepath.Join(p.ImageDir, "SHA256SUMS"))
 		if err != nil || len(sums) > 128*1024 {
 			return fmt.Errorf("image checksum list unavailable")

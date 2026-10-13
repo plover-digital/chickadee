@@ -57,7 +57,11 @@ func TestDiagnosticRejectsSpecialFilesWithoutBlocking(t *testing.T) {
 	if err = os.Symlink(regular, symlink); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{fifo, symlink, dir} {
+	subdir := filepath.Join(dir, "subdir")
+	if err := os.Mkdir(subdir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{fifo, symlink, subdir} {
 		if file, err = openDiagnostic(directory, filepath.Base(name)); err == nil {
 			file.Close()
 			t.Fatalf("accepted nonregular diagnostic %s", name)
