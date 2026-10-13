@@ -75,6 +75,7 @@ type Engine struct {
 	draining   bool
 	fatal      error
 	closed     bool
+	runResults map[string]bool
 	waiters    int
 	nextBoot   map[string]time.Time
 }
@@ -631,8 +632,16 @@ func (e *Engine) Deliver(identity Identity, assignmentID, jit string) error {
 	e.notifyLocked()
 	e.mu.Unlock()
 	go func() {
-		_ = v.vm.Run(jit, time.Duration(e.config.JobTimeoutSeconds)*time.Second, filepath.Join(e.config.StateDir, "logs", v.id+".jsonl"))
+		runErr := v.vm.Run(jit, time.Duration(e.config.JobTimeoutSeconds)*time.Second, filepath.Join(e.config.StateDir, "logs", v.id+".jsonl"))
 		e.mu.Lock()
+		if e.runResults == nil {
+			e.runResults = make(map[string]bool)
+		}
+		e.runResults[v.request.AssignmentID] = runErr != nil
+		if runErr != nil {
+			// Never render guest-controlled errors or configuration.
+			slog.Warn("Runner completion not confirmed", "execution", v.id)
+		}
 		v.state = "retiring"
 		e.notifyLocked()
 		e.mu.Unlock()
@@ -764,4 +773,25 @@ func (c Config) accessPlans() ([]*landlockrunner.AccessPlan, error) {
 		}
 	}
 	return plans, nil
+}
+
+// CompletionError reports a local Run failure separately from proven retirement.
+// It is process-local and is not a GitHub job outcome or durable billing signal.
+func (e *Engine) CompletionError(identity Identity, assignment string) error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if identity != e.config.Identity {
+		return ErrFenced
+	}
+	if !e.closed || !e.draining || len(e.entries) != 0 {
+		return ErrTransition
+	}
+	failed, known := e.runResults[assignment]
+	if !known {
+		return ErrNotFound
+	}
+	if failed {
+		return fmt.Errorf("runner completion not confirmed")
+	}
+	return nil
 }

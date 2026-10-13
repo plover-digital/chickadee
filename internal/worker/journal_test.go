@@ -3,6 +3,8 @@
 package worker
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/plover-digital/chickadee/workerapi"
@@ -12,6 +14,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func fixture() Request {
@@ -342,5 +345,72 @@ func TestTerminalResourceSummarySurvivesRecovery(t *testing.T) {
 	rows, err := j.Records()
 	if err != nil || len(rows) != 1 || rows[0].Resources == nil || rows[0].Resources.CPUUsec != 1000000 {
 		t.Fatalf("metrics not durable: %v %+v", err, rows)
+	}
+}
+
+func TestDrainedHostJournalRetainsTombstoneWithoutWorkFolder(t *testing.T) {
+	type oldRequest struct {
+		Identity      Identity `json:"identity"`
+		AssignmentID  string   `json:"assignment_id"`
+		VMID          string   `json:"vm_id"`
+		ProfileDigest string   `json:"profile_digest"`
+		CPUs          int      `json:"cpus"`
+		MemoryMiB     int      `json:"memory_mib"`
+		DiskGiB       int      `json:"disk_gib"`
+	}
+	type oldRecord struct {
+		Request     oldRequest                 `json:"request"`
+		State       State                      `json:"state"`
+		CompletedAt time.Time                  `json:"completed_at,omitempty"`
+		Resources   *workerapi.ResourceSummary `json:"resources,omitempty"`
+	}
+	legacyRead := func(raw []byte) error {
+		var old struct {
+			Version  int                  `json:"version"`
+			Identity Identity             `json:"identity"`
+			Records  map[string]oldRecord `json:"records"`
+		}
+		dec := json.NewDecoder(bytes.NewReader(raw))
+		dec.DisallowUnknownFields()
+		return dec.Decode(&old)
+	}
+	dir := privateDir(t)
+	request := fixture()
+	request.WorkFolder = "/shared/work/slot-1"
+	j := openTest(t, dir, request.Identity)
+	reserveSeal(t, j, request)
+	active, _ := os.ReadFile(filepath.Join(dir, "state.json"))
+	if legacyRead(active) == nil {
+		t.Fatal("active host record unexpectedly downgradeable")
+	}
+	proof := ExitProof{VMID: request.VMID, ProcessExitConfirmed: true, DiskRemoved: true}
+	record, err := j.Terminal(request, proof)
+	if err != nil || record.Request.WorkFolder != "" {
+		t.Fatal("terminal metadata retained", err)
+	}
+	if _, err = j.Terminal(request, proof); err != nil {
+		t.Fatal("terminal retry lost idempotence", err)
+	}
+	drained, _ := os.ReadFile(filepath.Join(dir, "state.json"))
+	if err = legacyRead(drained); err != nil {
+		t.Fatal("drained journal rejects old reader", err)
+	}
+	j.Close()
+	// Migrate a terminal snapshot produced by the previous PR revision.
+	var previous snapshot
+	json.Unmarshal(drained, &previous)
+	record = previous.Records[request.AssignmentID]
+	record.Request.WorkFolder = request.WorkFolder
+	previous.Records[request.AssignmentID] = record
+	raw, _ := json.Marshal(previous)
+	os.WriteFile(filepath.Join(dir, "state.json"), raw, 0600)
+	reopened := openTest(t, dir, request.Identity)
+	migrated, _ := os.ReadFile(filepath.Join(dir, "state.json"))
+	if err = legacyRead(migrated); err != nil {
+		t.Fatal("terminal migration incompatible", err)
+	}
+	records, err := reopened.Records()
+	if err != nil || len(records) != 1 || records[0].State != Terminal || records[0].Request.VMID != request.VMID {
+		t.Fatal("tombstone lost", err)
 	}
 }

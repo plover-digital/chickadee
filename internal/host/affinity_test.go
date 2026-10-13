@@ -5,6 +5,8 @@ package host
 import (
 	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -27,7 +29,11 @@ func TestAffinityCommandPreservesDefaultAndWrapsBeforeExecution(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"taskset", "--cpu-list", strconv.Itoa(allowed[0]), "prlimit", "--fsize=1:1", "--", "qemu"}
+	resolved, err := exec.LookPath("prlimit")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"taskset", "--cpu-list", strconv.Itoa(allowed[0]), resolved, "--fsize=1:1", "--", "qemu"}
 	if !reflect.DeepEqual(cmd.Args, want) {
 		t.Fatal("affinity wrapper changed process arguments")
 	}
@@ -130,5 +136,30 @@ func TestAffinityValidationRejectsInvalidDuplicateAndOfflineCPU(t *testing.T) {
 	t.Setenv("PATH", "")
 	if err := ValidateCPUSet(allowed[:1]); err == nil || !strings.Contains(err.Error(), "taskset") {
 		t.Fatal("missing taskset did not fail closed")
+	}
+}
+
+func TestAffinityResolvesWorkerPathBeforeSanitizingChildEnvironment(t *testing.T) {
+	allowed, err := AllowedCPUs()
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	executable := filepath.Join(root, "bwrap")
+	if err := os.WriteFile(executable, []byte("#!/bin/sh\nprintf 'selected-modern-bwrap'\n"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", root+":"+os.Getenv("PATH"))
+	cmd, err := AffinityCommand("bwrap", nil, allowed[:1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cmd.Args[3] != executable || !filepath.IsAbs(cmd.Args[3]) {
+		t.Fatal("affinity wrapper left executable lookup to child PATH")
+	}
+	cmd.Env = []string{"PATH=/usr/bin:/bin"}
+	out, err := cmd.Output()
+	if err != nil || string(out) != "selected-modern-bwrap" {
+		t.Fatal("selected executable changed", err)
 	}
 }

@@ -173,9 +173,21 @@ func Open(dir string, identity Identity) (*Journal, error) {
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return fail(err)
 	}
-	if j.data.Identity != identity || errors.Is(err, os.ErrNotExist) {
+	needsRewrite := false
+	for _, record := range j.data.Records {
+		if record.State == Terminal && record.Request.WorkFolder != "" {
+			needsRewrite = true
+		}
+	}
+	if needsRewrite || j.data.Identity != identity || errors.Is(err, os.ErrNotExist) {
 		next := j.clone()
 		next.Identity = identity
+		for id, record := range next.Records {
+			if record.State == Terminal {
+				record.Request.WorkFolder = ""
+				next.Records[id] = record
+			}
+		}
 		if err = j.commit(next); err != nil {
 			return fail(err)
 		}
@@ -377,6 +389,9 @@ func (j *Journal) RecoverTerminal(assignmentID string, proof ExitProof) (Record,
 }
 func (j *Journal) terminal(request Request, proof ExitProof) (Record, error) {
 	record, ok := j.data.Records[request.AssignmentID]
+	if ok && record.State == Terminal {
+		request.WorkFolder = ""
+	}
 	if !ok || record.Request != request {
 		return Record{}, ErrConflict
 	}
@@ -391,6 +406,7 @@ func (j *Journal) terminal(request Request, proof ExitProof) (Record, error) {
 	}
 	record.Resources = proof.Resources
 	record.State = Terminal
+	record.Request.WorkFolder = ""
 	record.CompletedAt = time.Now().UTC()
 	next := j.clone()
 	next.Records[request.AssignmentID] = record

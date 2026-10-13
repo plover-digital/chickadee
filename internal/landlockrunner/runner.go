@@ -28,6 +28,13 @@ import (
 var sandboxID = regexp.MustCompile(`^[0-9a-f]{16}$`)
 
 func CheckPolicy() error { return CheckPolicyFor(false) }
+func BubblewrapPath() (string, error) {
+	path, err := exec.LookPath("bwrap")
+	if err != nil {
+		return "", fmt.Errorf("bubblewrap is required")
+	}
+	return filepath.Abs(path)
+}
 func CheckPolicyFor(integrated bool) error {
 	abi, err := ll.LandlockGetABIVersion()
 	minimum := 6
@@ -37,22 +44,27 @@ func CheckPolicyFor(integrated bool) error {
 	if err != nil || abi < minimum {
 		return fmt.Errorf("Landlock ABI%d or newer is required", minimum)
 	}
-	if _, err = exec.LookPath("bwrap"); err != nil {
+	if _, err = BubblewrapPath(); err != nil {
 		return fmt.Errorf("bubblewrap is required")
 	}
 	return nil
 }
 
-// PolicySummary reports capability choices, never paths, environment or credentials.
+// PolicySummary reports capabilities and the selected public executable, never
+// environment values or credentials.
 func PolicySummary(integrated bool) (string, error) {
+	path, err := BubblewrapPath()
+	if err != nil {
+		return "", err
+	}
 	abi, err := ll.LandlockGetABIVersion()
 	if err != nil {
 		return "", fmt.Errorf("Landlock ABI unavailable")
 	}
 	if integrated {
-		return fmt.Sprintf("HOST_ACCESS abi=%d policy=V5 enforced=fs,truncate,ioctl omitted=ipc-scope network=host identity=service-primary workspace=unbounded supplementary_groups=unsupported remote_containment=none", abi), nil
+		return fmt.Sprintf("HOST_ACCESS bwrap=%q abi=%d policy=V5 enforced=fs,truncate,ioctl omitted=ipc-scope network=host identity=service-primary workspace=unbounded supplementary_groups=unsupported remote_containment=none", path, abi), nil
 	}
-	return fmt.Sprintf("SEALED abi=%d policy=V6 network=private-relay", abi), nil
+	return fmt.Sprintf("SEALED bwrap=%q abi=%d policy=V6 network=private-relay", path, abi), nil
 }
 func ValidateDenyPrefixes(values []string) error {
 	if len(values) == 0 || len(values) > 32 {
@@ -336,7 +348,11 @@ func StartWithAccess(ctx context.Context, c config.Config, id string, denied []s
 		}
 		m.relay = newRelay(conn, prefixes)
 	}
-	m.cmd, err = host.AffinityCommand("bwrap", args, c.AssignedCPUs)
+	bwrap, err := BubblewrapPath()
+	if err != nil {
+		return fail(err)
+	}
+	m.cmd, err = host.AffinityCommand(bwrap, args, c.AssignedCPUs)
 	if err != nil {
 		return fail(err)
 	}

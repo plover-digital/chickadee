@@ -5,6 +5,8 @@ package worker
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -24,6 +26,7 @@ type fakeMachine struct {
 	finishOnce     sync.Once
 	mu             sync.Mutex
 	runs           int
+	runError       error
 	cleanupError   bool
 	cleanupGate    <-chan struct{}
 	cleanupStarted chan struct{}
@@ -33,10 +36,11 @@ type fakeMachine struct {
 func (f *fakeMachine) Run(_ string, timeout time.Duration, _ string) error {
 	f.mu.Lock()
 	f.runs++
+	runErr := f.runError
 	f.mu.Unlock()
 	select {
 	case <-f.finish:
-		return nil
+		return runErr
 	case <-time.After(timeout):
 		return context.DeadlineExceeded
 	}
@@ -832,4 +836,41 @@ func TestAffinityCleanupFailureRetainsCPUOwnership(t *testing.T) {
 	vm.mu.Unlock()
 	vm.Cleanup()
 	e.journal.Close()
+}
+
+func TestCompletionFailureIsSeparateFromConfirmedCleanup(t *testing.T) {
+	for _, interrupted := range []bool{false, true} {
+		t.Run(fmt.Sprint(interrupted), func(t *testing.T) {
+			c := engineConfig(t)
+			e, f := testEngine(t, c)
+			r := reserveEngine(t, e, c.Identity, "result", c.Profiles[0].ID)
+			f.mu.Lock()
+			vm := f.vms[r.Request.VMID]
+			f.mu.Unlock()
+			if interrupted {
+				vm.mu.Lock()
+				vm.runError = io.EOF
+				vm.mu.Unlock()
+			}
+			if _, err := e.Seal(c.Identity, "result"); err != nil {
+				t.Fatal(err)
+			}
+			if err := e.Deliver(c.Identity, "result", "e30="); err != nil {
+				t.Fatal(err)
+			}
+			e.Drain(c.Identity)
+			vm.complete()
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+			if err := e.Wait(ctx); err != nil {
+				t.Fatal("cleanup failed", err)
+			}
+			if (e.CompletionError(c.Identity, "result") != nil) != interrupted {
+				t.Fatal("completion signal disagrees with run")
+			}
+			if _, err := os.Stat(vm.dir); !os.IsNotExist(err) {
+				t.Fatal("completion failure prevented cleanup")
+			}
+		})
+	}
 }
