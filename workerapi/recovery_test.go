@@ -206,7 +206,7 @@ func TestCanceledInventoryDoesNotInterruptOtherActiveStatus(t *testing.T) {
 	release := make(chan struct{})
 	defer close(release)
 	f := newFixtureHandler(t, func(i Identity, b *testBackend) http.Handler {
-		b.record = Record{Request: Request{i, "assignment", "0123456789abcdef", strings.Repeat("a", 64), 2, 2048, 48}, State: "delivery_intent"}
+		b.record = Record{Request: Request{Identity: i, AssignmentID: "assignment", VMID: "0123456789abcdef", ProfileDigest: strings.Repeat("a", 64), CPUs: 2, MemoryMiB: 2048, DiskGiB: 48}, State: "delivery_intent"}
 		handler := NewHandler(i, b)
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/v1/inventory" {

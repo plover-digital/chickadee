@@ -4,6 +4,7 @@ package worker
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -89,12 +90,18 @@ func OpenEngine(c Config) (*Engine, error) {
 	c = cloneConfig(c)
 	if c.IsLandlock() {
 		return openEngine(c, func(ctx context.Context, conf hostconfig.Config, slot int, id string) (machine, error) {
-			m, err := landlockrunner.Start(ctx, conf, id, c.LandlockDenyPrefixes)
+			m, err := landlockrunner.StartWithAccess(ctx, conf, id, c.LandlockDenyPrefixes, c.profileAccess(conf.WorkerProfileID), slot, c.Budget.MaxVMs, c.protectedFor(conf.WorkerProfileID, slot)...)
 			if m == nil {
 				return nil, err
 			}
 			return m, err
-		}, func(state string) error { return landlockrunner.Reap(state, c.Cgroup) }, verifyImages, checkDiskSpace)
+		}, func(state string) error {
+			plans, err := c.accessPlans()
+			if err != nil {
+				return err
+			}
+			return landlockrunner.ReapWithAccess(state, c.Cgroup, plans)
+		}, verifyImages, checkDiskSpace)
 	}
 
 	return openEngine(c, startHost, host.ReapOwned, func(c Config) error {
@@ -106,6 +113,10 @@ func OpenEngine(c Config) (*Engine, error) {
 }
 func cloneConfig(c Config) Config {
 	c.Profiles = append([]Profile(nil), c.Profiles...)
+	for i := range c.Profiles {
+		c.Profiles[i].HostAccess = landlockrunner.CloneAccess(c.Profiles[i].HostAccess)
+	}
+	c.ProtectedPaths = append([]string(nil), c.ProtectedPaths...)
 	if c.Cgroup != nil {
 		copy := *c.Cgroup
 		copy.IOMax = append([]hostconfig.IOLimit(nil), c.Cgroup.IOMax...)
@@ -139,8 +150,17 @@ func openEngine(c Config, start startMachine, reap func(string) error, check fun
 	if err = host.CheckCgroupBudget(c.Cgroup, c.Budget.MaxMemoryMiB, c.Budget.MaxVMs); err != nil {
 		return fail(err)
 	}
-	if err = host.PrepareCgroup(c.Cgroup); err != nil {
+	if err = host.PrepareCgroup(c.ResourceCgroup()); err != nil {
 		return fail(err)
+	}
+	if c.IsLandlock() {
+		hasCPU, err := host.HasCPUController(c.Cgroup)
+		if err != nil {
+			return fail(err)
+		}
+		if !hasCPU && len(c.CPUIDs) == 0 {
+			return fail(fmt.Errorf("host_access without CPU quota requires cpu_ids"))
+		}
 	}
 	if err = check(c); err != nil {
 		return fail(err)
@@ -198,7 +218,7 @@ func openEngine(c Config, start startMachine, reap func(string) error, check fun
 }
 func (e *Engine) notifyLocked() { close(e.changed); e.changed = make(chan struct{}) }
 func compatible(a, b Profile) bool {
-	return a.Digest == b.Digest && a.Machine == b.Machine && a.CPUs == b.CPUs && a.MemoryMiB == b.MemoryMiB && a.DiskGiB == b.DiskGiB
+	return accessEqual(a.HostAccess, b.HostAccess) && a.Digest == b.Digest && a.Machine == b.Machine && a.CPUs == b.CPUs && a.MemoryMiB == b.MemoryMiB && a.DiskGiB == b.DiskGiB
 }
 func (e *Engine) fitsLocked(p Profile) bool {
 	cpus, memory := p.CPUs, p.MemoryMiB
@@ -283,7 +303,7 @@ func (e *Engine) bootLocked(p Profile) {
 }
 func (e *Engine) boot(ctx context.Context, v *instance) {
 	started := time.Now()
-	c := hostconfig.Config{Cgroup: e.config.Cgroup, AssignedCPUs: append([]int(nil), v.cpuIDs...), StateDir: e.config.StateDir, ImageDir: v.profile.ImageDir, Machine: v.profile.Machine, CPUs: v.profile.CPUs, MemoryMiB: v.profile.MemoryMiB, DiskGiB: v.profile.DiskGiB, BootSeconds: e.config.BootTimeoutSeconds, JobSeconds: e.config.JobTimeoutSeconds}
+	c := hostconfig.Config{WorkerProfileID: v.profile.ID, Cgroup: e.config.ProfileCgroup(v.profile), AssignedCPUs: append([]int(nil), v.cpuIDs...), StateDir: e.config.StateDir, ImageDir: v.profile.ImageDir, Machine: v.profile.Machine, CPUs: v.profile.CPUs, MemoryMiB: v.profile.MemoryMiB, DiskGiB: v.profile.DiskGiB, BootSeconds: e.config.BootTimeoutSeconds, JobSeconds: e.config.JobTimeoutSeconds}
 	vm, err := e.start(ctx, c, v.slot, v.id)
 	if vm == nil && err == nil {
 		err = fmt.Errorf("missing VM lifecycle handle")
@@ -465,7 +485,18 @@ func (e *Engine) Reserve(ctx context.Context, identity Identity, assignmentID, p
 					continue
 				default:
 				}
-				request := Request{Identity: identity, AssignmentID: assignmentID, VMID: v.id, ProfileDigest: p.Digest, CPUs: p.CPUs, MemoryMiB: p.MemoryMiB, DiskGiB: p.DiskGiB}
+				workFolder := ""
+				if p.HostAccess != nil {
+					workFolder, _ = p.HostAccess.Workspace(v.slot, e.config.Budget.MaxVMs)
+				}
+				if checker, ok := v.vm.(interface{ ValidateReady() error }); ok {
+					if err := checker.ValidateReady(); err != nil {
+						v.state = "retiring"
+						go e.cleanup(v)
+						continue
+					}
+				}
+				request := Request{WorkFolder: workFolder, Identity: identity, AssignmentID: assignmentID, VMID: v.id, ProfileDigest: p.Digest, CPUs: p.CPUs, MemoryMiB: p.MemoryMiB, DiskGiB: p.DiskGiB}
 				record, err := e.journal.Reserve(request)
 				if err != nil {
 					e.failLocked(err)
@@ -544,6 +575,13 @@ func (e *Engine) Seal(identity Identity, assignmentID string) (Record, error) {
 	}
 	if v == nil || v.state == "retiring" {
 		return Record{}, ErrTransition
+	}
+	if checker, ok := v.vm.(interface{ ValidateReady() error }); ok {
+		if err := checker.ValidateReady(); err != nil {
+			v.state = "retiring"
+			go e.cleanup(v)
+			return Record{}, ErrTransition
+		}
 	}
 	record, err = e.journal.Seal(record.Request)
 	if err != nil {
@@ -696,4 +734,34 @@ func (e *Engine) Wait(ctx context.Context) error {
 		case <-changed:
 		}
 	}
+}
+
+func accessEqual(a, b *landlockrunner.HostAccess) bool {
+	aa, _ := json.Marshal(a)
+	bb, _ := json.Marshal(b)
+	return string(aa) == string(bb)
+}
+func (c Config) profileAccess(id string) *landlockrunner.HostAccess {
+	for _, p := range c.Profiles {
+		if p.ID == id {
+			return p.HostAccess
+		}
+	}
+	return nil
+}
+func (c Config) accessPlans() ([]*landlockrunner.AccessPlan, error) {
+	var plans []*landlockrunner.AccessPlan
+	for _, p := range c.Profiles {
+		if p.HostAccess == nil {
+			continue
+		}
+		for slot := 1; slot <= c.Budget.MaxVMs; slot++ {
+			plan, err := landlockrunner.NormalizeAccess(p.HostAccess, slot, c.Budget.MaxVMs, c.protectedFor(p.ID, slot))
+			if err != nil {
+				return nil, fmt.Errorf("host access recovery plan unavailable: %w", err)
+			}
+			plans = append(plans, plan)
+		}
+	}
+	return plans, nil
 }

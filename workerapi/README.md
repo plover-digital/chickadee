@@ -87,3 +87,8 @@ still requires complete process-tree exit and writable-state cleanup.
 
 Landlock is exclusive to independent self-hosted deployments. chickadee.run and
 Roost service routing accept VM backends only.
+
+Host-integrated Landlock records may include `request.work_folder`, a bounded
+worker-selected absolute path for fresh JIT generation after Reserve/Seal.
+Upgrade strict clients before enabling these profiles; legacy records omit it.
+See [host-access setup](../docs/host-access-runners.md).

@@ -54,11 +54,21 @@ func main() {
 			err = worker.CheckConfig(c.Config)
 		}
 		if err == nil {
-			err = landlockrunner.CheckSandbox(c.Profiles[0].ImageDir, c.Profiles[0].DiskGiB)
+			err = worker.CheckLandlockSandboxes(c.Config)
 		}
 		if err != nil {
 			slog.Error("Landlock preflight failed", "reason", err.Error())
 			os.Exit(1)
+		}
+		for _, p := range c.Profiles {
+			if p.HostAccess != nil {
+				summary, err := landlockrunner.PolicySummary(true)
+				if err != nil {
+					slog.Error("Landlock capability report unavailable")
+					os.Exit(1)
+				}
+				fmt.Println(summary)
+			}
 		}
 		fmt.Println("LANDLOCK_SANDBOX_VERIFIED")
 		return
@@ -97,6 +107,7 @@ func load(path string) (configuration, error) {
 	if d.Decode(&c) != nil || d.Decode(new(any)) != io.EOF {
 		return c, fmt.Errorf("invalid worker configuration")
 	}
+	c.ProtectedPaths = []string{path, c.TLS.KeyFile, c.TLS.CertificateFile, c.TLS.CAFile}
 	return c, c.Config.Validate()
 }
 func wireIdentity(i worker.Identity) workerapi.Identity {
@@ -121,8 +132,10 @@ func run(path string, check bool) error {
 		if err = worker.CheckConfig(c.Config); err != nil {
 			return err
 		}
-		if err = landlockrunner.CheckSandbox(c.Profiles[0].ImageDir, c.Profiles[0].DiskGiB); err != nil {
-			return err
+		if c.Profiles[0].HostAccess == nil {
+			if err = landlockrunner.CheckSandbox(c.Profiles[0].ImageDir, c.Profiles[0].DiskGiB); err != nil {
+				return err
+			}
 		}
 	} else if err = host.CheckSandbox(); err != nil {
 		return err
@@ -210,7 +223,7 @@ func translate(err error) error {
 }
 func wireRecord(r worker.Record) workerapi.Record {
 	q := r.Request
-	return workerapi.Record{Request: workerapi.Request{Identity: wireIdentity(q.Identity), AssignmentID: q.AssignmentID, VMID: q.VMID, ProfileDigest: q.ProfileDigest, CPUs: q.CPUs, MemoryMiB: q.MemoryMiB, DiskGiB: q.DiskGiB}, State: string(r.State), CompletedAt: r.CompletedAt, Resources: r.Resources}
+	return workerapi.Record{Request: workerapi.Request{Identity: wireIdentity(q.Identity), AssignmentID: q.AssignmentID, VMID: q.VMID, ProfileDigest: q.ProfileDigest, CPUs: q.CPUs, MemoryMiB: q.MemoryMiB, DiskGiB: q.DiskGiB, WorkFolder: q.WorkFolder}, State: string(r.State), CompletedAt: r.CompletedAt, Resources: r.Resources}
 }
 func (a *engineAdapter) Inventory() (workerapi.Inventory, error) {
 	v, e := a.engine.Inventory()

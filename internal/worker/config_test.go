@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/plover-digital/chickadee/internal/host"
+	"github.com/plover-digital/chickadee/internal/landlockrunner"
 	"os"
 	"path/filepath"
 	"strings"
@@ -222,5 +223,43 @@ func TestConfigCloneOwnsNetworkPolicyAndCgroup(t *testing.T) {
 	c.Cgroup.PidsMax = 512
 	if cloned.LandlockDenyPrefixes[0] != "8.8.8.8/32" || cloned.Cgroup.PidsMax != 256 {
 		t.Fatal("caller mutation changed owned policy")
+	}
+}
+
+func TestHostAccess32SlotsAndIndependentPolicy(t *testing.T) {
+	root, err := os.MkdirTemp("/var/tmp", "chickadee-worker-slots-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(root)
+	c := engineConfig(t)
+	c.Profiles[0].Machine = "landlock"
+	c.Profiles[0].CPUs = 1
+	c.Profiles[0].MemoryMiB = 512
+	c.Profiles[0].Warm = 0
+	c.Cgroup = &host.CgroupConfig{PidsMax: 128}
+	c.Budget = Budget{MaxVMs: 32, MaxCPUs: 32, MaxMemoryMiB: 32 * 512}
+	c.Profiles[0].HostAccess = &landlockrunner.HostAccess{WorkDir: filepath.Join(root, "slot-{slot}"), Env: map[string]string{"PATH": "/usr/bin:/bin"}}
+	for i := 1; i <= 32; i++ {
+		os.Mkdir(filepath.Join(root, fmt.Sprintf("slot-%d", i)), 0700)
+	}
+	if err = c.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	if !c.ResourceCgroup().AllowMissingCPUAndIO {
+		t.Fatal("host controller policy not selected")
+	}
+	copied := cloneConfig(c)
+	c.Profiles[0].HostAccess.Env["PATH"] = "changed"
+	if copied.Profiles[0].HostAccess.Env["PATH"] != "/usr/bin:/bin" {
+		t.Fatal("nested policy was not copied")
+	}
+	if compatible(c.Profiles[0], copied.Profiles[0]) {
+		t.Fatal("different trust/runtime policies share warm executions")
+	}
+	bad := cloneConfig(c)
+	bad.Profiles[0].HostAccess.WorkDir = filepath.Join(root, "slot-1")
+	if bad.Validate() == nil {
+		t.Fatal("32 executions sharing one directory accepted")
 	}
 }

@@ -89,7 +89,8 @@ func readControl(root, name string) (string, error) {
 	}
 	return strings.TrimSpace(string(data)), nil
 }
-func requireControllers(root string) error {
+func requireControllers(root string) error { return requireControllersFor(root, nil) }
+func requireControllersFor(root string, c *CgroupConfig) error {
 	value, err := readControl(root, "cgroup.controllers")
 	if err != nil {
 		return err
@@ -98,9 +99,16 @@ func requireControllers(root string) error {
 	for _, name := range strings.Fields(value) {
 		present[name] = true
 	}
-	for _, name := range []string{"cpu", "memory", "pids", "io"} {
+	required := []string{"cpu", "memory", "pids", "io"}
+	if c != nil && c.AllowMissingCPUAndIO {
+		required = []string{"memory", "pids"}
+		if c.IOWeight != 0 || len(c.IOMax) > 0 {
+			required = append(required, "io")
+		}
+	}
+	for _, name := range required {
 		if !present[name] {
-			return fmt.Errorf("delegation requires cpu memory pids io controllers")
+			return fmt.Errorf("delegation requires controller %s", name)
 		}
 	}
 	domain, err := readControl(root, "cgroup.type")
@@ -120,8 +128,13 @@ func CheckCgroup(c *CgroupConfig) error {
 	if err != nil {
 		return err
 	}
-	if err = requireControllers(root); err != nil {
+	if err = requireControllersFor(root, c); err != nil {
 		return err
+	}
+	for _, name := range []string{"memory.max", "memory.swap.max", "memory.oom.group", "pids.max"} {
+		if _, err = readControl(root, name); err != nil {
+			return err
+		}
 	}
 	for _, limit := range c.IOMax {
 		if _, err = os.Stat(filepath.Join("/sys/dev/block", limit.Device)); err != nil {
@@ -175,7 +188,21 @@ func PrepareCgroup(c *CgroupConfig) error {
 	if err = writeControl(leaf, "cgroup.procs", strconv.Itoa(os.Getpid())); err != nil {
 		return err
 	}
-	return writeControl(root, "cgroup.subtree_control", "+cpu +memory +pids +io")
+	controllers := "+cpu +memory +pids +io"
+	if c.AllowMissingCPUAndIO {
+		available, err := readControl(root, "cgroup.controllers")
+		if err != nil {
+			return err
+		}
+		var enabled []string
+		for _, name := range strings.Fields(available) {
+			if name == "cpu" || name == "memory" || name == "pids" || name == "io" {
+				enabled = append(enabled, "+"+name)
+			}
+		}
+		controllers = strings.Join(enabled, " ")
+	}
+	return writeControl(root, "cgroup.subtree_control", controllers)
 }
 
 var ownedCgroup = regexp.MustCompile(`^chickadee-vm-[0-9a-f]{16}$`)
@@ -219,6 +246,9 @@ func createCgroup(c *CgroupConfig, id string, cpus, memoryMiB int) (*vmCgroup, e
 	if err != nil {
 		return nil, err
 	}
+	if err := requireControllersFor(root, c); err != nil {
+		return nil, err
+	}
 	name := "chickadee-vm-" + id
 	if !ownedCgroup.MatchString(name) {
 		return nil, fmt.Errorf("invalid cgroup VM identity")
@@ -228,7 +258,20 @@ func createCgroup(c *CgroupConfig, id string, cpus, memoryMiB int) (*vmCgroup, e
 		return nil, fmt.Errorf("VM cgroup already exists or cannot be created")
 	}
 	group := &vmCgroup{path: path}
-	if err = cgroupLimits(normalizedCgroup(c), cpus, memoryMiB, func(name, value string) error { return writeControl(path, name, value) }); err != nil {
+	available, readErr := readControl(root, "cgroup.controllers")
+	if readErr != nil {
+		return group, readErr
+	}
+	present := map[string]bool{}
+	for _, name := range strings.Fields(available) {
+		present[name] = true
+	}
+	if err = cgroupLimits(normalizedCgroup(c), cpus, memoryMiB, func(name, value string) error {
+		if c.AllowMissingCPUAndIO && ((!present["cpu"] && name == "cpu.max") || (!present["io"] && (name == "io.weight" || name == "io.max"))) {
+			return nil
+		}
+		return writeControl(path, name, value)
+	}); err != nil {
 		return group, err
 	}
 	fd, err := syscall.Open(path, syscall.O_RDONLY|syscall.O_DIRECTORY|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0)
@@ -320,4 +363,23 @@ func checkParentMemory(value string, required int64) error {
 		return fmt.Errorf("delegated memory.max must cover guest budget, per-VM overhead and controller headroom")
 	}
 	return nil
+}
+
+// HasCPUController checks effective delegation, never converts a failed write
+// into permission to run without a configured control.
+func HasCPUController(c *CgroupConfig) (bool, error) {
+	root, err := delegatedRoot(c)
+	if err != nil {
+		return false, err
+	}
+	value, err := readControl(root, "cgroup.controllers")
+	if err != nil {
+		return false, err
+	}
+	for _, name := range strings.Fields(value) {
+		if name == "cpu" {
+			return true, nil
+		}
+	}
+	return false, nil
 }

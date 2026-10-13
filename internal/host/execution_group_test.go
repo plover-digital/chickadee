@@ -5,8 +5,10 @@ package host
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"testing"
@@ -87,5 +89,75 @@ func TestRealExecutionGroupKillsDescendantsAndRecovers(t *testing.T) {
 				t.Fatal("recovery not idempotent", err)
 			}
 		})
+	}
+}
+
+func TestRealHostAccessMemoryPidsOnly(t *testing.T) {
+	if os.Getenv("CHICKADEE_CGROUP_SMOKE") != "1" {
+		t.Skip("requires isolated delegated unit")
+	}
+	base := &CgroupConfig{}
+	if err := PrepareCgroup(base); err != nil {
+		t.Fatal(err)
+	}
+	root, err := delegatedRoot(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	limited := filepath.Join(root, "limited")
+	nested := filepath.Join(limited, "worker")
+	if err = os.Mkdir(limited, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err = writeControl(limited, "cgroup.subtree_control", "+memory +pids"); err != nil {
+		t.Fatal(err)
+	}
+	if err = os.Mkdir(nested, 0755); err != nil {
+		t.Fatal(err)
+	}
+	writeControl(nested, "memory.max", "2147483648")
+	if err = writeControl(nested, "cgroup.procs", fmt.Sprint(os.Getpid())); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		writeControl(filepath.Join(root, "controller"), "cgroup.procs", fmt.Sprint(os.Getpid()))
+		os.Remove(filepath.Join(nested, "controller"))
+		os.Remove(nested)
+		os.Remove(limited)
+	}()
+	c := &CgroupConfig{Root: nested, AllowMissingCPUAndIO: true}
+	if err = PrepareCgroup(c); err != nil {
+		t.Fatal(err)
+	}
+	if has, err := HasCPUController(c); err != nil || has {
+		t.Fatal("expected memory/pids-only delegation", has, err)
+	}
+	strict := *c
+	strict.AllowMissingCPUAndIO = false
+	if CheckCgroup(&strict) == nil {
+		t.Fatal("sealed resource requirements relaxed")
+	}
+	explicit := *c
+	explicit.IOWeight = 25
+	if CheckCgroup(&explicit) == nil {
+		t.Fatal("explicit unavailable I/O accepted")
+	}
+	group, err := NewExecutionGroup(c, NewID(), 1, 128)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer group.Remove()
+	if _, err = os.Stat(filepath.Join(group.group.path, "cpu.max")); !os.IsNotExist(err) {
+		t.Fatal("unexpected CPU quota control")
+	}
+	for _, name := range []string{"memory.max", "memory.swap.max", "memory.oom.group", "pids.max"} {
+		if _, err = readControl(group.group.path, name); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	if err = group.Stop(ctx); err != nil {
+		t.Fatal(err)
 	}
 }

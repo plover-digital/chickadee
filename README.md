@@ -104,3 +104,7 @@ shares the host kernel/read-only userland; it does not replace VM profiles.
 
 Landlock is a self-hosted option only. The chickadee.run hosted service provides
 disposable VM runners and does not offer process sandboxes.
+
+Optional [host-access profiles](docs/host-access-runners.md) support strict ABI5,
+site tools, socket authority, host networking and separate fixed slot workspaces
+for trusted self-hosted workflows. They are not available on chickadee.run.

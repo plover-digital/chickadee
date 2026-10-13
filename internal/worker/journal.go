@@ -45,6 +45,7 @@ type Identity struct {
 // Request binds one unique assignment to one unique VM and immutable profile.
 // ProfileDigest is a content digest, never a local image path or runner label.
 type Request struct {
+	WorkFolder    string   `json:"work_folder,omitempty"`
 	Identity      Identity `json:"identity"`
 	AssignmentID  string   `json:"assignment_id"`
 	VMID          string   `json:"vm_id"`
@@ -102,7 +103,7 @@ func validIdentity(i Identity) bool {
 	return idPattern.MatchString(i.WorkerID) && idPattern.MatchString(i.BrokerID) && i.Generation > 0
 }
 func validRequest(r Request) bool {
-	return validIdentity(r.Identity) && idPattern.MatchString(r.AssignmentID) && idPattern.MatchString(r.VMID) && digestPattern.MatchString(r.ProfileDigest) && r.CPUs > 0 && r.CPUs <= 256 && r.MemoryMiB > 0 && r.MemoryMiB <= 1<<20 && r.DiskGiB > 0 && r.DiskGiB <= 1<<20
+	return workerapi.ValidWorkFolder(r.WorkFolder) && validIdentity(r.Identity) && idPattern.MatchString(r.AssignmentID) && idPattern.MatchString(r.VMID) && digestPattern.MatchString(r.ProfileDigest) && r.CPUs > 0 && r.CPUs <= 256 && r.MemoryMiB > 0 && r.MemoryMiB <= 1<<20 && r.DiskGiB > 0 && r.DiskGiB <= 1<<20
 }
 func ownedPrivate(info os.FileInfo, regular bool) bool {
 	stat, ok := info.Sys().(*syscall.Stat_t)

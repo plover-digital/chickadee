@@ -22,19 +22,37 @@ import (
 	"github.com/plover-digital/chickadee/internal/config"
 	"github.com/plover-digital/chickadee/internal/host"
 	"github.com/plover-digital/chickadee/internal/protocol"
+	"golang.org/x/sys/unix"
 )
 
 var sandboxID = regexp.MustCompile(`^[0-9a-f]{16}$`)
 
-func CheckPolicy() error {
+func CheckPolicy() error { return CheckPolicyFor(false) }
+func CheckPolicyFor(integrated bool) error {
 	abi, err := ll.LandlockGetABIVersion()
-	if err != nil || abi < 6 {
-		return fmt.Errorf("Landlock ABI6 or newer is required")
+	minimum := 6
+	if integrated {
+		minimum = 5
+	}
+	if err != nil || abi < minimum {
+		return fmt.Errorf("Landlock ABI%d or newer is required", minimum)
 	}
 	if _, err = exec.LookPath("bwrap"); err != nil {
 		return fmt.Errorf("bubblewrap is required")
 	}
 	return nil
+}
+
+// PolicySummary reports capability choices, never paths, environment or credentials.
+func PolicySummary(integrated bool) (string, error) {
+	abi, err := ll.LandlockGetABIVersion()
+	if err != nil {
+		return "", fmt.Errorf("Landlock ABI unavailable")
+	}
+	if integrated {
+		return fmt.Sprintf("HOST_ACCESS abi=%d policy=V5 enforced=fs,truncate,ioctl omitted=ipc-scope network=host identity=service-primary workspace=unbounded supplementary_groups=unsupported remote_containment=none", abi), nil
+	}
+	return fmt.Sprintf("SEALED abi=%d policy=V6 network=private-relay", abi), nil
 }
 func ValidateDenyPrefixes(values []string) error {
 	if len(values) == 0 || len(values) > 32 {
@@ -65,12 +83,49 @@ func publicRuntimeTarget(target string) bool {
 }
 
 func sandboxArgs(image, exe, runtime string, diskGiB int, probe bool) ([]string, error) {
+	return sandboxArgsWithAccess(image, exe, runtime, diskGiB, probe, nil)
+}
+func sandboxArgsWithAccess(image, exe, runtime string, diskGiB int, probe bool, plan *AccessPlan) ([]string, error) {
 	for _, p := range []string{image, exe, runtime} {
 		if !filepath.IsAbs(p) || filepath.Clean(p) != p {
 			return nil, fmt.Errorf("clean absolute sandbox paths required")
 		}
 	}
 	args := []string{"--unshare-user", "--unshare-pid", "--unshare-net", "--unshare-ipc", "--unshare-uts", "--unshare-cgroup", "--disable-userns", "--assert-userns-disabled", "--uid", "1000", "--gid", "1000", "--hostname", "chickadee-sandbox", "--die-with-parent", "--new-session", "--as-pid-1", "--cap-drop", "ALL", "--clearenv", "--setenv", "PATH", "/usr/bin:/bin", "--setenv", "LANG", "C.UTF-8", "--proc", "/proc", "--dev", "/dev", "--size", fmt.Sprint(int64(diskGiB) << 30), "--tmpfs", "/job", "--dir", "/job/home", "--dir", "/job/home/work", "--dir", "/job/tmp", "--symlink", "/job/home", "/home/runner", "--symlink", "/job/tmp", "/tmp"}
+	if plan != nil {
+		filtered := make([]string, 0, len(args))
+		for i := 0; i < len(args); i++ {
+			if args[i] == "--unshare-net" {
+				continue
+			}
+			if args[i] == "--uid" {
+				filtered = append(filtered, "--uid", fmt.Sprint(plan.UID))
+				i++
+				continue
+			}
+			if args[i] == "--gid" {
+				filtered = append(filtered, "--gid", fmt.Sprint(plan.GID))
+				i++
+				continue
+			}
+			filtered = append(filtered, args[i])
+		}
+		args = filtered
+		payload, _ := json.Marshal(plan)
+		args = append(args, "--setenv", "CHICKADEE_HOST_ACCESS", string(payload))
+		args = append(args, "--dir", "/var", "--symlink", "/run", "/var/run", "--bind-fd", "3", plan.WorkDir)
+		for i, m := range plan.Mounts {
+			args = append(args, "--ro-bind-fd", fmt.Sprint(4+i), m.Target)
+		}
+		for _, name := range []string{"/etc/nsswitch.conf", "/etc/resolv.conf", "/etc/hosts"} {
+			if source, err := filepath.EvalSymlinks(name); err == nil {
+				info, e := os.Stat(source)
+				if e == nil && info.Mode().IsRegular() {
+					args = append(args, "--ro-bind", source, name)
+				}
+			}
+		}
+	}
 	for _, p := range []string{"/usr", "/bin", "/sbin", "/lib", "/lib64"} {
 		if _, err := os.Stat(p); err == nil {
 			args = append(args, "--ro-bind", p, p)
@@ -125,7 +180,11 @@ func sandboxArgs(image, exe, runtime string, diskGiB int, probe bool) ([]string,
 		args = append(args, "--ro-bind", ca, target)
 	}
 	for _, name := range []string{"passwd", "group"} {
-		args = append(args, "--ro-bind", filepath.Join(runtime, name), "/etc/"+name)
+		source := filepath.Join(runtime, name)
+		if plan != nil {
+			source = "/etc/" + name
+		}
+		args = append(args, "--ro-bind", source, "/etc/"+name)
 	}
 	args = append(args, "--ro-bind", filepath.Join(image, "runner.tar.gz"), "/image/runner.tar.gz", "--ro-bind", exe, "/engine", "--chdir", "/job", "--", "/engine", "-landlock-child")
 	if probe {
@@ -135,6 +194,10 @@ func sandboxArgs(image, exe, runtime string, diskGiB int, probe bool) ([]string,
 }
 
 type Runner struct {
+	workspace               *Workspace
+	workspaceOwned          bool
+	plan                    *AccessPlan
+	pins                    []mountIdentity
 	mu                      sync.Mutex
 	dir                     string
 	cmd                     *exec.Cmd
@@ -151,15 +214,22 @@ type Runner struct {
 }
 
 func Start(ctx context.Context, c config.Config, id string, denied []string) (*Runner, error) {
+	return StartWithAccess(ctx, c, id, denied, nil, 1, 1)
+}
+func StartWithAccess(ctx context.Context, c config.Config, id string, denied []string, access *HostAccess, slot, maxSlots int, protected ...string) (*Runner, error) {
 	if !sandboxID.MatchString(id) || c.Machine != "landlock" || c.Cgroup == nil {
 		return nil, fmt.Errorf("invalid Landlock execution configuration")
 	}
-	if err := CheckPolicy(); err != nil {
+	if err := CheckPolicyFor(access != nil); err != nil {
 		return nil, err
 	}
-	prefixes, err := deniedAddresses(denied)
-	if err != nil {
-		return nil, err
+	var prefixes []netip.Prefix
+	var err error
+	if access == nil {
+		prefixes, err = deniedAddresses(denied)
+		if err != nil {
+			return nil, err
+		}
 	}
 	dir := filepath.Join(c.StateDir, "vms", id)
 	if err = os.Mkdir(dir, 0700); err != nil {
@@ -167,13 +237,56 @@ func Start(ctx context.Context, c config.Config, id string, denied []string) (*R
 	}
 	m := &Runner{dir: dir, wait: make(chan struct{}), exited: make(chan struct{})}
 	fail := func(err error) (*Runner, error) { return m, err }
+	plan, err := NormalizeAccess(access, slot, maxSlots, protectedPaths(c.StateDir, c.ImageDir, protected))
+	if err != nil {
+		return fail(err)
+	}
+	m.plan = plan
+	if plan != nil {
+		m.workspace, err = LockWorkspace(plan.WorkDir)
+		if err != nil {
+			return fail(err)
+		}
+		if err = m.workspace.Empty(); err != nil {
+			return fail(err)
+		}
+	}
 	groupPath, err := host.ExecutionGroupPath(c.Cgroup, id)
 	if err != nil {
 		return fail(err)
 	}
-	marker, _ := json.Marshal(map[string]any{"version": 1, "backend": "landlock", "id": id, "cgroup_path": groupPath})
+	value := sandboxMarker{Version: 1, Backend: "landlock", ID: id, CgroupPath: groupPath}
+	if plan != nil {
+		value.Version = 2
+		value.AccessHash = plan.Hash
+		value.WorkDir = plan.WorkDir
+		value.Device = m.workspace.Device
+		value.Inode = m.workspace.Inode
+	}
+	marker, _ := json.Marshal(value)
 	if err = os.WriteFile(filepath.Join(dir, "sandbox.json"), marker, 0600); err != nil {
 		return fail(err)
+	}
+	markerFile, e := os.OpenFile(filepath.Join(dir, "sandbox.json"), os.O_RDWR, 0)
+	if e != nil {
+		return fail(e)
+	}
+	e = markerFile.Sync()
+	markerFile.Close()
+	if e != nil {
+		return fail(e)
+	}
+	markerDir, e := os.Open(dir)
+	if e != nil {
+		return fail(e)
+	}
+	e = markerDir.Sync()
+	markerDir.Close()
+	if e != nil {
+		return fail(e)
+	}
+	if plan != nil {
+		m.workspaceOwned = true
 	}
 	for name, data := range map[string]string{"passwd": "runner:x:1000:1000:Chickadee:/home/runner:/bin/bash\n", "group": "runner:x:1000:\n"} {
 		if err = os.WriteFile(filepath.Join(dir, name), []byte(data), 0600); err != nil {
@@ -184,29 +297,51 @@ func Start(ctx context.Context, c config.Config, id string, denied []string) (*R
 	if err != nil {
 		return fail(err)
 	}
-	args, err := sandboxArgs(c.ImageDir, exe, dir, c.DiskGiB, false)
+	args, err := sandboxArgsWithAccess(c.ImageDir, exe, dir, c.DiskGiB, false, plan)
 	if err != nil {
 		return fail(err)
 	}
-	pair, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM|syscall.SOCK_CLOEXEC, 0)
-	if err != nil {
-		return fail(err)
+	var extra []*os.File
+	if plan != nil {
+		extra = append(extra, m.workspace.file)
+		for _, mount := range plan.Mounts {
+			file, identity, e := pinMount(mount)
+			if e != nil {
+				for _, f := range extra[1:] {
+					f.Close()
+				}
+				return fail(e)
+			}
+			extra = append(extra, file)
+			m.pins = append(m.pins, identity)
+		}
+		defer func() {
+			for _, f := range extra[1:] {
+				f.Close()
+			}
+		}()
+	} else {
+		pair, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM|syscall.SOCK_CLOEXEC, 0)
+		if err != nil {
+			return fail(err)
+		}
+		parent := os.NewFile(uintptr(pair[0]), "relay-parent")
+		child := os.NewFile(uintptr(pair[1]), "relay-child")
+		defer child.Close()
+		extra = append(extra, child)
+		conn, err := net.FileConn(parent)
+		parent.Close()
+		if err != nil {
+			return fail(err)
+		}
+		m.relay = newRelay(conn, prefixes)
 	}
-	parent := os.NewFile(uintptr(pair[0]), "relay-parent")
-	child := os.NewFile(uintptr(pair[1]), "relay-child")
-	defer child.Close()
-	conn, err := net.FileConn(parent)
-	parent.Close()
-	if err != nil {
-		return fail(err)
-	}
-	m.relay = newRelay(conn, prefixes)
 	m.cmd, err = host.AffinityCommand("bwrap", args, c.AssignedCPUs)
 	if err != nil {
 		return fail(err)
 	}
 	m.cmd.Env = []string{"PATH=/usr/bin:/bin", "LANG=C.UTF-8"}
-	m.cmd.ExtraFiles = []*os.File{child}
+	m.cmd.ExtraFiles = extra
 	m.cmd.Stderr = io.Discard
 	m.input, err = m.cmd.StdinPipe()
 	if err != nil {
@@ -254,6 +389,9 @@ func (m *Runner) Run(jit string, timeout time.Duration, logPath string) error {
 	}
 	m.spent = true
 	m.mu.Unlock()
+	if err := m.ValidateReady(); err != nil {
+		return err
+	}
 	if err := protocol.Write(m.input, protocol.Frame{V: 1, Type: "CONFIG", JIT: jit}); err != nil {
 		return err
 	}
@@ -369,6 +507,15 @@ func (m *Runner) Cleanup() error {
 	if m.relay != nil {
 		m.relay.Close()
 	}
+	if m.workspace != nil {
+		if m.workspaceOwned {
+			if err := m.workspace.Clear(); err != nil {
+				return err
+			}
+		}
+		m.workspace.Close()
+		m.workspace = nil
+	}
 	if m.group != nil {
 		if err := m.group.Remove(); err != nil {
 			return err
@@ -385,7 +532,8 @@ func (m *Runner) Cleanup() error {
 // Reap requires matching host-only metadata and the journal lock held by the
 // caller. cgroup.kill and populated0 confirm every descendant exited, even if
 // the guardian/controller died. Unknown state fails closed without PID kills.
-func Reap(state string, c *host.CgroupConfig) error {
+func Reap(state string, c *host.CgroupConfig) error { return ReapWithAccess(state, c, nil) }
+func ReapWithAccess(state string, c *host.CgroupConfig, plans []*AccessPlan) error {
 	root := filepath.Join(state, "vms")
 	entries, err := os.ReadDir(root)
 	if err != nil {
@@ -407,21 +555,38 @@ func Reap(state string, c *host.CgroupConfig) error {
 		}
 		marker := filepath.Join(dir, "sandbox.json")
 		info, err = os.Lstat(marker)
-		if err != nil || !info.Mode().IsRegular() || info.Size() > 4096 || info.Mode().Perm()&0077 != 0 {
+		if err != nil || !info.Mode().IsRegular() || info.Size() > 16384 || info.Mode().Perm()&0077 != 0 {
 			return fmt.Errorf("sandbox identity unavailable")
 		}
 		raw, err := os.ReadFile(marker)
 		if err != nil {
 			return err
 		}
-		var value struct {
-			Version    int    `json:"version"`
-			Backend    string `json:"backend"`
-			ID         string `json:"id"`
-			CgroupPath string `json:"cgroup_path"`
-		}
-		if json.Unmarshal(raw, &value) != nil || value.Version != 1 || value.Backend != "landlock" || value.ID != id {
+		var value sandboxMarker
+		if json.Unmarshal(raw, &value) != nil || (value.Version != 1 && value.Version != 2) || value.Backend != "landlock" || value.ID != id {
 			return fmt.Errorf("sandbox identity mismatch")
+		}
+		var workspace *Workspace
+		if value.Version == 2 {
+			valid := false
+			for _, plan := range plans {
+				if plan.Hash == value.AccessHash && plan.WorkDir == value.WorkDir {
+					valid = true
+				}
+			}
+			if !valid {
+				return fmt.Errorf("host access policy mismatch; retain state")
+			}
+			workspace, err = LockWorkspace(value.WorkDir)
+			if err != nil {
+				return err
+			}
+			defer workspace.Close()
+			if workspace.Device != value.Device || workspace.Inode != value.Inode {
+				return fmt.Errorf("workspace identity mismatch; retain state")
+			}
+		} else if value.AccessHash != "" || value.WorkDir != "" || value.Device != 0 || value.Inode != 0 {
+			return fmt.Errorf("invalid sealed marker")
 		}
 		expected, err := host.ExecutionGroupPath(c, id)
 		if err != nil || value.CgroupPath != expected {
@@ -433,8 +598,73 @@ func Reap(state string, c *host.CgroupConfig) error {
 		if err != nil {
 			return err
 		}
+		if workspace != nil {
+			if err = workspace.Clear(); err != nil {
+				return err
+			}
+			workspace.Close()
+		}
 		if err = os.RemoveAll(dir); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+type sandboxMarker struct {
+	Version    int    `json:"version"`
+	Backend    string `json:"backend"`
+	ID         string `json:"id"`
+	CgroupPath string `json:"cgroup_path"`
+	AccessHash string `json:"access_hash,omitempty"`
+	WorkDir    string `json:"work_dir,omitempty"`
+	Device     uint64 `json:"workspace_device,omitempty"`
+	Inode      uint64 `json:"workspace_inode,omitempty"`
+}
+type mountIdentity struct {
+	target string
+	device uint64
+	inode  uint64
+}
+
+func pinMount(m AccessMount) (*os.File, mountIdentity, error) {
+	fd, err := unix.Openat2(unix.AT_FDCWD, m.Source, &unix.OpenHow{Flags: unix.O_PATH | unix.O_CLOEXEC, Resolve: unix.RESOLVE_NO_SYMLINKS})
+	if err != nil {
+		return nil, mountIdentity{}, fmt.Errorf("host mount cannot be pinned")
+	}
+	f := os.NewFile(uintptr(fd), "host-mount")
+	info, err := f.Stat()
+	if err != nil {
+		f.Close()
+		return nil, mountIdentity{}, err
+	}
+	if (m.Kind == "socket" && info.Mode()&os.ModeSocket == 0) || (m.Kind == "dir" && !info.IsDir()) || (m.Kind == "file" && !info.Mode().IsRegular()) {
+		f.Close()
+		return nil, mountIdentity{}, fmt.Errorf("host mount type changed")
+	}
+	st := info.Sys().(*syscall.Stat_t)
+	return f, mountIdentity{m.Target, uint64(st.Dev), st.Ino}, nil
+}
+func (m *Runner) ValidateReady() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.plan == nil {
+		return nil
+	}
+	if m.workspace == nil {
+		return fmt.Errorf("host workspace unavailable")
+	}
+	if err := m.workspace.Verify(); err != nil {
+		return err
+	}
+	for _, pin := range m.pins {
+		info, err := os.Stat(pin.target)
+		if err != nil {
+			return fmt.Errorf("host mount changed")
+		}
+		st := info.Sys().(*syscall.Stat_t)
+		if uint64(st.Dev) != pin.device || st.Ino != pin.inode {
+			return fmt.Errorf("host mount changed; retire execution")
 		}
 	}
 	return nil
