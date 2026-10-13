@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -54,6 +55,15 @@ func deniedAddresses(values []string) ([]netip.Prefix, error) {
 	return mustPrefixes(values), nil
 }
 
+func publicRuntimeTarget(target string) bool {
+	for _, root := range []string{"/usr", "/bin", "/sbin", "/lib", "/lib64"} {
+		if target == root || strings.HasPrefix(target, root+"/") {
+			return true
+		}
+	}
+	return false
+}
+
 func sandboxArgs(image, exe, runtime string, diskGiB int, probe bool) ([]string, error) {
 	for _, p := range []string{image, exe, runtime} {
 		if !filepath.IsAbs(p) || filepath.Clean(p) != p {
@@ -67,6 +77,31 @@ func sandboxArgs(image, exe, runtime string, diskGiB int, probe bool) ([]string,
 		} else if !os.IsNotExist(err) {
 			return nil, err
 		}
+	}
+	// Toolchain/library aliases often traverse /etc/alternatives. Normalize only
+	// symlinks resolving into the already-exposed read-only runtime, rather than
+	// mounting the host's alternatives/configuration directory wholesale.
+	aliases, err := os.ReadDir("/etc/alternatives")
+	if err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
+	if len(aliases) > 4096 {
+		return nil, fmt.Errorf("runtime alias inventory exceeds bounds")
+	}
+	for _, alias := range aliases {
+		if alias.Type()&os.ModeSymlink == 0 {
+			continue
+		}
+		name := filepath.Join("/etc/alternatives", alias.Name())
+		target, err := filepath.EvalSymlinks(name)
+		if err != nil || !publicRuntimeTarget(target) {
+			continue
+		}
+		info, err := os.Stat(target)
+		if err != nil || (!info.Mode().IsRegular() && !info.IsDir()) {
+			continue
+		}
+		args = append(args, "--ro-bind", target, name)
 	}
 	// Only public runtime configuration, never the host's /etc or home tree.
 	for _, p := range []string{"/etc/ld.so.cache", "/etc/localtime", "/etc/os-release"} {

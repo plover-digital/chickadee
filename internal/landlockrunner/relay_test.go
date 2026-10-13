@@ -219,3 +219,16 @@ func TestCONNECTProxySocketBridgeAndDenial(t *testing.T) {
 		t.Fatal("protected CONNECT reached dialer")
 	}
 }
+
+func TestRuntimeAliasesNeverExposeOtherHostTrees(t *testing.T) {
+	for _, path := range []string{"/etc/shadow", "/home/key", "/var/lib/private", "/usr-secret/key", "/run/socket"} {
+		if publicRuntimeTarget(path) {
+			t.Fatal("nonruntime alias exposed", path)
+		}
+	}
+	for _, path := range []string{"/usr/bin/ld.bfd", "/usr/lib/library.so", "/lib64/loader.so"} {
+		if !publicRuntimeTarget(path) {
+			t.Fatal("public runtime alias rejected", path)
+		}
+	}
+}

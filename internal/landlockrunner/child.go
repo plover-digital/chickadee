@@ -17,11 +17,14 @@ import (
 	"time"
 
 	"github.com/landlock-lsm/go-landlock/landlock"
+	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
 	"github.com/plover-digital/chickadee/internal/protocol"
 )
 
 func restrict() error {
-	rules := []landlock.Rule{landlock.RWDirs("/job").WithRefer(), landlock.RODirs("/proc", "/etc", "/image"), landlock.ROFiles("/engine"), landlock.RWFiles("/dev/null"), landlock.ROFiles("/dev/zero", "/dev/random", "/dev/urandom")}
+	// Runner path validation lists every ancestor. Permit directory metadata only
+	// in the already-private mount tree, without broad file read/write rights.
+	rules := []landlock.Rule{landlock.PathAccess(landlock.AccessFSSet(ll.AccessFSReadDir), "/"), landlock.RWDirs("/job").WithRefer(), landlock.RODirs("/proc", "/etc", "/image"), landlock.ROFiles("/engine"), landlock.RWFiles("/dev/null"), landlock.ROFiles("/dev/zero", "/dev/random", "/dev/urandom")}
 	for _, dir := range []string{"/usr", "/bin", "/sbin", "/lib", "/lib64"} {
 		if _, err := os.Stat(dir); err == nil {
 			rules = append(rules, landlock.RODirs(dir))
@@ -221,6 +224,11 @@ func diagnostics() {
 	}
 }
 func probeIsolation() error {
+	for _, directory := range []string{"/", "/job", "/job/home"} {
+		if _, err := os.ReadDir(directory); err != nil {
+			return fmt.Errorf("runner ancestor directory enumeration denied")
+		}
+	}
 	if err := os.WriteFile("/job/allowed", []byte("ok"), 0600); err != nil {
 		return err
 	}

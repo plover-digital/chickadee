@@ -25,8 +25,12 @@ Each execution gets:
 - Strict Landlock ABI6 filesystem and IPC restrictions, using pinned
   `github.com/landlock-lsm/go-landlock v0.10.1`. Unsupported kernels fail closed;
   `BestEffort` and unsandboxed fallback are never used.
+- Directory listing in the private mount tree permits runner ancestor-path
+  validation; it grants no broader file read/write access.
 - Read-only `/usr`, runtime libraries, public OS/CA metadata, the verified runner
-  archive and trusted worker executable. Host home, management state, keys,
+  archive and trusted worker executable. Runtime alternatives are normalized only
+  when their symlinks resolve into these already-exposed read-only trees.
+  Host home, management state, keys,
   sockets, `/sys`, KVM and Docker devices are absent. Keep exposed runtime trees
   free of secrets. Runtime/tool versions come from the host, not the bundle digest.
 - A fresh size-limited tmpfs for the runner, home, workspace, tools and temporary
@@ -167,6 +171,15 @@ sudo systemd-run --unit=chickadee-cgroup-test --wait --collect \
   /tmp/chickadee-host-cgroup-tests -test.v \
   -test.run '^TestRealExecutionGroupKillsDescendantsAndRecovers$'
 ```
+
+### Prototype acceptance
+
+[Real one-job acceptance](https://github.com/plover-digital/chickadee/actions/runs/38448046800)
+passed checkout, native compilation, filesystem isolation, filtered HTTPS and
+private loopback, including a deliberately surviving background descendant.
+The execution retired, writable runtime was removed and the ephemeral GitHub
+registration disappeared. This is prototype evidence, not a hostile-workload
+security certification.
 
 The test creates only its own execution cgroups in that transient unit. Normal
 cleanup checks `populated 0` before removal; recovery kills surviving descendants
