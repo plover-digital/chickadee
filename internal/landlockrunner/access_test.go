@@ -54,6 +54,10 @@ func TestHostAccessValidationAndAliasPlan(t *testing.T) {
 	if _, err = NormalizeAccess(a, 1, 1, []string{tools}); err == nil {
 		t.Fatal("canonical protected source accepted")
 	}
+	if _, err = NormalizeAccess(a, 1, 1, []string{alias}); err == nil {
+		t.Fatal("protected path alias bypassed")
+	}
+
 	clone := CloneAccess(a)
 	a.Env["PATH"] = "changed"
 	a.ROPaths[0] = "changed"
@@ -177,5 +181,39 @@ func TestPinMountRejectsReplacedParentSymlink(t *testing.T) {
 	if f, _, err := pinMount(AccessMount{Source: source, Target: source, Kind: "dir"}); err == nil {
 		f.Close()
 		t.Fatal("source substitution followed")
+	}
+}
+
+func TestProtectedPathCanonicalizationAndMissingLeaves(t *testing.T) {
+	work := workspaceFixture(t)
+	parent := hostTemp(t)
+	secret := filepath.Join(parent, "private-key")
+	if err := os.WriteFile(secret, []byte("fixture"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	alias := filepath.Join(hostTemp(t), "alias")
+	if err := os.Symlink(parent, alias); err != nil {
+		t.Fatal(err)
+	}
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	relative, err := filepath.Rel(cwd, secret)
+	if err != nil {
+		t.Fatal(err)
+	}
+	access := &HostAccess{WorkDir: work, ROPaths: []string{parent}}
+	for _, protected := range []string{filepath.Join(alias, "private-key"), relative, filepath.Join(alias, "future-state", "journal")} {
+		if _, err := NormalizeAccess(access, 1, 1, []string{protected}); err == nil {
+			t.Fatal("protected ancestor exposed", protected)
+		}
+	}
+	broken := filepath.Join(hostTemp(t), "broken")
+	if err := os.Symlink(filepath.Join(parent, "absent"), broken); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := NormalizeAccess(&HostAccess{WorkDir: work}, 1, 1, []string{broken}); err == nil {
+		t.Fatal("unresolvable protected alias ignored")
 	}
 }

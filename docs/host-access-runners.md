@@ -102,6 +102,16 @@ CPU ownership. Configure parent memory/tasks budgets to cover all executions,
 per-execution overhead and controller headroom. Any explicitly requested I/O
 weight/limits require a usable io controller.
 
+If adapting [the sealed worker unit](../deploy/chickadee-landlock-worker.service),
+add the precreated workspace paths to `ReadWritePaths`: its `ProtectSystem=strict`
+otherwise makes shared disk paths read-only. Keep management directories private.
+`ProtectHome` and `PrivateTmp` must also permit the operator-selected runtime and
+workspace paths in the service's view. The host namespace means the worker's
+network namespace, so do not enable systemd `PrivateNetwork` for host access.
+On memory/pids-only sites request those delegated controllers and omit CPU/I/O
+unit settings that the site cannot provide; retain bounded parent memory/swap/tasks.
+Run the check through the final unit, not just an unrestricted shell.
+
 Run inside the delegated service/scope:
 
 ```sh
@@ -179,6 +189,14 @@ Use the production-style non-race child for archive/bootstrap timing; normal
 unit/lifecycle tests still run with Go race instrumentation. The kernel tests
 verify two credential-free sandboxes, sibling-safe cleanup, recovery markers and
 actual memory/pids-only delegation without relaxing sealed requirements.
+
+Local real-job acceptance also passed: [workflow 38465413623](https://github.com/plover-digital/chickadee/actions/runs/38465413623)
+completed checkout, native C build/run, disk-workspace verification, direct HTTPS,
+an ephemeral-port loopback server and a leftover local descendant. Retirement
+removed the execution runtime, left the workspace empty and retained, and removed
+the ephemeral GitHub registration. This used a newer ABI6 kernel enforcing V5;
+it does not replace target-host acceptance. A preceding attempt failed because
+the fixture used an occupied host port; the workflow now allocates its own port.
 
 Target-owner acceptance remains required: real fresh-JIT checkout/build on ABI5,
 Munge UID match, same-path srun/sbatch --wait/MPI, local path denials, OOM/PID

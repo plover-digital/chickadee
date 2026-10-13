@@ -96,7 +96,21 @@ func NormalizeAccess(a *HostAccess, slot, maxSlots int, protected []string) (*Ac
 	if err != nil {
 		return nil, err
 	}
-	forbidden := append([]string(nil), protected...)
+	var forbidden []string
+	for _, path := range protected {
+		if path == "" {
+			continue
+		}
+		absolute, err := filepath.Abs(path)
+		if err != nil {
+			return nil, fmt.Errorf("protected host path unavailable")
+		}
+		canonical, err := canonicalProtectedPath(absolute)
+		if err != nil {
+			return nil, err
+		}
+		forbidden = append(forbidden, absolute, canonical)
+	}
 	forbidden = append(forbidden, "/job", "/tmp", "/proc", "/sys", "/dev", "/engine", "/image", "/home/runner")
 	check := func(p string) error {
 		if !cleanPath(p) {
@@ -199,7 +213,9 @@ func NormalizeAccess(a *HostAccess, slot, maxSlots int, protected []string) (*Ac
 		Version int
 		Access  *HostAccess
 		Mounts  []AccessMount
-	}{1, normalized, plan.Mounts})
+		UID     int
+		GID     int
+	}{1, normalized, plan.Mounts, plan.UID, plan.GID})
 	sum := sha256.Sum256(raw)
 	plan.Hash = hex.EncodeToString(sum[:])
 	raw, _ = json.Marshal(plan)
@@ -210,4 +226,28 @@ func NormalizeAccess(a *HostAccess, slot, maxSlots int, protected []string) (*Ac
 }
 func protectedPaths(state, image string, extra []string) []string {
 	return append(append([]string(nil), extra...), state, image)
+}
+
+// Resolve existing ancestors even before a state directory or TLS file is created.
+// Broken aliases, loops and inaccessible components cannot become an ignored deny.
+func canonicalProtectedPath(path string) (string, error) {
+	candidate := path
+	var missing []string
+	for {
+		if _, err := os.Lstat(candidate); err == nil {
+			canonical, err := filepath.EvalSymlinks(candidate)
+			if err != nil {
+				return "", fmt.Errorf("protected host path cannot be resolved safely")
+			}
+			return filepath.Join(append([]string{canonical}, missing...)...), nil
+		} else if !os.IsNotExist(err) {
+			return "", fmt.Errorf("protected host path cannot be resolved safely")
+		}
+		parent := filepath.Dir(candidate)
+		if parent == candidate {
+			return "", fmt.Errorf("protected host path unavailable")
+		}
+		missing = append([]string{filepath.Base(candidate)}, missing...)
+		candidate = parent
+	}
 }
