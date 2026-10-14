@@ -56,6 +56,10 @@ func main() {
 		os.Exit(1)
 	}
 	if *githubMode {
+		if os.Geteuid() == 0 {
+			slog.Error("standalone GitHub controller must be unprivileged")
+			os.Exit(1)
+		}
 		c, err := load(*path)
 		if err == nil && c.GitHub == nil {
 			err = fmt.Errorf("github configuration required")
@@ -67,8 +71,13 @@ func main() {
 			}
 		}
 		if err == nil && !*check {
-			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR1, syscall.SIGHUP)
+			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR1)
 			defer stop()
+			// This mode has no live reload. Consume SIGHUP without shutting down
+			// the listener or disturbing compatible warm/credentialed executions.
+			hup := make(chan os.Signal, 1)
+			signal.Notify(hup, syscall.SIGHUP)
+			defer signal.Stop(hup)
 			err = github.RunStandalone(ctx, c.Config, *c.GitHub, *githubCleanup)
 		}
 		if err != nil {

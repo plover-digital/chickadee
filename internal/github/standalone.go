@@ -22,6 +22,7 @@ var ErrRegistrationGuard = errors.New("late-registration guard pending; retry cl
 
 // StandaloneConfig is operator-owned. One GitHub queue drives one local profile.
 type StandaloneConfig struct {
+	GitHubHost     string `json:"github_host,omitempty"`
 	GitHubURL      string `json:"github_url"`
 	ClientID       string `json:"app_client_id"`
 	InstallationID int64  `json:"app_installation_id"`
@@ -31,7 +32,7 @@ type StandaloneConfig struct {
 }
 
 func (s StandaloneConfig) apiConfig() config.Config {
-	return config.Config{GitHubURL: s.GitHubURL, ClientID: s.ClientID, InstallationID: s.InstallationID, KeyFile: s.KeyFile, ScaleSet: s.ScaleSet, RunnerGroupID: s.RunnerGroupID}
+	return config.Config{GitHubURL: s.GitHubURL, GitHubHost: s.GitHubHost, ClientID: s.ClientID, InstallationID: s.InstallationID, KeyFile: s.KeyFile, ScaleSet: s.ScaleSet, RunnerGroupID: s.RunnerGroupID}
 }
 func (s StandaloneConfig) Validate(c worker.Config) error {
 	if len(c.Profiles) != 1 || !c.IsLandlock() {
@@ -40,8 +41,8 @@ func (s StandaloneConfig) Validate(c worker.Config) error {
 	if !config.Name.MatchString(s.ScaleSet) || s.ClientID == "" || s.InstallationID <= 0 || s.RunnerGroupID < 1 || !filepath.IsAbs(s.KeyFile) {
 		return fmt.Errorf("GitHub App, queue and runner group required")
 	}
-	// Apply the same public-GitHub scope validation as the existing VM adapter.
-	if err := validateScope(s.GitHubURL); err != nil {
+	// Public GitHub is the default; GHES requires an explicit host opt-in.
+	if err := validateScope(s.GitHubURL, s.GitHubHost); err != nil {
 		return err
 	}
 	info, err := os.Stat(s.KeyFile)
@@ -70,6 +71,9 @@ type sandboxBackend interface {
 // RunStandalone takes engine ownership before contacting GitHub. It exposes no
 // worker listener, and never puts App credentials into an execution environment.
 func RunStandalone(ctx context.Context, c worker.Config, s StandaloneConfig, cleanup bool) (runErr error) {
+	if os.Geteuid() == 0 {
+		return fmt.Errorf("standalone GitHub controller must be unprivileged")
+	}
 	c.ProtectedPaths = append(append([]string(nil), c.ProtectedPaths...), s.KeyFile)
 	if err := s.Validate(c); err != nil {
 		return err
@@ -170,6 +174,9 @@ func provisionSandbox(ctx context.Context, c worker.Config, s StandaloneConfig, 
 	// Any provisioning failure destroys the reserved execution, including an
 	// ambiguous JIT API result. Never retry JIT against that execution.
 	defer e.RetireReservation(c.Identity, id)
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if _, err = e.Seal(c.Identity, id); err != nil {
 		return err
 	}
@@ -181,6 +188,9 @@ func provisionSandbox(ctx context.Context, c worker.Config, s StandaloneConfig, 
 	jit, err := b.JITWithWorkFolder(jitCtx, name, record.Request.WorkFolder)
 	cancel()
 	if err != nil {
+		return err
+	}
+	if err := ctx.Err(); err != nil {
 		return err
 	}
 	if err := e.Deliver(c.Identity, id, jit); err != nil {

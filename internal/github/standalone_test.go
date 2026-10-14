@@ -353,3 +353,81 @@ func TestStandaloneDemandClampedToResourceBudget(t *testing.T) {
 		t.Fatal("CPU budget exceeded", e.delivered)
 	}
 }
+
+type lateJITBackend struct {
+	*fakeSandboxBackend
+	started chan struct{}
+	release chan struct{}
+}
+
+func (b *lateJITBackend) JITWithWorkFolder(ctx context.Context, name, path string) (string, error) {
+	jit, err := b.fakeSandboxBackend.JITWithWorkFolder(ctx, name, path)
+	close(b.started)
+	<-b.release // Model a successful HTTP response racing caller cancellation.
+	return jit, err
+}
+func TestCancelledProvisioningNeverDeliversLateJIT(t *testing.T) {
+	c, s, e, base, dir := standaloneFixture(t)
+	b := &lateJITBackend{fakeSandboxBackend: base, started: make(chan struct{}), release: make(chan struct{})}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan error, 1)
+	id := host.NewID()
+	go func() { done <- provisionSandbox(ctx, c, s, e, b, dir, id) }()
+	select {
+	case <-b.started:
+	case <-time.After(3 * time.Second):
+		t.Fatal("JIT not started")
+	}
+	cancel()
+	close(b.release)
+	if err := <-done; !errors.Is(err, context.Canceled) {
+		t.Fatal(err)
+	}
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.delivered != 0 || e.retired != 1 {
+		t.Fatal("late credentials delivered after cancellation", e.delivered, e.retired)
+	}
+	records, err := registrationRecords(dir, s)
+	if err != nil || len(records) != 1 {
+		t.Fatal("late-registration intent lost", records, err)
+	}
+}
+
+func TestGHESRequiresExplicitVerifiedHost(t *testing.T) {
+	c, s, _, _, _ := standaloneFixture(t)
+	s.GitHubURL = "https://ghe.example.net/site/repo"
+	if s.Validate(c) == nil {
+		t.Fatal("implicit arbitrary GHES host trusted")
+	}
+	s.GitHubHost = "ghe.example.net"
+	if err := s.Validate(c); err != nil {
+		t.Fatal(err)
+	}
+	if s.apiConfig().GitHubHost != s.GitHubHost {
+		t.Fatal("GHES host not carried into App client")
+	}
+	for _, url := range []string{"http://ghe.example.net/site", "https://other.example.net/site", "https://user@ghe.example.net/site", "https://ghe.example.net/site?q=1"} {
+		bad := s
+		bad.GitHubURL = url
+		if bad.Validate(c) == nil {
+			t.Fatal("unsafe GHES scope accepted", url)
+		}
+	}
+	for _, host := range []string{"ghe.example.net/path", "user@ghe.example.net", "ghe.example.net?token=1", "ghe.example.net#fragment", "ghe.example.net:bad"} {
+		bad := s
+		bad.GitHubHost = host
+		if bad.Validate(c) == nil {
+			t.Fatal("unsafe authority accepted", host)
+		}
+	}
+}
+func TestStandaloneRejectsRootBeforeOpeningState(t *testing.T) {
+	if os.Geteuid() != 0 {
+		t.Skip("run isolated test as root to verify privilege rejection")
+	}
+	if err := RunStandalone(context.Background(), worker.Config{}, StandaloneConfig{}, false); err == nil || !strings.Contains(err.Error(), "unprivileged") {
+		t.Fatal("root controller accepted", err)
+	}
+}

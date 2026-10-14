@@ -26,8 +26,13 @@ sandbox controllers. Do not run another listener for the same GitHub scale set.
    Self-hosted runners write or repository Administration write as appropriate.
    Install it in the configured scope. Store its private key outside the repo,
    mode0600, readable only by the controller account. Supply its client ID,
-   installation ID and runner group ID in `github`. The initial adapter supports
-   public github.com org/repository scopes; it does not add GHES support.
+   installation ID and runner group ID in `github`. Public github.com is the default. For GHES, set `github_host` to the
+   exact trusted host (and port when nondefault) and use its HTTPS org/repo URL.
+   For example, `github_host: "ghe.example.net"` with
+   `github_url: "https://ghe.example.net/example-org"`. Create/install the App
+   on that appliance. Normal TLS verification remains mandatory; install its
+   trusted CA on the host and expose the corresponding public CA bundle to the
+   runner. There is no insecure-TLS option or implicit trust of arbitrary hosts.
 4. Precreate all slot workspaces when using host_access. Keep writable workspace
    storage separate from controller journals/logs where possible. Keep configuration
    private and outside built-in runtime mounts. The App key path is added to the
@@ -89,8 +94,9 @@ intent for retry. Restart first reaps owned local executions, then reconciles
 registrations; it never replays JIT. Restore the original queue/scope/installation
 configuration to clean older intents before changing that identity.
 
-SIGTERM, SIGINT, SIGUSR1 and SIGHUP stop polling/provisioning and drain delivered
-jobs. There is no live configuration reload in this mode. Keep systemd
+SIGTERM, SIGINT and SIGUSR1 stop polling/provisioning and drain delivered
+jobs. SIGHUP preserves the listener and all executions; it does not apply
+configuration changes. There is no live configuration reload in this mode. Keep systemd
 `KillMode=mixed` and a stop deadline long enough for the configured job timeout
 plus cleanup. Drain before binary/image/policy changes. For recovery without
 warm creation or demand polling, run in the same delegated unit:
@@ -122,4 +128,9 @@ leftover descendant. The first used sandbox retired and its empty retained
 workspace was replaced by a distinct credential-free READY execution before the
 second job. No manual JIT input or worker API was used. A dedicated temporary
 runner group allowed only this trusted acceptance workflow. This validates the
-new GitHub adapter on local ABI6 enforcing V5, not target GHES/ABI5 acceptance.
+new GitHub adapter on local ABI6 enforcing V5, not target GHES/ABI5 acceptance. Target-owner reports in
+[issue21](https://github.com/plover-digital/chickadee/issues/21) now establish real
+ABI5/GHES runner jobs and multi-slot broker operation, while
+[issue22](https://github.com/plover-digital/chickadee/issues/22) reports unsafe live
+workspace cleanup in that multi-slot deployment. Treat multi-slot host_access
+deployment as blocked until that issue is resolved and target re-tested.

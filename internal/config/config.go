@@ -61,6 +61,7 @@ type CgroupConfig struct {
 }
 
 type Config struct {
+	GitHubHost      string        `json:"-"` // Explicit trusted API host; VM JSON remains github.com-only.
 	WorkerProfileID string        `json:"-"`
 	Cgroup          *CgroupConfig `json:"cgroup,omitempty"`
 	// AssignedCPUs is local execution metadata, never accepted from JSON.

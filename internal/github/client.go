@@ -29,7 +29,7 @@ func New(ctx context.Context, c config.Config) (*Client, error) { return newClie
 // Existing never recreates a removed scale set during journal recovery.
 func Existing(ctx context.Context, c config.Config) (*Client, error) { return newClient(ctx, c, false) }
 func newClient(ctx context.Context, c config.Config, create bool) (*Client, error) {
-	if e := validateScope(c.GitHubURL); e != nil {
+	if e := validateScope(c.GitHubURL, c.GitHubHost); e != nil {
 		return nil, e
 	}
 	info, e := os.Stat(c.KeyFile)
@@ -182,10 +182,18 @@ func maxInt(a, b int) int {
 	return b
 }
 
-func validateScope(scope string) error {
+func validateScope(scope, configuredHost string) error {
+	host := configuredHost
+	if host == "" {
+		host = "github.com"
+	}
+	authority, err := url.Parse("https://" + host)
+	if err != nil || len(host) > 260 || authority.Host != host || authority.Hostname() == "" || authority.User != nil || authority.Path != "" || authority.RawQuery != "" || authority.Fragment != "" {
+		return fmt.Errorf("invalid configured GitHub host")
+	}
 	u, e := url.Parse(scope)
-	if e != nil || u.Scheme != "https" || u.Host != "github.com" || u.User != nil || u.RawQuery != "" || u.Fragment != "" || u.RawPath != "" {
-		return fmt.Errorf("prototype supports https://github.com org/repo scopes")
+	if e != nil || u.Scheme != "https" || !strings.EqualFold(u.Host, host) || u.User != nil || u.RawQuery != "" || u.Fragment != "" || u.RawPath != "" {
+		return fmt.Errorf("use HTTPS on the explicitly configured GitHub host")
 	}
 	p := strings.Split(strings.Trim(u.Path, "/"), "/")
 	if len(p) < 1 || len(p) > 2 || p[0] == "" || p[0] == "enterprises" {
