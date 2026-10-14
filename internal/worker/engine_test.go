@@ -16,6 +16,7 @@ import (
 	"time"
 
 	hostconfig "github.com/plover-digital/chickadee/internal/config"
+	"github.com/plover-digital/chickadee/internal/landlockrunner"
 )
 
 type fakeMachine struct {
@@ -871,6 +872,83 @@ func TestCompletionFailureIsSeparateFromConfirmedCleanup(t *testing.T) {
 			if _, err := os.Stat(vm.dir); !os.IsNotExist(err) {
 				t.Fatal("completion failure prevented cleanup")
 			}
+		})
+	}
+}
+
+func TestReservationRetryBindsLiveAccessPolicy(t *testing.T) {
+	for _, test := range []struct {
+		name            string
+		original, retry *landlockrunner.HostAccess
+		allowed         bool
+	}{
+		{"host-to-sealed", &landlockrunner.HostAccess{WorkDir: "/shared/work", Env: map[string]string{"PATH": "/opt/site/bin"}}, nil, false},
+		{"sealed-to-host", nil, &landlockrunner.HostAccess{WorkDir: "/shared/work"}, false},
+		{"changed-environment", &landlockrunner.HostAccess{WorkDir: "/shared/work", Env: map[string]string{"PATH": "/opt/site/bin"}}, &landlockrunner.HostAccess{WorkDir: "/shared/work", Env: map[string]string{"PATH": "/opt/other/bin"}}, false},
+		{"changed-sockets", &landlockrunner.HostAccess{WorkDir: "/shared/work", Sockets: []string{"/run/a.sock"}}, &landlockrunner.HostAccess{WorkDir: "/shared/work", Sockets: []string{"/run/b.sock"}}, false},
+		{"changed-mounts", &landlockrunner.HostAccess{WorkDir: "/shared/work", ROPaths: []string{"/opt/a"}}, &landlockrunner.HostAccess{WorkDir: "/shared/work", ROPaths: []string{"/opt/b"}}, false},
+		{"equivalent-alias", &landlockrunner.HostAccess{WorkDir: "/shared/work"}, &landlockrunner.HostAccess{WorkDir: "/shared/work"}, true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			request := fixture()
+			journal, err := Open(privateDir(t), request.Identity)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer journal.Close()
+			if _, err = journal.Reserve(request); err != nil {
+				t.Fatal(err)
+			}
+			original := Profile{ID: "original", Machine: "landlock", Digest: request.ProfileDigest, CPUs: request.CPUs, MemoryMiB: request.MemoryMiB, DiskGiB: request.DiskGiB, HostAccess: test.original}
+			retry := original
+			retry.ID = "alias"
+			retry.HostAccess = test.retry
+			engine := &Engine{config: Config{Identity: request.Identity}, journal: journal, profiles: map[string]Profile{"alias": retry}, entries: map[string]*instance{request.VMID: {id: request.VMID, profile: original}}, draining: true}
+			for _, state := range []State{Reserved, Sealed, DeliveryIntent} {
+				if state == Sealed {
+					if _, err = journal.Seal(request); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if state == DeliveryIntent {
+					if _, err = journal.DeliverIntent(request); err != nil {
+						t.Fatal(err)
+					}
+				}
+				got, err := engine.Reserve(context.Background(), request.Identity, request.AssignmentID, "alias")
+				if test.allowed {
+					if err != nil || got.Request.VMID != request.VMID {
+						t.Fatal(state, got, err)
+					}
+				} else if !errors.Is(err, ErrConflict) {
+					t.Fatal("different access policy accepted", state, err)
+				}
+			}
+			delete(engine.entries, request.VMID)
+			if _, err = engine.Reserve(context.Background(), request.Identity, request.AssignmentID, "alias"); !errors.Is(err, ErrConflict) {
+				t.Fatal("live request without immutable execution accepted", err)
+			}
+			if _, err = journal.RecoverTerminal(request.AssignmentID, ExitProof{VMID: request.VMID, ProcessExitConfirmed: true, DiskRemoved: true}); err != nil {
+				t.Fatal(err)
+			}
+			journalDir := journal.dir
+			journal.Close()
+			reopened, err := Open(journalDir, request.Identity)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer reopened.Close()
+			engine.journal = reopened
+			if record, err := engine.Reserve(context.Background(), request.Identity, request.AssignmentID, "alias"); err != nil || record.State != Terminal {
+				t.Fatal("recovered tombstone lost", record, err)
+			}
+			if _, err := engine.Seal(request.Identity, request.AssignmentID); !errors.Is(err, ErrTransition) {
+				t.Fatal("recovered execution sealed", err)
+			}
+			if err := engine.Deliver(request.Identity, request.AssignmentID, "e30="); !errors.Is(err, ErrConsumed) {
+				t.Fatal("credentials delivered to terminal retry", err)
+			}
+
 		})
 	}
 }

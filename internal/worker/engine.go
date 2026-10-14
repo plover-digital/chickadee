@@ -458,7 +458,14 @@ func (e *Engine) Reserve(ctx context.Context, identity Identity, assignmentID, p
 			e.mu.Unlock()
 			return Record{}, ErrConflict
 		}
-		if record, _, err := e.findLocked(assignmentID); err == nil {
+		if record, execution, err := e.findLocked(assignmentID); err == nil {
+			// The durable VMID binds this request to an immutable live profile.
+			// Image/resource equality alone cannot authorize a different access policy.
+			// Recovery makes every prior live request terminal before admission.
+			if (execution != nil && !compatible(execution.profile, p)) || (execution == nil && record.State != Terminal) {
+				e.mu.Unlock()
+				return Record{}, ErrConflict
+			}
 			if record.Request.Identity != identity || record.Request.ProfileDigest != p.Digest || record.Request.CPUs != p.CPUs || record.Request.MemoryMiB != p.MemoryMiB || record.Request.DiskGiB != p.DiskGiB {
 				e.mu.Unlock()
 				return Record{}, ErrConflict
