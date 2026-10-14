@@ -137,8 +137,10 @@ func TestRealConcurrentHostAccessViaWorkerAPIKeepsLiveWorkspaces(t *testing.T) {
 			engine.Drain(cfg.Identity)
 			wait, stop := context.WithTimeout(context.Background(), 330*time.Second)
 			defer stop()
-			if engine.Wait(wait) == nil {
+			if err := engine.Wait(wait); err == nil {
 				clean = true
+			} else {
+				t.Errorf("cleanup failed; retained fixtures: %v", err)
 			}
 			return
 		}
@@ -147,19 +149,19 @@ func TestRealConcurrentHostAccessViaWorkerAPIKeepsLiveWorkspaces(t *testing.T) {
 			if err == nil {
 				clean = true
 			} else {
-				t.Log("cleanup failed; retained fixtures", err)
+				t.Errorf("cleanup failed; retained fixtures: %v", err)
 			}
 		case <-time.After(330 * time.Second):
-			t.Log("cleanup proof unavailable; retained fixtures")
+			t.Error("cleanup proof unavailable; retained fixtures")
 		}
 	}()
 	listener, err := net.Listen("tcp4", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer listener.Close()
 	srv, err := workerapi.NewServer(workerapi.ServerConfig{Listen: listener.Addr().String(), Identity: wireIdentity(identity), TLS: serverTLS}, &engineAdapter{engine: engine})
 	if err != nil {
+		listener.Close()
 		t.Fatal(err)
 	}
 	serving = true
