@@ -103,26 +103,16 @@ func sandboxArgsWithAccess(image, exe, runtime string, diskGiB int, probe bool, 
 			return nil, fmt.Errorf("clean absolute sandbox paths required")
 		}
 	}
-	args := []string{"--unshare-user", "--unshare-pid", "--unshare-net", "--unshare-ipc", "--unshare-uts", "--unshare-cgroup", "--disable-userns", "--assert-userns-disabled", "--uid", "1000", "--gid", "1000", "--hostname", "chickadee-sandbox", "--die-with-parent", "--new-session", "--as-pid-1", "--cap-drop", "ALL", "--clearenv", "--setenv", "PATH", "/usr/bin:/bin", "--setenv", "LANG", "C.UTF-8", "--proc", "/proc", "--dev", "/dev", "--size", fmt.Sprint(int64(diskGiB) << 30), "--tmpfs", "/job", "--dir", "/job/home", "--dir", "/job/home/work", "--dir", "/job/tmp", "--symlink", "/job/home", "/home/runner", "--symlink", "/job/tmp", "/tmp"}
+	uid, gid := "1000", "1000"
 	if plan != nil {
-		filtered := make([]string, 0, len(args))
-		for i := 0; i < len(args); i++ {
-			if args[i] == "--unshare-net" {
-				continue
-			}
-			if args[i] == "--uid" {
-				filtered = append(filtered, "--uid", fmt.Sprint(plan.UID))
-				i++
-				continue
-			}
-			if args[i] == "--gid" {
-				filtered = append(filtered, "--gid", fmt.Sprint(plan.GID))
-				i++
-				continue
-			}
-			filtered = append(filtered, args[i])
-		}
-		args = filtered
+		uid, gid = fmt.Sprint(plan.UID), fmt.Sprint(plan.GID)
+	}
+	args := []string{"--unshare-user", "--unshare-pid"}
+	if plan == nil {
+		args = append(args, "--unshare-net")
+	}
+	args = append(args, "--unshare-ipc", "--unshare-uts", "--unshare-cgroup", "--disable-userns", "--assert-userns-disabled", "--uid", uid, "--gid", gid, "--hostname", "chickadee-sandbox", "--die-with-parent", "--new-session", "--as-pid-1", "--cap-drop", "ALL", "--clearenv", "--setenv", "PATH", "/usr/bin:/bin", "--setenv", "LANG", "C.UTF-8", "--proc", "/proc", "--dev", "/dev", "--size", fmt.Sprint(int64(diskGiB)<<30), "--tmpfs", "/dev/shm", "--size", fmt.Sprint(int64(diskGiB)<<30), "--tmpfs", "/job", "--dir", "/job/home", "--dir", "/job/home/work", "--dir", "/job/tmp", "--symlink", "/job/home", "/home/runner", "--symlink", "/job/tmp", "/tmp")
+	if plan != nil {
 		payload, _ := json.Marshal(plan)
 		args = append(args, "--setenv", "CHICKADEE_HOST_ACCESS", string(payload))
 		args = append(args, "--dir", "/var", "--symlink", "/run", "/var/run", "--bind-fd", "3", plan.WorkDir)

@@ -42,6 +42,7 @@ func CheckSandboxWithAccess(image string, diskGiB int, access *HostAccess, slot,
 	if err != nil {
 		return err
 	}
+	var workspace *Workspace
 	var extra []*os.File
 	if plan != nil {
 		w, err := LockWorkspace(plan.WorkDir)
@@ -49,6 +50,7 @@ func CheckSandboxWithAccess(image string, diskGiB int, access *HostAccess, slot,
 			return err
 		}
 		defer w.Close()
+		workspace = w
 		if err = w.Empty(); err != nil {
 			return err
 		}
@@ -82,7 +84,20 @@ func CheckSandboxWithAccess(image string, diskGiB int, access *HostAccess, slot,
 	cmd.Stdout = io.Discard
 	var debug bytes.Buffer
 	cmd.Stderr = &debug
-	if cmd.Run() != nil {
+	runErr := cmd.Run()
+	if workspace != nil {
+		// The probe has no descendants; bwrap has exited before anchored cleanup.
+		if err := workspace.Verify(); err != nil {
+			return err
+		}
+		if err := workspace.root.Remove(".chickadee-probe"); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("workspace probe cleanup failed")
+		}
+		if err := workspace.Empty(); err != nil {
+			return err
+		}
+	}
+	if runErr != nil {
 		return fmt.Errorf("Landlock/namespace preflight failed; refusing unsandboxed execution: %.2048s", debug.String())
 	}
 	return nil

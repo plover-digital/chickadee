@@ -17,6 +17,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -60,6 +62,11 @@ func main() {
 			slog.Error("Landlock preflight failed", "reason", err.Error())
 			os.Exit(1)
 		}
+		hasCPU, err := host.HasCPUController(c.Cgroup)
+		if err != nil {
+			slog.Error("CPU capability report unavailable")
+			os.Exit(1)
+		}
 		for _, p := range c.Profiles {
 			if p.HostAccess != nil {
 				summary, err := landlockrunner.PolicySummary(true)
@@ -67,7 +74,7 @@ func main() {
 					slog.Error("Landlock capability report unavailable")
 					os.Exit(1)
 				}
-				fmt.Println(summary)
+				fmt.Println(summary + " " + cpuModeSummary(hasCPU, c.CPUIDs))
 			}
 		}
 		fmt.Println("LANDLOCK_SANDBOX_VERIFIED")
@@ -270,4 +277,15 @@ func (a *engineAdapter) Status(i workerapi.Identity, id string) (workerapi.Recor
 }
 func (a *engineAdapter) Drain(i workerapi.Identity) error {
 	return translate(a.engine.Drain(localIdentity(i)))
+}
+
+func cpuModeSummary(hasQuota bool, ids []int) string {
+	if hasQuota {
+		return "cpu=quota"
+	}
+	parts := make([]string, len(ids))
+	for i, id := range ids {
+		parts[i] = strconv.Itoa(id)
+	}
+	return "cpu=affinity-only(" + strings.Join(parts, ",") + ")"
 }

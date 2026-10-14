@@ -18,7 +18,8 @@ import (
 
 func TestMain(m *testing.M) {
 	if len(os.Args) > 1 && os.Args[1] == "-landlock-child" {
-		if err := Child(false); err != nil {
+		probe := len(os.Args) > 2 && os.Args[2] == "-landlock-probe"
+		if err := Child(probe); err != nil {
 			fmt.Fprintln(os.Stderr, "sandbox child failed")
 			os.Exit(1)
 		}
@@ -64,6 +65,25 @@ func TestRealHostAccessConcurrentCleanupAndRecovery(t *testing.T) {
 		}
 	}()
 	a := &HostAccess{WorkDir: filepath.Join(root, "{slot}"), ROPaths: []string{toolDir}, Sockets: []string{socket}}
+	if err := CheckSandboxWithAccess(bundle, 8, a, 1, 2, nil); err != nil {
+		t.Fatal("host preflight", err)
+	}
+	// A killed/failed probe can leave its exact scratch name behind. The parent
+	// owns an initially empty, locked directory and removes it after child exit.
+	fakeDir := hostTemp(t)
+	fake := "#!/bin/sh\nprintf probe > \"" + filepath.Join(root, "1", ".chickadee-probe") + "\"\nexec sleep 30\n"
+	if err := os.WriteFile(filepath.Join(fakeDir, "bwrap"), []byte(fake), 0700); err != nil {
+		t.Fatal(err)
+	}
+	originalPath := os.Getenv("PATH")
+	t.Setenv("PATH", fakeDir+":"+originalPath)
+	if err := CheckSandboxWithAccess(bundle, 8, a, 1, 2, nil); err == nil {
+		t.Fatal("timed-out probe accepted")
+	}
+	t.Setenv("PATH", originalPath)
+	if entries, err := os.ReadDir(filepath.Join(root, "1")); err != nil || len(entries) != 0 {
+		t.Fatal("timed-out probe stranded workspace", entries, err)
+	}
 	c := config.Config{StateDir: state, ImageDir: bundle, Machine: "landlock", CPUs: 1, MemoryMiB: 1024, DiskGiB: 8, Cgroup: cg}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -136,4 +156,16 @@ func TestRealHostAccessConcurrentCleanupAndRecovery(t *testing.T) {
 	// Reap removed the group/runtime; disable the deferred object's old handle.
 	r2.group = nil
 	r2.cleaned = true
+}
+
+func TestRealSealedSharedMemory(t *testing.T) {
+	if os.Getenv("CHICKADEE_HOST_ACCESS_SMOKE") != "1" {
+		t.Skip("requires isolated kernel test unit")
+	}
+	if err := CheckPolicy(); err != nil {
+		t.Skip("sealed requires ABI6", err)
+	}
+	if err := CheckSandbox(os.Getenv("CHICKADEE_TEST_RUNNER_BUNDLE"), 8); err != nil {
+		t.Fatal(err)
+	}
 }

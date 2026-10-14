@@ -114,7 +114,7 @@ func TestSandboxMountPolicy(t *testing.T) {
 		t.Fatal(err)
 	}
 	text := strings.Join(args, " ")
-	for _, required := range []string{"--unshare-user", "--disable-userns", "--unshare-pid", "--unshare-net", "--unshare-ipc", "--unshare-uts", "--cap-drop ALL", "--tmpfs /job", "--size 8589934592", "--ro-bind /trusted/worker /engine"} {
+	for _, required := range []string{"--unshare-user", "--disable-userns", "--unshare-pid", "--unshare-net", "--unshare-ipc", "--unshare-uts", "--cap-drop ALL", "--tmpfs /job", "--size 8589934592 --tmpfs /dev/shm", "--size 8589934592", "--ro-bind /trusted/worker /engine"} {
 		if !strings.Contains(text, required) {
 			t.Fatalf("missing policy %s", required)
 		}

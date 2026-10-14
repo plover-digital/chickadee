@@ -117,6 +117,13 @@ func NormalizeAccess(a *HostAccess, slot, maxSlots int, protected []string) (*Ac
 		if err != nil {
 			return nil, err
 		}
+		for _, runtime := range []string{"/usr", "/bin", "/sbin", "/lib", "/lib64"} {
+			for _, candidate := range []string{absolute, canonical} {
+				if overlaps(candidate, runtime) {
+					return nil, fmt.Errorf("protected path overlaps built-in runtime mount")
+				}
+			}
+		}
 		forbidden = append(forbidden, absolute, canonical)
 	}
 	forbidden = append(forbidden, "/job", "/tmp", "/proc", "/sys", "/dev", "/engine", "/image", "/home/runner")

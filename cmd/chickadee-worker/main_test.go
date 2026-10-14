@@ -81,3 +81,12 @@ func TestAdapterPreservesDefinitiveAbsenceAndActualCompletion(t *testing.T) {
 		t.Fatal("worker cleanup time replaced by later broker observation")
 	}
 }
+
+func TestCPUPreflightModeReportsEnforcementBoundary(t *testing.T) {
+	if got := cpuModeSummary(true, []int{4, 5}); got != "cpu=quota" {
+		t.Fatal(got)
+	}
+	if got := cpuModeSummary(false, []int{4, 5, 6, 7}); got != "cpu=affinity-only(4,5,6,7)" {
+		t.Fatal(got)
+	}
+}
