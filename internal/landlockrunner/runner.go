@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"net/netip"
 	"os"
@@ -515,6 +516,7 @@ func (m *Runner) Cleanup() error {
 	}
 	if m.workspace != nil {
 		if m.workspaceOwned {
+			slog.Info("Clearing retired sandbox workspace", "controller_pid", os.Getpid(), "execution", filepath.Base(m.dir), "started", m.started, "credential_intent", m.spent)
 			if err := m.workspace.Clear(); err != nil {
 				return err
 			}

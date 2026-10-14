@@ -182,7 +182,7 @@ func serveWorker(ctx context.Context, c worker.Config, engine drainEngine, srv *
 	var err error
 	result := make(chan error, 1)
 	go func() { result <- listen() }()
-	slog.Info("Keyless worker starting authenticated listener", "worker", c.Identity.WorkerID)
+	slog.Info("Keyless worker starting authenticated listener", "worker", c.Identity.WorkerID, "controller_pid", os.Getpid())
 	select {
 	case <-ctx.Done():
 	case err = <-result:

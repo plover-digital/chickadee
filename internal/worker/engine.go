@@ -330,7 +330,7 @@ func (e *Engine) boot(ctx context.Context, v *instance) {
 		return
 	}
 	v.state = "ready"
-	slog.Info("Guest READY", "profile", v.profile.ID, "boot_ms", time.Since(started).Milliseconds())
+	slog.Info("Guest READY", "profile", v.profile.ID, "boot_ms", time.Since(started).Milliseconds(), "controller_pid", os.Getpid(), "execution", v.id, "slot", v.slot)
 	e.notifyLocked()
 	e.mu.Unlock()
 	go func() {
