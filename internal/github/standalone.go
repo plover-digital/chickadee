@@ -193,7 +193,7 @@ func provisionSandbox(ctx context.Context, c worker.Config, s StandaloneConfig, 
 	if err := e.Deliver(c.Identity, id, jit); err != nil {
 		return err
 	}
-	slog.Info("Runner credential intent committed", "assignment", id)
+	slog.Info("Runner credential intent committed", "assignment", id, "runner", name, "execution", record.Request.VMID)
 	return nil
 }
 
@@ -255,7 +255,7 @@ func runStandalone(parent context.Context, c worker.Config, s StandaloneConfig, 
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() { defer wg.Done(); pollSandbox(ctx, s, capacity, b, demands) }()
-	pending := map[string]bool{}
+	pending := map[string]context.CancelFunc{}
 	desired := 0
 	tick := time.NewTicker(time.Second)
 	defer tick.Stop()
@@ -273,6 +273,9 @@ func runStandalone(parent context.Context, c worker.Config, s StandaloneConfig, 
 			}
 			desired = next
 		case result := <-results:
+			if stop := pending[result.id]; stop != nil {
+				stop()
+			}
 			delete(pending, result.id)
 			if result.failed {
 				nextProvision = time.Now().Add(2 * time.Second)
@@ -288,9 +291,20 @@ func runStandalone(parent context.Context, c worker.Config, s StandaloneConfig, 
 		}
 		active := len(pending)
 		for _, r := range inventory.Records {
-			if r.State != worker.Terminal && !pending[r.Request.AssignmentID] {
+			if r.State != worker.Terminal && pending[r.Request.AssignmentID] == nil {
 				active++
 			}
+		}
+		// Cancel excess in-flight reservations when demand falls. This only
+		// cancels provisioning; delivered executions remain owned by the engine
+		// and RetireReservation refuses to interrupt credentialed jobs.
+		excess := active - desired
+		for _, stop := range pending {
+			if excess <= 0 {
+				break
+			}
+			stop()
+			excess--
 		}
 		if !time.Now().Before(nextCleanup) {
 			nextCleanup = time.Now().Add(30 * time.Second)
@@ -303,12 +317,13 @@ func runStandalone(parent context.Context, c worker.Config, s StandaloneConfig, 
 		}
 		for active < desired && !time.Now().Before(nextProvision) {
 			id := host.NewID()
-			pending[id] = true
+			provision, stop := context.WithCancel(ctx)
+			pending[id] = stop
 			active++
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				err := provisionSandbox(ctx, c, s, e, b, dir, id)
+				err := provisionSandbox(provision, c, s, e, b, dir, id)
 				if err != nil {
 					slog.Warn("Runner provisioning failed", "assignment", id)
 				}

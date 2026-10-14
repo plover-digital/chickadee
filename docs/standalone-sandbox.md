@@ -165,3 +165,19 @@ No PAT option is added to the VM JSON configuration or hosted service.
 For GHES 3.16, the target operator verified that `app_client_id` must contain the
 numeric App ID as a string, rather than the OAuth Client ID. The pinned client
 accepts an App ID in this field; consult your GHES version's requirements.
+
+## Burst demand and stopping
+
+The shared scale-set client acquires every offered job request before acknowledging
+its message. Local capacity caps provisioned runners, not the scale set's backlog;
+excess acquired jobs wait for slots. Demand remains derived from GitHub's assigned
+job statistics. A drop in demand cancels excess in-flight provisioning before JIT
+delivery; an already credentialed execution is never reused or canceled on that
+basis.
+
+Graceful stop preserves credentialed executions until terminal cleanup, including
+a connected runner that has not received a job. The current protocol does not
+prove job execution has begun, so idle credentials can delay stop until the job
+lifecycle timeout. Do not infer idle state from a local credential or RUNNING frame,
+or force-remove a runner based only on a sampled GitHub busy flag: job assignment
+can race that check. Safe idle-runner shutdown remains a lifecycle follow-up.

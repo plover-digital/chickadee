@@ -501,3 +501,72 @@ func TestStandalonePATRejectsMixedAuthAndOrganizationScope(t *testing.T) {
 		}
 	}
 }
+
+func TestAppKeyRetainsOwnerReadOnlyPermissionSupport(t *testing.T) {
+	c, s, _, _, _ := standaloneFixture(t)
+	if err := os.Chmod(s.KeyFile, 0400); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Validate(c); err != nil {
+		t.Fatal("owner-only App key rejected", err)
+	}
+	if _, pat, err := credentialFile(s.apiConfig()); err != nil || pat {
+		t.Fatal("owner-only App key read failed", err)
+	}
+	if err := os.Chmod(s.KeyFile, 0440); err != nil {
+		t.Fatal(err)
+	}
+	if FailureCategory(s.Validate(c)) != "app-key-unreadable" {
+		t.Fatal("group-readable App key accepted")
+	}
+}
+
+type demandDropBackend struct {
+	*fakeSandboxBackend
+	started  chan struct{}
+	canceled chan struct{}
+}
+
+func (b *demandDropBackend) JITWithWorkFolder(ctx context.Context, name, path string) (string, error) {
+	jit, err := b.fakeSandboxBackend.JITWithWorkFolder(ctx, name, path)
+	close(b.started)
+	<-ctx.Done()
+	close(b.canceled)
+	return jit, err // Deliberately return a successful but now obsolete response.
+}
+func TestDemandFallCancelsUndeliveredProvisioning(t *testing.T) {
+	c, s, e, base, dir := standaloneFixture(t)
+	b := &demandDropBackend{base, make(chan struct{}), make(chan struct{})}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan error, 1)
+	go func() { done <- runStandalone(ctx, c, s, e, b, dir, false) }()
+	base.desired <- 1
+	select {
+	case <-b.started:
+	case <-time.After(3 * time.Second):
+		t.Fatal("JIT not started")
+	}
+	base.desired <- 0
+	select {
+	case <-b.canceled:
+	case <-time.After(3 * time.Second):
+		t.Fatal("obsolete provisioning not canceled")
+	}
+	waitSandbox(t, func() bool { e.mu.Lock(); defer e.mu.Unlock(); return e.retired == 1 })
+	e.mu.Lock()
+	delivered := e.delivered
+	e.mu.Unlock()
+	if delivered != 0 {
+		t.Fatal("credentials delivered after demand fell")
+	}
+	cancel()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("canceled provisioning did not drain")
+	}
+}

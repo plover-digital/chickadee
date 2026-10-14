@@ -102,7 +102,7 @@ func credentialPath(c config.Config) (string, bool, error) {
 		return "", false, startupFailure("config-invalid")
 	}
 	info, err := os.Stat(path)
-	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm() != 0600 || info.Size() > 64*1024 {
+	if err != nil || !info.Mode().IsRegular() || (info.Mode().Perm()&0077 != 0 || (pat && info.Mode().Perm() != 0600)) || info.Size() > 64*1024 {
 		return "", pat, startupFailure(category)
 	}
 	return path, pat, nil
@@ -122,7 +122,7 @@ func credentialFile(c config.Config) (string, bool, error) {
 	}
 	defer f.Close()
 	info, err := f.Stat()
-	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm() != 0600 || info.Size() > 64*1024 {
+	if err != nil || !info.Mode().IsRegular() || (info.Mode().Perm()&0077 != 0 || (pat && info.Mode().Perm() != 0600)) || info.Size() > 64*1024 {
 		return "", pat, startupFailure(category)
 	}
 	data, err := io.ReadAll(io.LimitReader(f, 64*1024+1))
@@ -215,15 +215,11 @@ func pollMessages(ctx context.Context, session messageSession, max int, desired 
 		if m == nil {
 			continue
 		}
-		capacity := max
-		if m.Statistics != nil {
-			capacity = max - m.Statistics.TotalAssignedJobs
-		}
+		// Acquire every offered request before acknowledging the message. Local
+		// capacity limits credentialed runners, not ownership of queued demand;
+		// dropping excess IDs here strands them after DeleteMessage.
 		var ids []int64
 		for _, j := range m.JobAvailableMessages {
-			if len(ids) >= capacity {
-				break
-			}
 			ids = append(ids, j.RunnerRequestID)
 		}
 		if m.Statistics != nil {
@@ -240,7 +236,7 @@ func pollMessages(ctx context.Context, session messageSession, max int, desired 
 			if _, e = session.AcquireJobs(ctx, ids); e != nil {
 				return fmt.Errorf("job acquisition failed")
 			}
-			slog.Info("Scale-set acquisition completed", "duration_ms", time.Since(started).Milliseconds())
+			slog.Info("Scale-set acquisition completed", "duration_ms", time.Since(started).Milliseconds(), "requests", len(ids))
 		}
 		if e = session.DeleteMessage(ctx, m.MessageID); e != nil {
 			return fmt.Errorf("message acknowledgement failed")
