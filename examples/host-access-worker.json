@@ -22,10 +22,10 @@
       "host_access": {
         "ro_paths": [
           "/opt/site-tools",
-          "/etc/slurm"
+          "/opt/site-config"
         ],
         "sockets": [
-          "/run/munge/munge.socket.2"
+          "/run/site-service/authorization.sock"
         ],
         "work_dir": "/shared/work/slot-{slot}",
         "env": {
@@ -50,5 +50,9 @@
     "certificate_file": "/etc/chickadee-landlock/tls/worker.crt",
     "key_file": "/etc/chickadee-landlock/tls/worker.key",
     "ca_file": "/etc/chickadee-landlock/tls/ca.crt"
-  }
+  },
+  "cpu_ids": [
+    0,
+    1
+  ]
 }

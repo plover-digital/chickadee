@@ -15,25 +15,27 @@ This is independently deployed Chickadee software. **chickadee.run is VM-only.**
 
 The private user/mount/PID/IPC/UTS/cgroup namespaces, no capabilities,
 no-new-privileges and disabled nested user namespaces remain. Host integration
-is an explicit authority grant, not VM-equivalent isolation. Access to an auth
-socket can authorize external work. Same-UID remote scheduler jobs are outside
-this local filesystem/process boundary and can recover broader site authority.
-Remote jobs may outlive cancellation and lose their workspace; workflows must
-wait for them (`srun`, `sbatch --wait`, or the site's appropriate equivalent).
-This backend does not own remote job cancellation or their resource limits.
+is an explicit authority grant, not VM-equivalent isolation. Any socket or network
+service the sandbox can reach may act on the service identity outside the sandbox.
+The sandbox does not constrain that service's authority or the work it launches.
+Local cgroups and Landlock contain only the local process tree; **remote containment
+is none**. Workflows must wait for externally dispatched work to finish, or it can
+outlive the runner and lose its workspace. The external service owns cancellation
+and resource enforcement. Same-UID remote processes may recover broader site
+access than the local sandbox has.
 
 ## Configuration
 
 Start with [the example](../examples/host-access-worker.json). It is illustrative:
-replace paths, bundle digest, worker identity, budgets and TLS settings with local
+replace paths, CPU IDs, bundle digest, worker identity, budgets and TLS settings with local
 operator configuration. Do not put secrets in `env`: the nonsecret normalized
 plan is passed in the bubblewrap command line. App/OAuth/gh credentials stay on
 the host and are never added to the runner environment.
 
 ```json
 "host_access": {
-  "ro_paths": ["/opt/site-tools", "/etc/slurm"],
-  "sockets": ["/run/munge/munge.socket.2"],
+  "ro_paths": ["/opt/site-tools", "/opt/site-config"],
+  "sockets": ["/run/site-service/authorization.sock"],
   "work_dir": "/shared/work/slot-{slot}",
   "env": {"PATH": "/opt/site-tools/bin:/usr/bin:/bin"}
 }
@@ -45,10 +47,12 @@ host roots, management/image/workspace overlaps, conflicting mounts and special
 files are rejected. Socket endpoints must be direct Unix sockets; only the
 individual endpoint is mounted. `/var/run` aliases the sandbox's `/run`.
 Both requested aliases and resolved targets are mounted, including symlinked
-site prefixes. `/etc/slurm` is only an example: if `slurm.conf` is under the site's
-installation prefix, expose that configuration path instead; no `/etc` Slurm bind
-is required. Public CAs and selected resolver/NSS files are mounted; private keys and unrelated
-home directories are absent. Exposed runtime trees must be free of secrets.
+site prefixes. List the actual tool configuration paths, wherever the site
+installed them; do not reflexively bind `/etc` subtrees. The `/var/run` alias
+supports client libraries that use legacy paths, independently of which service
+owns the socket. Public CAs and selected resolver/NSS files are mounted; private
+keys and unrelated home directories are absent. Exposed runtime trees must be
+free of secrets.
 Host userland is mutable: policy identity does not certify every runtime file.
 
 Operator `env` seeds the runner environment. PATH can select installed site
@@ -64,19 +68,29 @@ to the actual host runtime and are covered by real-job acceptance.
 ## Workspaces and concurrency
 
 A literal work_dir is valid with one slot, including standalone `-jit-stdin`.
-For concurrent workers, use exactly one `{slot}` token: existing scheduler slots
+Multi-slot host access is **implemented, not yet target-validated on ABI5**.
+Two concurrent sandboxes/cleanup were tested locally on ABI6 with strict V5;
+the ABI5 owner exercised only standalone single-slot operation. Validate multiple
+warm slots, reservation/JIT paths, isolation and recovery on the actual site before
+expanding capacity. For concurrent workers, use exactly one `{slot}` token: existing scheduler slots
 expand it to decimal1–32. Precreate each directory as the service user, mode0700,
 empty, with no symlinks in any component. The worker locks the directory and pins
 its object for mounts and cleanup; another instance cannot use that workspace.
 Do not share it with another application or point it at persistent shared scratch.
 
 The directory is bound at the **same absolute path**, so remote nodes can resolve
-executables, cwd, inputs and outputs. The host/private namespace parents are not
-mounted wholesale and sibling slots remain hidden locally. Ensure the site's
-compute nodes see the same underlying filesystem/path; same-UID remote access
+executables, cwd, inputs and outputs. If an external executor resolves paths
+itself, the workspace must be on a shared filesystem visible at this identical
+path on both sides. Host/private namespace parents are not mounted wholesale and
+sibling slots remain hidden locally; same-UID remote access
 is not confined by this worker. `disk_gib` bounds only private tmpfs. It does not
 cap shared disk consumption; the operator explicitly accepts the unbounded
-workspace and manages site storage capacity.
+workspace and manages site storage capacity. An ordinary directory has no
+Chickadee-enforced disk quota: a workflow can fill its backing filesystem and
+disrupt other runners or management writes. Use site-managed quotas or separate
+storage to protect journals/logs and other workloads. This v1 neither validates
+nor provisions those controls; it is an operator responsibility, not a disk-limit
+guarantee. Sealed/VM storage limits remain unchanged.
 
 After kernel-confirmed whole-tree exit and guardian reaping, only contents of
 the matching pinned directory are deleted. The directory/parent are retained.
@@ -123,9 +137,13 @@ Set that PATH in the actual worker service/scope, not just an interactive shell.
 cgroup-v2 controls must work on the actual distribution/backported kernel.
 
 The existing controller-leaf implementation avoids requiring DelegateSubgroup.
-The target systemd252 path still needs target acceptance. Memory, pids, swap-zero
-and OOM-group controls are mandatory. If cpu is not delegated, configure the
-existing `cpu_ids` pool covering the CPU budget. Allocation is disjoint within
+Actual delegation must be checked on each target system; the reported single-slot
+ABI5 fixture used systemd252 successfully. Memory, pids, swap-zero and OOM-group
+controls are mandatory. If cpu is not delegated, configure the existing `cpu_ids`
+pool: a profile's `cpus` selects that many IDs per execution, and
+`budget.max_cpus` must be no larger than `len(cpu_ids)`. The IDs must be distinct,
+online and permitted by the worker's affinity. For example, a four-ID pool and
+max_cpus=4 can admit two profiles with cpus=2, subject to VM/memory budgets. Allocation is disjoint within
 this worker and inherited by descendants; it is not CPU quota or exclusive host
 CPU ownership. Trusted jobs can change their affinity within the host's cpuset
 permissions; this is starting placement, not a hostile-job CPU ceiling. Configure parent memory/tasks budgets to cover all executions,
@@ -151,9 +169,17 @@ chickadee-worker -config /private/config.json -check-landlock
 This validates each profile's slot1 namespaces, V5 enforcement, service identity,
 workspace permissions, configured socket connection and host namespace identity.
 Config validation covers all slot paths. Socket connection proves reachability,
-not Munge authentication; the site acceptance commands verify that authority.
+not authentication, authorization or what the peer service can do. Site
+acceptance must verify the intended identity and authority separately.
 Reports expose no env/JIT values. Dirty workspaces fail this read-only check;
 normal worker startup can reconcile matching owned markers first.
+
+`job_timeout_seconds` covers the entire local Run, including time the workflow
+spends waiting in an external service's queue and waiting for its work to finish.
+Sites with long queue waits may need hours; the current configurable range is
+1–14400 seconds (four hours). On timeout, Chickadee terminates the local tree,
+then cleans its workspace. This does not cancel external work, which can be
+orphaned and lose its working directory as described in the trust boundary above.
 
 ## GitHub control plane
 
@@ -237,7 +263,7 @@ controller was killed, its delegated cgroup disappeared, and dirty contents/priv
 marker were retained. Restart in the same delegated unit with a nonsecret invalid
 JIT fixture reclaimed the old execution, cleared the contents and retired the new
 fixture execution; the workspace directory survived. This tests local restart,
-not remote scheduler cancellation. GitHub cancellation/owned registration removal
+not cancellation by an external execution service. GitHub cancellation/owned registration removal
 is the trusted caller's separate responsibility; a dead runner may require
 [force cancellation](https://docs.github.com/en/rest/actions/workflow-runs#force-cancel-a-workflow-run)
 when ordinary cancellation cannot complete.
@@ -251,8 +277,25 @@ That report uses a substitute run.sh workload, not the actual GitHub runner/JIT
 connection to GHE. The affinity, completion-reporting and drained-journal fixes
 now have regression coverage; real local DONE/interrupted CLI fixtures also pass.
 
-Target-owner real-runner/GHE acceptance remains outstanding: real fresh-JIT checkout/build on ABI5,
-Munge UID match, same-path srun/sbatch --wait/MPI, local path denials, OOM/PID
-containment, cancellation, socket replacement, controller restart, workspace
-cleanup and an observed remote-boundary/cancellation result. Prototype kernel
-checks on a newer host do not certify the ABI5/Slurm deployment.
+The target owner re-verified an unpatched f0535aa build and reported successful
+single-slot functional/OOM cleanup plus GHE DNS, HTTPS with certificate verification,
+and required .NET library visibility ([follow-up](https://github.com/plover-digital/chickadee/pull/19#issuecomment-6172775096)).
+This removes known host-side obstacles; an actual runner-to-GHE fresh-JIT job
+still has not been exercised there. Multi-slot ABI5 operation is also outstanding.
+
+Site acceptance should use a real fresh-JIT checkout/build, verify the exposed
+service identity/authority and external execution paths, and cover local path
+denials, OOM/PID containment, cancellation, socket replacement, controller restart,
+workspace cleanup and the observed external-work boundary. Local ABI6 results
+and substitute runner fixtures do not certify those untested deployment paths.
+
+## Worked example: HPC scheduler login host
+
+[The HPC example](../examples/host-access-hpc-scheduler.json) illustrates the
+reported fixture, not a backend dependency: read-only site tools/configuration,
+a Munge authentication socket, and a same-path shared workspace. Slurm clients
+can use `srun` or `sbatch --wait` to wait for dispatched work; queue wait consumes
+the local timeout too. A prefix-installed slurm.conf needs its actual prefix path,
+not an automatic `/etc/slurm` bind. Lustre and MPI were used in the validation
+record above; other filesystems and external services follow the same generic
+path, authority and lifecycle rules. No scheduler adapter is implemented.
