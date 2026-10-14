@@ -4,6 +4,7 @@ package main
 
 import (
 	"archive/tar"
+	"bytes"
 	"compress/gzip"
 	"context"
 	"crypto/ecdsa"
@@ -14,8 +15,11 @@ import (
 	"crypto/x509/pkix"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"fmt"
+	"io"
 	"math/big"
 	"net"
 	"net/url"
@@ -26,6 +30,7 @@ import (
 
 	"github.com/plover-digital/chickadee/internal/host"
 	"github.com/plover-digital/chickadee/internal/landlockrunner"
+	"github.com/plover-digital/chickadee/internal/protocol"
 	"github.com/plover-digital/chickadee/internal/worker"
 	"github.com/plover-digital/chickadee/workerapi"
 	"golang.org/x/sys/unix"
@@ -93,7 +98,7 @@ func TestRealConcurrentHostAccessViaWorkerAPIKeepsLiveWorkspaces(t *testing.T) {
 	}
 	bundle := filepath.Join(root, "bundle")
 	os.Mkdir(bundle, 0700)
-	script := []byte("#!/bin/sh\nset -eu\nwork=$(printf '%s' \"$ACTIONS_RUNNER_INPUT_JITCONFIG\" | base64 -d)\nprintf alive > \"$work/sentinel\"\nmkdir \"$work/checkout\"\nprintf checkout > \"$work/checkout/keep\"\nfor i in $(seq 1 160); do test -f \"$work/sentinel\"; test -f \"$work/checkout/keep\"; sleep 0.5; done\n")
+	script := []byte("#!/bin/sh\nset -eu\nwork=$(printf '%s' \"$ACTIONS_RUNNER_INPUT_JITCONFIG\" | base64 -d)\nprintf alive > \"$work/sentinel\"\nmkdir \"$work/checkout\"\nprintf checkout > \"$work/checkout/keep\"\nfor i in $(seq 1 160); do test -f \"$work/sentinel\"; test -f \"$work/checkout/keep\"; sleep 0.5; done\nmkdir -p /job/runner/_diag\nprintf CHICKADEE_CONCURRENCY_FIXTURE_COMPLETED > /job/runner/_diag/completed.log\n")
 	file, err := os.Create(filepath.Join(bundle, "runner.tar.gz"))
 	if err != nil {
 		t.Fatal(err)
@@ -264,6 +269,36 @@ func TestRealConcurrentHostAccessViaWorkerAPIKeepsLiveWorkspaces(t *testing.T) {
 		}
 	}
 	for _, record := range records {
+		// Terminal state alone does not prove the fixture exited successfully.
+		// Require diagnostics emitted only after all 80 seconds of sentinel checks,
+		// including the period after draining begins.
+		file, err := os.Open(filepath.Join(cfg.StateDir, "logs", record.Request.VMID+".jsonl"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		reader := json.NewDecoder(file)
+		var diagnostics []byte
+		for {
+			var frame protocol.Frame
+			err := reader.Decode(&frame)
+			if err != nil {
+				if !errors.Is(err, io.EOF) {
+					file.Close()
+					t.Fatal(err)
+				}
+				break
+			}
+			data, err := base64.StdEncoding.DecodeString(frame.Data)
+			if err != nil {
+				file.Close()
+				t.Fatal(err)
+			}
+			diagnostics = append(diagnostics, data...)
+		}
+		file.Close()
+		if !bytes.Contains(diagnostics, []byte("CHICKADEE_CONCURRENCY_FIXTURE_COMPLETED")) {
+			t.Fatal("fixture did not complete all live-workspace checks", record.Request.AssignmentID)
+		}
 		entries, err := os.ReadDir(record.Request.WorkFolder)
 		if err != nil || len(entries) != 0 {
 			t.Fatal("terminal workspace retained job data", entries, err)

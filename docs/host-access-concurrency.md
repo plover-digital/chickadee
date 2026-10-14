@@ -11,8 +11,10 @@ The opt-in real-kernel regression uses the existing authenticated worker API,
 three credential-free warm sandboxes, three noncredential fixture configurations,
 80-second shell workloads and a40-second reservation expiry. It verifies capacity,
 original runtime identities and workspace sentinels for50seconds; then drains,
-waits for terminal proof and verifies empty retained workspaces. It creates only
-its private temporary state, generated test TLS files and three local slots.
+requires a retained diagnostic completion marker emitted only after the entire
+80-second sentinel loop succeeds, waits for terminal proof and verifies empty
+retained workspaces. Terminal state alone does not establish fixture success.
+It creates only its private temporary state, generated test TLS files and three local slots.
 It does not register GitHub runners or dispatch external jobs. Its API listener
 binds loopback only; it changes no interfaces, routes, firewall rules or NAT.
 Failed cleanup retains its private fixtures for inspection.
