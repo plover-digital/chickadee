@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/plover-digital/chickadee/internal/host"
 	"github.com/plover-digital/chickadee/internal/landlockrunner"
@@ -261,5 +262,36 @@ func TestHostAccess32SlotsAndIndependentPolicy(t *testing.T) {
 	bad.Profiles[0].HostAccess.WorkDir = filepath.Join(root, "slot-1")
 	if bad.Validate() == nil {
 		t.Fatal("32 executions sharing one directory accepted")
+	}
+}
+
+func TestLandlockChecksIncludeEveryHostAndSealedProfile(t *testing.T) {
+	c := Config{StateDir: "/private/state", Budget: Budget{MaxVMs: 2}, Profiles: []Profile{
+		{ID: "first", Machine: "landlock", ImageDir: "/bundle/first", DiskGiB: 8, HostAccess: &landlockrunner.HostAccess{WorkDir: "/shared/first-{slot}"}},
+		{ID: "second", Machine: "landlock", ImageDir: "/bundle/second", DiskGiB: 8, HostAccess: &landlockrunner.HostAccess{WorkDir: "/shared/second-{slot}"}},
+		{ID: "sealed", Machine: "landlock", ImageDir: "/bundle/sealed", DiskGiB: 8},
+	}}
+	failed := errors.New("required socket unreachable")
+	var visited []string
+	probe := func(image string, disk int, access *landlockrunner.HostAccess, slot, max int, protected []string) error {
+		visited = append(visited, image)
+		if slot != 1 || max != 2 || disk != 8 {
+			t.Fatal("wrong probe arguments")
+		}
+		if image == "/bundle/second" {
+			return failed
+		}
+		return nil
+	}
+	if err := checkLandlockSandboxes(c, probe); !errors.Is(err, failed) || len(visited) != 2 {
+		t.Fatal("second host profile failure ignored", visited, err)
+	}
+	visited = nil
+	err := checkLandlockSandboxes(c, func(image string, _ int, _ *landlockrunner.HostAccess, _ int, _ int, _ []string) error {
+		visited = append(visited, image)
+		return nil
+	})
+	if err != nil || len(visited) != 3 {
+		t.Fatal("sealed/mixed profile omitted", visited, err)
 	}
 }

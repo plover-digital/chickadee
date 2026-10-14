@@ -139,6 +139,13 @@ func NormalizeAccess(a *HostAccess, slot, maxSlots int, protected []string) (*Ac
 	if err = check(work); err != nil {
 		return nil, err
 	}
+	// Parent runtime mounts are installed later and would hide an earlier
+	// writable workspace bind. Keep workspace storage outside those trees.
+	for _, runtime := range []string{"/usr", "/bin", "/sbin", "/lib", "/lib64"} {
+		if overlaps(work, runtime) {
+			return nil, fmt.Errorf("workspace overlaps read-only runtime tree")
+		}
+	}
 	// Directory ownership/symlink checks are separate from emptiness: recovery
 	// must be able to reclaim a matching owned dirty workspace first.
 	if err = ValidateWorkspace(work); err != nil {

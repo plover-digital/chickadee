@@ -409,11 +409,14 @@ func (c Config) protectedFor(id string, slot int) []string {
 // CheckLandlockSandboxes probes every configured policy without credentials or cleanup.
 // Slot paths are all validated by Config.Validate; the child probe uses slot one.
 func CheckLandlockSandboxes(c Config) error {
+	return checkLandlockSandboxes(c, landlockrunner.CheckSandboxWithAccess)
+}
+func checkLandlockSandboxes(c Config, probe func(string, int, *landlockrunner.HostAccess, int, int, []string) error) error {
 	for _, p := range c.Profiles {
 		if p.Machine != "landlock" {
 			return fmt.Errorf("Landlock configuration required")
 		}
-		if err := landlockrunner.CheckSandboxWithAccess(p.ImageDir, p.DiskGiB, p.HostAccess, 1, c.Budget.MaxVMs, c.protectedFor(p.ID, 1)); err != nil {
+		if err := probe(p.ImageDir, p.DiskGiB, p.HostAccess, 1, c.Budget.MaxVMs, c.protectedFor(p.ID, 1)); err != nil {
 			return err
 		}
 	}

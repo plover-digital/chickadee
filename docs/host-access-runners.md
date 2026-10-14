@@ -74,7 +74,9 @@ the ABI5 owner exercised only standalone single-slot operation. Validate multipl
 warm slots, reservation/JIT paths, isolation and recovery on the actual site before
 expanding capacity. For concurrent workers, use exactly one `{slot}` token: existing scheduler slots
 expand it to decimal1–32. Precreate each directory as the service user, mode0700,
-empty, with no symlinks in any component. The worker locks the directory and pins
+empty, with no symlinks in any component. Workspaces must be outside `/usr`,
+`/bin`, `/sbin`, `/lib` and `/lib64`; their read-only runtime mounts would hide
+a writable bind beneath them. The worker locks the directory and pins
 its object for mounts and cleanup; another instance cannot use that workspace.
 Do not share it with another application or point it at persistent shared scratch.
 
@@ -168,7 +170,9 @@ chickadee-worker -config /private/config.json -check-landlock
 
 This validates each profile's slot1 namespaces, V5 enforcement, service identity,
 workspace permissions, configured socket connection and host namespace identity.
-Config validation covers all slot paths. Socket connection proves reachability,
+Config validation covers all slot paths. Generic `-check` runs the same per-profile
+sandbox probes after validating listener/TLS settings. Both check modes are
+read-only; normal startup still reconciles matching owned crash state first. Socket connection proves reachability,
 not authentication, authorization or what the peer service can do. Site
 acceptance must verify the intended identity and authority separately.
 Reports expose no env/JIT values. Dirty workspaces fail this read-only check;
