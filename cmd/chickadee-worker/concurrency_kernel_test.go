@@ -143,7 +143,7 @@ func TestRealConcurrentHostAccessViaWorkerAPIKeepsLiveWorkspaces(t *testing.T) {
 			wait, stop := context.WithTimeout(context.Background(), 330*time.Second)
 			defer stop()
 			if err := engine.Wait(wait); err == nil {
-				clean = true
+				clean = !t.Failed()
 			} else {
 				t.Errorf("cleanup failed; retained fixtures: %v", err)
 			}
@@ -152,7 +152,7 @@ func TestRealConcurrentHostAccessViaWorkerAPIKeepsLiveWorkspaces(t *testing.T) {
 		select {
 		case err := <-done:
 			if err == nil {
-				clean = true
+				clean = !t.Failed()
 			} else {
 				t.Errorf("cleanup failed; retained fixtures: %v", err)
 			}

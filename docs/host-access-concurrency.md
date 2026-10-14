@@ -1,11 +1,21 @@
 # Investigating live workspace cleanup
 
-[Issue22](https://github.com/plover-digital/chickadee/issues/22) reports live
-workspace deletion in three-slot ABI5/Lustre worker-API operation. It is an open
-multi-slot deployment blocker. The trace/regression changes here do **not** claim
-to fix it. Local ABI6/V5 API reproductions kept all three live workspaces and
-runtime identities intact past40seconds, then cleaned only after completion.
-Target evidence is needed to identify the path responsible for the reported loss.
+[Issue22](https://github.com/plover-digital/chickadee/issues/22) was traced by
+the target operator to a second controller on another cluster node sharing the
+same state and workspaces. Host-local filesystem locks (`localflock`) did not
+exclude the second controller. Its recovery cleared the first host's live state.
+The process-attributed logs in this PR exposed that path. After pinning the user
+units to one host, the target operator reports successful three-job concurrency
+and a passing 80.49-second ABI5/Lustre regression. These changes add diagnostics
+and regression coverage; they do not yet implement cross-host recovery fencing.
+
+Use node-local `state_dir` and one controller per owned workspace set. When home
+is shared, enabled lingering systemd user units can start on compute nodes as
+soon as a job starts that user's session. Pin both worker and any broker units
+with `ConditionHost=<runner-host>` in their `[Unit]` sections, or install units
+outside the shared home. Do not rely on host-local locks as distributed ownership.
+Host-identity fencing for recovery remains a follow-up; retaining unfamiliar
+state must take precedence over automatically deleting it.
 
 The opt-in real-kernel regression uses the existing authenticated worker API,
 three credential-free warm sandboxes, three noncredential fixture configurations,
