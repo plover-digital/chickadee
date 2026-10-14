@@ -24,6 +24,10 @@ outlive the runner and lose its workspace. The external service owns cancellatio
 and resource enforcement. Same-UID remote processes may recover broader site
 access than the local sandbox has.
 
+For a persistent GitHub-driven pool, use the optional
+[standalone controller mode](standalone-sandbox.md). The worker API and
+`-jit-stdin` one-shot path remain available.
+
 ## Configuration
 
 Start with [the example](../examples/host-access-worker.json). It is illustrative:

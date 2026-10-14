@@ -8,6 +8,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/plover-digital/chickadee/internal/github"
 	"github.com/plover-digital/chickadee/internal/host"
 	"github.com/plover-digital/chickadee/internal/landlockrunner"
 	"github.com/plover-digital/chickadee/internal/worker"
@@ -25,8 +26,9 @@ import (
 
 type configuration struct {
 	worker.Config
-	Listen string             `json:"listen"`
-	TLS    workerapi.TLSFiles `json:"tls"`
+	GitHub *github.StandaloneConfig `json:"github,omitempty"`
+	Listen string                   `json:"listen"`
+	TLS    workerapi.TLSFiles       `json:"tls"`
 }
 
 func main() {
@@ -34,6 +36,8 @@ func main() {
 	check := flag.Bool("check", false, "validate local worker identity, resources, TLS and isolation without starting VMs or a listener")
 	probe := flag.String("sandbox-probe", "", "internal isolation preflight child")
 	landlockCheck := flag.Bool("check-landlock", false, "validate process-runner configuration and isolation without TLS or credentials")
+	githubMode := flag.Bool("github", false, "standalone GitHub scale-set demand listener for one sandbox profile; no worker API")
+	githubCleanup := flag.Bool("cleanup-github", false, "with -github, recover local state and reconcile registrations without starting runners")
 	jitStdin := flag.Bool("jit-stdin", false, "standalone one-job Landlock runner; read fresh JIT from stdin")
 	child := flag.Bool("landlock-child", false, "internal Landlock sandbox child")
 	childProbe := flag.Bool("landlock-probe", false, "internal Landlock negative-isolation probe")
@@ -42,6 +46,36 @@ func main() {
 		if err := landlockrunner.Child(*childProbe); err != nil {
 			if *childProbe {
 				fmt.Fprintln(os.Stderr, err.Error())
+			}
+			os.Exit(1)
+		}
+		return
+	}
+	if (*githubMode && (*jitStdin || *landlockCheck)) || (*githubCleanup && (!*githubMode || *check)) {
+		slog.Error("incompatible standalone flags")
+		os.Exit(1)
+	}
+	if *githubMode {
+		c, err := load(*path)
+		if err == nil && c.GitHub == nil {
+			err = fmt.Errorf("github configuration required")
+		}
+		if err == nil && *check {
+			err = worker.CheckConfig(c.Config)
+			if err == nil {
+				err = worker.CheckLandlockSandboxes(c.Config)
+			}
+		}
+		if err == nil && !*check {
+			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR1, syscall.SIGHUP)
+			defer stop()
+			err = github.RunStandalone(ctx, c.Config, *c.GitHub, *githubCleanup)
+		}
+		if err != nil {
+			if errors.Is(err, github.ErrRegistrationGuard) {
+				slog.Error("registration cleanup deferred by late-JIT guard; retry after NotBefore")
+			} else {
+				slog.Error("standalone GitHub controller stopped; inspect private configuration and diagnostics")
 			}
 			os.Exit(1)
 		}
@@ -115,6 +149,12 @@ func load(path string) (configuration, error) {
 		return c, fmt.Errorf("invalid worker configuration")
 	}
 	c.ProtectedPaths = []string{path, c.TLS.KeyFile, c.TLS.CertificateFile, c.TLS.CAFile}
+	if c.GitHub != nil {
+		c.ProtectedPaths = append(c.ProtectedPaths, c.GitHub.KeyFile)
+		if err := c.GitHub.Validate(c.Config); err != nil {
+			return c, err
+		}
+	}
 	return c, c.Config.Validate()
 }
 func wireIdentity(i worker.Identity) workerapi.Identity {
@@ -130,6 +170,9 @@ func run(path string, check bool) error {
 	c, err := load(path)
 	if err != nil {
 		return err
+	}
+	if c.GitHub != nil {
+		return fmt.Errorf("github configuration requires explicit -github mode")
 	}
 	sc := workerapi.ServerConfig{Listen: c.Listen, Identity: wireIdentity(c.Identity), TLS: c.TLS}
 	if err = workerapi.ValidateServerConfig(sc); err != nil {

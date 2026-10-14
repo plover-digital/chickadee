@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"github.com/actions/scaleset"
 	"github.com/plover-digital/chickadee/internal/config"
+	"github.com/plover-digital/chickadee/workerapi"
 	"log/slog"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -27,13 +29,8 @@ func New(ctx context.Context, c config.Config) (*Client, error) { return newClie
 // Existing never recreates a removed scale set during journal recovery.
 func Existing(ctx context.Context, c config.Config) (*Client, error) { return newClient(ctx, c, false) }
 func newClient(ctx context.Context, c config.Config, create bool) (*Client, error) {
-	u, e := url.Parse(c.GitHubURL)
-	if e != nil || u.Scheme != "https" || u.Host != "github.com" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
-		return nil, fmt.Errorf("prototype supports https://github.com org/repo scopes")
-	}
-	p := strings.Split(strings.Trim(u.Path, "/"), "/")
-	if len(p) < 1 || len(p) > 2 || p[0] == "" || p[0] == "enterprises" {
-		return nil, fmt.Errorf("use repository or organization scope")
+	if e := validateScope(c.GitHubURL); e != nil {
+		return nil, e
 	}
 	info, e := os.Stat(c.KeyFile)
 	if e != nil {
@@ -70,7 +67,18 @@ func newClient(ctx context.Context, c config.Config, create bool) (*Client, erro
 	return &Client{API: api, SetID: set.ID}, nil
 }
 func (c *Client) JIT(ctx context.Context, name string) (string, error) {
-	j, e := c.API.GenerateJitRunnerConfig(ctx, &scaleset.RunnerScaleSetJitRunnerSetting{Name: name, WorkFolder: runnerWorkFolder}, c.SetID)
+	return c.JITWithWorkFolder(ctx, name, runnerWorkFolder)
+}
+
+// JITWithWorkFolder uses a host-selected reserved workspace, never workflow input.
+func (c *Client) JITWithWorkFolder(ctx context.Context, name, workFolder string) (string, error) {
+	if !workerapi.ValidWorkFolder(workFolder) {
+		return "", fmt.Errorf("invalid reserved work folder")
+	}
+	if workFolder == "" {
+		workFolder = runnerWorkFolder
+	}
+	j, e := c.API.GenerateJitRunnerConfig(ctx, &scaleset.RunnerScaleSetJitRunnerSetting{Name: name, WorkFolder: workFolder}, c.SetID)
 	if e != nil || j == nil || j.EncodedJITConfig == "" {
 		return "", fmt.Errorf("JIT generation failed")
 	}
@@ -172,4 +180,22 @@ func maxInt(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func validateScope(scope string) error {
+	u, e := url.Parse(scope)
+	if e != nil || u.Scheme != "https" || u.Host != "github.com" || u.User != nil || u.RawQuery != "" || u.Fragment != "" || u.RawPath != "" {
+		return fmt.Errorf("prototype supports https://github.com org/repo scopes")
+	}
+	p := strings.Split(strings.Trim(u.Path, "/"), "/")
+	if len(p) < 1 || len(p) > 2 || p[0] == "" || p[0] == "enterprises" {
+		return fmt.Errorf("use repository or organization scope")
+	}
+
+	for _, part := range p {
+		if !regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]*$`).MatchString(part) {
+			return fmt.Errorf("invalid GitHub scope")
+		}
+	}
+	return nil
 }

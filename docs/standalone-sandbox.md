@@ -1,0 +1,125 @@
+# Standalone GitHub sandbox runners
+
+One persistent `chickadee-worker -github` process listens for GitHub Actions
+scale-set demand and manages a local pool of disposable process runners. It
+supports one queue and one Landlock profile, with configurable warm capacity
+and up to32 slots within the existing CPU/memory budgets. No Roost account,
+worker API listener, TLS certificate, database or Kubernetes is needed.
+
+This is a **trusted self-hosted option**. chickadee.run remains VM-only.
+[Sealed Landlock](landlock-runners.md) requires ABI6 and private networking;
+explicit [host_access](host-access-runners.md) supports ABI5, selected site tools,
+service authority and host networking. Their existing trust/limit distinctions
+still apply. Use separate state directories and delegated units for VM and
+sandbox controllers. Do not run another listener for the same GitHub scale set.
+
+## Configure and start
+
+1. Build/install `chickadee-worker` and the verified runner bundle using
+   [Landlock setup](landlock-runners.md). This mode uses the existing worker
+   JSON configuration, version1, plus the optional `github` section.
+2. Copy [the standalone example](../examples/standalone-sandbox.json), replace
+   the bundle digest, paths, CPU IDs, identity and resource budgets. The example
+   selects host_access; remove it and add the required `landlock_deny_prefixes`
+   to use sealed isolation. Use a dedicated scale-set name as the workflow label.
+3. Set up a GitHub App as in [installation](install.md), with organization
+   Self-hosted runners write or repository Administration write as appropriate.
+   Install it in the configured scope. Store its private key outside the repo,
+   mode0600, readable only by the controller account. Supply its client ID,
+   installation ID and runner group ID in `github`. The initial adapter supports
+   public github.com org/repository scopes; it does not add GHES support.
+4. Precreate all slot workspaces when using host_access. Keep writable workspace
+   storage separate from controller journals/logs where possible. Keep configuration
+   private and outside built-in runtime mounts. The App key path is added to the
+   protected mount paths automatically.
+5. Run under the same bounded, delegated systemd unit used for the process worker,
+   changing ExecStart to:
+
+```sh
+/usr/local/bin/chickadee-worker -config /etc/chickadee-sandbox/config.json -github
+```
+
+Make sure the runner group allows the target repository and, when configured,
+the exact workflow/ref. Public repositories require the group's public-repository
+permission. A valid label alone does not override those GitHub access policies.
+
+Use `-github -check` first under that unit to verify the configuration, key file
+permissions, pinned bundle, cgroup budget and real namespace/Landlock probes,
+without contacting GitHub. No `listen` or `tls` section is needed. Merely adding
+`github` to the config does not activate this mode: `-github` is explicit, and
+ordinary keyless worker/one-shot operation rejects the credential-bearing config.
+
+The [example systemd unit](../deploy/chickadee-sandbox-github.service) has a bounded
+sealed-runtime baseline. Adapt memory/CPU/tasks limits and bundle paths to your
+profile. For host_access, add the precreated workspace paths to `ReadWritePaths`
+and use the actual supported delegation, as described in the host-access guide.
+
+A workflow targets the scale-set name:
+
+```yaml
+jobs:
+  build:
+    runs-on: chickadee-sandbox
+    steps:
+      - uses: actions/checkout@v5
+      - run: make build test
+```
+
+## Lifecycle and recovery
+
+Warm sandboxes have no GitHub credentials and are not registered. Demand comes
+from `statistics.TotalAssignedJobs`, not individual job messages. Chickadee
+reserves a warm slot, seals it, persists a private registration intent, generates
+one fresh JIT with that slot's workspace and delivers it once. GitHub chooses
+any matching job; a slot is not bound to a particular workflow job by Chickadee.
+The runner exits after one job. The existing engine confirms process-tree exit,
+cleans writable state and replenishes the pool.
+
+Failed provisioning destroys the reserved sandbox. A timeout/ambiguous JIT
+response is never retried against it. Failures back off before further admission.
+The controller's App key stays on the host; only per-runner JIT enters the sandbox.
+No JIT or credential values are logged.
+
+Registration intents live under `state_dir/github/records`, separately from
+local engine state. Cleanup removes the exact owned GitHub registration only
+when the local assignment is terminal. Unknown/uncertain local state is retained.
+A ten-minute NotBefore guard keeps the intent for repeated removal in case a late
+JIT request registers after an ambiguous response. A GitHub outage retains the
+intent for retry. Restart first reaps owned local executions, then reconciles
+registrations; it never replays JIT. Restore the original queue/scope/installation
+configuration to clean older intents before changing that identity.
+
+SIGTERM, SIGINT, SIGUSR1 and SIGHUP stop polling/provisioning and drain delivered
+jobs. There is no live configuration reload in this mode. Keep systemd
+`KillMode=mixed` and a stop deadline long enough for the configured job timeout
+plus cleanup. Drain before binary/image/policy changes. For recovery without
+warm creation or demand polling, run in the same delegated unit:
+
+```sh
+chickadee-worker -config /etc/chickadee-sandbox/config.json -github -cleanup-github
+```
+
+Cleanup does not create a missing scale set. If the late-registration guard has
+not expired, it reports pending cleanup; retry later. This does not cancel external
+work launched through exposed host services, nor force-cancel GitHub workflow runs.
+
+The existing engine journal has a bounded1024-assignment lifetime and deliberately
+stops admission when full. Safe tombstone pruning remains separate work: do not
+manually delete engine records while registration intents remain. This prototype
+adds no billing, usage dashboard, multi-profile routing or general scheduler.
+
+The integration reuses the pinned official [scaleset client v0.4.0](https://github.com/actions/scaleset/blob/v0.4.0/README.md)
+and its JIT/message-session APIs. Older worker binaries reject this optional
+configuration; upgrade the binary before enabling it. Worker API v1 is unchanged.
+
+## Acceptance evidence
+
+Two real standalone-demand jobs passed: [38621672450](https://github.com/plover-digital/chickadee/actions/runs/38621672450)
+and [38621885608](https://github.com/plover-digital/chickadee/actions/runs/38621885608).
+They ran on distinct runners through the same persistent one-slot controller:
+checkout, C compilation, private writable state, HTTPS, disk workspace and a
+leftover descendant. The first used sandbox retired and its empty retained
+workspace was replaced by a distinct credential-free READY execution before the
+second job. No manual JIT input or worker API was used. A dedicated temporary
+runner group allowed only this trusted acceptance workflow. This validates the
+new GitHub adapter on local ABI6 enforcing V5, not target GHES/ABI5 acceptance.

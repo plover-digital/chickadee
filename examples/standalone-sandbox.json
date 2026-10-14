@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "identity": {
+    "worker_id": "sandbox-standalone",
+    "broker_id": "standalone",
+    "generation": 1
+  },
+  "state_dir": "/var/lib/chickadee-sandbox-github",
+  "cgroup": {
+    "pids_max": 512
+  },
+  "profiles": [
+    {
+      "id": "landlock-small",
+      "digest": "REPLACE_WITH_BUNDLE_SHA256SUMS_DIGEST",
+      "image_dir": "/var/lib/chickadee-landlock-images/runner-2.338.0",
+      "machine": "landlock",
+      "cpus": 2,
+      "memory_mib": 4096,
+      "disk_gib": 8,
+      "warm_pool": 1,
+      "host_access": {
+        "ro_paths": [
+          "/opt/site-tools",
+          "/opt/site-config"
+        ],
+        "sockets": [
+          "/run/site-service/authorization.sock"
+        ],
+        "work_dir": "/shared/work/slot-{slot}",
+        "env": {
+          "PATH": "/opt/site-tools/bin:/usr/bin:/bin",
+          "LD_LIBRARY_PATH": "/opt/site-tools/lib",
+          "MODULEPATH": "/opt/site-tools/modulefiles"
+        }
+      }
+    }
+  ],
+  "budget": {
+    "max_vms": 1,
+    "max_cpus": 2,
+    "max_memory_mib": 4096
+  },
+  "boot_timeout_seconds": 60,
+  "job_timeout_seconds": 600,
+  "reservation_timeout_seconds": 120,
+  "log_retention_mib": 64,
+  "cpu_ids": [
+    0,
+    1
+  ],
+  "github": {
+    "github_url": "https://github.com/example-org",
+    "app_client_id": "REPLACE_WITH_APP_CLIENT_ID",
+    "app_installation_id": 1,
+    "app_key_file": "/etc/chickadee-sandbox/app.pem",
+    "scale_set": "chickadee-sandbox",
+    "runner_group_id": 1
+  }
+}
