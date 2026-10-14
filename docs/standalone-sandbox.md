@@ -83,7 +83,12 @@ cleans writable state and replenishes the pool.
 Failed provisioning destroys the reserved sandbox. A timeout/ambiguous JIT
 response is never retried against it. Failures back off before further admission.
 The controller's App key stays on the host; only per-runner JIT enters the sandbox.
-No JIT or credential values are logged.
+No JIT or credential values are logged. Startup failures include a fixed
+`reason` category: config-invalid, app-key-unreadable, github-auth-failed,
+scale-set-lookup-failed, scale-set-create-failed, scale-set-policy-invalid,
+engine-open-failed or engine-check-failed. SDK responses/raw errors are never
+printed. For lookup/auth failures, check the configured App, installation and
+permissions; engine-open includes local startup/recovery checks.
 
 Registration intents live under `state_dir/github/records`, separately from
 local engine state. Cleanup removes the exact owned GitHub registration only

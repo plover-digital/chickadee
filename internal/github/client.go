@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/actions/scaleset"
 	"github.com/plover-digital/chickadee/internal/config"
@@ -13,6 +14,18 @@ import (
 	"strings"
 	"time"
 )
+
+// startupFailure contains only a fixed code, never an SDK response or credential.
+type startupFailure string
+
+func (e startupFailure) Error() string { return string(e) }
+func FailureCategory(err error) string {
+	var stage startupFailure
+	if errors.As(err, &stage) {
+		return string(stage)
+	}
+	return ""
+}
 
 type Client struct {
 	API   *scaleset.Client
@@ -34,23 +47,23 @@ func newClient(ctx context.Context, c config.Config, create bool) (*Client, erro
 	}
 	info, e := os.Stat(c.KeyFile)
 	if e != nil {
-		return nil, e
+		return nil, startupFailure("app-key-unreadable")
 	}
 	if !info.Mode().IsRegular() || info.Mode().Perm()&0077 != 0 {
-		return nil, fmt.Errorf("App key must be a regular file with mode 0600")
+		return nil, startupFailure("app-key-unreadable")
 	}
 	key, e := os.ReadFile(c.KeyFile)
 	if e != nil {
-		return nil, e
+		return nil, startupFailure("app-key-unreadable")
 	}
 	// Do not replay non-idempotent JIT creation after an ambiguous HTTP failure.
 	api, e := scaleset.NewClientWithGitHubApp(scaleset.ClientWithGitHubAppConfig{GitHubConfigURL: c.GitHubURL, GitHubAppAuth: scaleset.GitHubAppAuth{ClientID: c.ClientID, InstallationID: c.InstallationID, PrivateKey: string(key)}, SystemInfo: scaleset.SystemInfo{System: "chickadee", Version: "prototype"}}, scaleset.WithTimeout(65*time.Second), scaleset.WithRetryMax(0))
 	if e != nil {
-		return nil, fmt.Errorf("App client initialization failed")
+		return nil, startupFailure("github-auth-failed")
 	}
 	set, e := api.GetRunnerScaleSet(ctx, c.RunnerGroupID, c.ScaleSet)
 	if e != nil {
-		return nil, fmt.Errorf("scale set lookup failed")
+		return nil, startupFailure("scale-set-lookup-failed")
 	}
 	if set == nil && !create {
 		return &Client{API: api}, nil
@@ -58,11 +71,11 @@ func newClient(ctx context.Context, c config.Config, create bool) (*Client, erro
 	if set == nil {
 		set, e = api.CreateRunnerScaleSet(ctx, &scaleset.RunnerScaleSet{Name: c.ScaleSet, RunnerGroupID: c.RunnerGroupID, RunnerSetting: scaleset.RunnerSetting{DisableUpdate: true}})
 		if e != nil {
-			return nil, fmt.Errorf("scale set creation failed")
+			return nil, startupFailure("scale-set-create-failed")
 		}
 	}
 	if !set.RunnerSetting.DisableUpdate {
-		return nil, fmt.Errorf("existing scale set must disable runner auto-update")
+		return nil, startupFailure("scale-set-policy-invalid")
 	}
 	return &Client{API: api, SetID: set.ID}, nil
 }

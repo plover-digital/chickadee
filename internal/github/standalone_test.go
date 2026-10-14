@@ -5,6 +5,7 @@ package github
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -429,5 +430,32 @@ func TestStandaloneRejectsRootBeforeOpeningState(t *testing.T) {
 	}
 	if err := RunStandalone(context.Background(), worker.Config{}, StandaloneConfig{}, false); err == nil || !strings.Contains(err.Error(), "unprivileged") {
 		t.Fatal("root controller accepted", err)
+	}
+}
+
+func TestStartupFailureCategoryNeverRendersRawErrors(t *testing.T) {
+	for _, code := range []string{"app-key-unreadable", "github-auth-failed", "scale-set-lookup-failed", "scale-set-create-failed", "engine-open-failed"} {
+		err := fmt.Errorf("untrusted credential text: %w", startupFailure(code))
+		if got := FailureCategory(err); got != code || strings.Contains(got, "credential") {
+			t.Fatal("unsafe reason category", got)
+		}
+	}
+	if got := FailureCategory(errors.New("raw token-like text")); got != "" {
+		t.Fatal("raw error entered category", got)
+	}
+}
+
+type deadlineJITBackend struct{ *fakeSandboxBackend }
+
+func (b *deadlineJITBackend) JITWithWorkFolder(ctx context.Context, _, _ string) (string, error) {
+	<-ctx.Done()
+	return "late-fixture", nil
+}
+func TestJITResponseAfterRequestDeadlineRejectedWithLiveParent(t *testing.T) {
+	_, _, _, base, _ := standaloneFixture(t)
+	parent := context.Background()
+	_, err := requestSandboxJIT(parent, &deadlineJITBackend{base}, "fixture", "/shared/work", 5*time.Millisecond)
+	if !errors.Is(err, context.DeadlineExceeded) || parent.Err() != nil {
+		t.Fatal("request deadline not enforced independently", err)
 	}
 }

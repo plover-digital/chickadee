@@ -47,7 +47,7 @@ func (s StandaloneConfig) Validate(c worker.Config) error {
 	}
 	info, err := os.Stat(s.KeyFile)
 	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0077 != 0 {
-		return fmt.Errorf("App key must be a private regular file")
+		return startupFailure("app-key-unreadable")
 	}
 	return nil
 }
@@ -84,7 +84,7 @@ func RunStandalone(ctx context.Context, c worker.Config, s StandaloneConfig, cle
 	}
 	e, err := worker.OpenEngine(c)
 	if err != nil {
-		return err
+		return startupFailure("engine-open-failed")
 	}
 	defer func() {
 		e.Drain(c.Identity)
@@ -184,12 +184,11 @@ func provisionSandbox(ctx context.Context, c worker.Config, s StandaloneConfig, 
 	if err = host.Save(dir, host.Record{ID: id, Name: name, GitHubURL: s.GitHubURL, InstallationID: s.InstallationID, RunnerGroupID: s.RunnerGroupID, NotBefore: time.Now().Add(10 * time.Minute)}); err != nil {
 		return err
 	}
-	jitCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
-	jit, err := b.JITWithWorkFolder(jitCtx, name, record.Request.WorkFolder)
-	cancel()
+	jit, err := requestSandboxJIT(ctx, b, name, record.Request.WorkFolder, 60*time.Second)
 	if err != nil {
 		return err
 	}
+
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -199,6 +198,18 @@ func provisionSandbox(ctx context.Context, c worker.Config, s StandaloneConfig, 
 	slog.Info("Runner credential intent committed", "assignment", id)
 	return nil
 }
+
+// Keep the request deadline distinct from the longer-lived controller context.
+func requestSandboxJIT(parent context.Context, b sandboxBackend, name, path string, timeout time.Duration) (string, error) {
+	request, cancel := context.WithTimeout(parent, timeout)
+	defer cancel()
+	jit, err := b.JITWithWorkFolder(request, name, path)
+	if err == nil {
+		err = request.Err()
+	}
+	return jit, err
+}
+
 func pollSandbox(ctx context.Context, s StandaloneConfig, max int, b sandboxBackend, out chan<- int) {
 	for ctx.Err() == nil {
 		if err := b.Poll(ctx, s.ScaleSet, max, out); ctx.Err() != nil {

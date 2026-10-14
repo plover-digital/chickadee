@@ -60,17 +60,20 @@ func main() {
 			slog.Error("standalone GitHub controller must be unprivileged")
 			os.Exit(1)
 		}
+		reason := "config-invalid"
 		c, err := load(*path)
 		if err == nil && c.GitHub == nil {
 			err = fmt.Errorf("github configuration required")
 		}
 		if err == nil && *check {
+			reason = "engine-check-failed"
 			err = worker.CheckConfig(c.Config)
 			if err == nil {
 				err = worker.CheckLandlockSandboxes(c.Config)
 			}
 		}
 		if err == nil && !*check {
+			reason = "controller-failed"
 			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR1)
 			defer stop()
 			// This mode has no live reload. Consume SIGHUP without shutting down
@@ -84,7 +87,10 @@ func main() {
 			if errors.Is(err, github.ErrRegistrationGuard) {
 				slog.Error("registration cleanup deferred by late-JIT guard; retry after NotBefore")
 			} else {
-				slog.Error("standalone GitHub controller stopped; inspect private configuration and diagnostics")
+				if category := github.FailureCategory(err); category != "" {
+					reason = category
+				}
+				slog.Error("standalone GitHub controller stopped; inspect private configuration and diagnostics", "reason", reason)
 			}
 			os.Exit(1)
 		}
