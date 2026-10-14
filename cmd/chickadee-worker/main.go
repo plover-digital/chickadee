@@ -165,7 +165,7 @@ func load(path string) (configuration, error) {
 	}
 	c.ProtectedPaths = []string{path, c.TLS.KeyFile, c.TLS.CertificateFile, c.TLS.CAFile}
 	if c.GitHub != nil {
-		c.ProtectedPaths = append(c.ProtectedPaths, c.GitHub.KeyFile)
+		c.ProtectedPaths = append(c.ProtectedPaths, c.GitHub.KeyFile, c.GitHub.TokenFile)
 		if err := c.GitHub.Validate(c.Config); err != nil {
 			return c, err
 		}

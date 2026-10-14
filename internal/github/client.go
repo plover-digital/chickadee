@@ -7,9 +7,11 @@ import (
 	"github.com/actions/scaleset"
 	"github.com/plover-digital/chickadee/internal/config"
 	"github.com/plover-digital/chickadee/workerapi"
+	"io"
 	"log/slog"
 	"net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -45,19 +47,19 @@ func newClient(ctx context.Context, c config.Config, create bool) (*Client, erro
 	if e := validateScope(c.GitHubURL, c.GitHubHost); e != nil {
 		return nil, e
 	}
-	info, e := os.Stat(c.KeyFile)
+	credential, pat, e := credentialFile(c)
 	if e != nil {
-		return nil, startupFailure("app-key-unreadable")
-	}
-	if !info.Mode().IsRegular() || info.Mode().Perm()&0077 != 0 {
-		return nil, startupFailure("app-key-unreadable")
-	}
-	key, e := os.ReadFile(c.KeyFile)
-	if e != nil {
-		return nil, startupFailure("app-key-unreadable")
+		return nil, e
 	}
 	// Do not replay non-idempotent JIT creation after an ambiguous HTTP failure.
-	api, e := scaleset.NewClientWithGitHubApp(scaleset.ClientWithGitHubAppConfig{GitHubConfigURL: c.GitHubURL, GitHubAppAuth: scaleset.GitHubAppAuth{ClientID: c.ClientID, InstallationID: c.InstallationID, PrivateKey: string(key)}, SystemInfo: scaleset.SystemInfo{System: "chickadee", Version: "prototype"}}, scaleset.WithTimeout(65*time.Second), scaleset.WithRetryMax(0))
+	opts := []scaleset.HTTPOption{scaleset.WithTimeout(65 * time.Second), scaleset.WithRetryMax(0)}
+	system := scaleset.SystemInfo{System: "chickadee", Version: "prototype"}
+	var api *scaleset.Client
+	if pat {
+		api, e = scaleset.NewClientWithPersonalAccessToken(scaleset.NewClientWithPersonalAccessTokenConfig{GitHubConfigURL: c.GitHubURL, PersonalAccessToken: credential, SystemInfo: system}, opts...)
+	} else {
+		api, e = scaleset.NewClientWithGitHubApp(scaleset.ClientWithGitHubAppConfig{GitHubConfigURL: c.GitHubURL, GitHubAppAuth: scaleset.GitHubAppAuth{ClientID: c.ClientID, InstallationID: c.InstallationID, PrivateKey: credential}, SystemInfo: system}, opts...)
+	}
 	if e != nil {
 		return nil, startupFailure("github-auth-failed")
 	}
@@ -79,6 +81,64 @@ func newClient(ctx context.Context, c config.Config, create bool) (*Client, erro
 	}
 	return &Client{API: api, SetID: set.ID}, nil
 }
+
+// credentialFile rejects mixed auth and never returns raw file errors.
+func credentialPath(c config.Config) (string, bool, error) {
+	pat := c.TokenFile != ""
+	path, category := c.KeyFile, "app-key-unreadable"
+	if pat {
+		if c.KeyFile != "" || c.ClientID != "" || c.InstallationID != 0 {
+			return "", false, startupFailure("config-invalid")
+		}
+		u, err := url.Parse(c.GitHubURL)
+		if err != nil || len(strings.Split(strings.Trim(u.Path, "/"), "/")) != 2 {
+			return "", false, startupFailure("config-invalid")
+		}
+		path, category = c.TokenFile, "token-file-unreadable"
+	} else if c.ClientID == "" || c.InstallationID <= 0 {
+		return "", false, startupFailure("config-invalid")
+	}
+	if !filepath.IsAbs(path) {
+		return "", false, startupFailure("config-invalid")
+	}
+	info, err := os.Stat(path)
+	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm() != 0600 || info.Size() > 64*1024 {
+		return "", pat, startupFailure(category)
+	}
+	return path, pat, nil
+}
+func credentialFile(c config.Config) (string, bool, error) {
+	path, pat, err := credentialPath(c)
+	if err != nil {
+		return "", pat, err
+	}
+	category := "app-key-unreadable"
+	if pat {
+		category = "token-file-unreadable"
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return "", pat, startupFailure(category)
+	}
+	defer f.Close()
+	info, err := f.Stat()
+	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm() != 0600 || info.Size() > 64*1024 {
+		return "", pat, startupFailure(category)
+	}
+	data, err := io.ReadAll(io.LimitReader(f, 64*1024+1))
+	if err != nil || len(data) == 0 || len(data) > 64*1024 {
+		return "", pat, startupFailure(category)
+	}
+	value := string(data)
+	if pat {
+		value = strings.TrimSpace(value)
+		if value == "" || strings.ContainsAny(value, " \t\r\n") {
+			return "", pat, startupFailure(category)
+		}
+	}
+	return value, pat, nil
+}
+
 func (c *Client) JIT(ctx context.Context, name string) (string, error) {
 	return c.JITWithWorkFolder(ctx, name, runnerWorkFolder)
 }

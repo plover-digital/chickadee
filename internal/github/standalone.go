@@ -26,30 +26,28 @@ type StandaloneConfig struct {
 	GitHubURL      string `json:"github_url"`
 	ClientID       string `json:"app_client_id"`
 	InstallationID int64  `json:"app_installation_id"`
-	KeyFile        string `json:"app_key_file"`
+	KeyFile        string `json:"app_key_file,omitempty"`
+	TokenFile      string `json:"token_file,omitempty"`
 	ScaleSet       string `json:"scale_set"`
 	RunnerGroupID  int    `json:"runner_group_id"`
 }
 
 func (s StandaloneConfig) apiConfig() config.Config {
-	return config.Config{GitHubURL: s.GitHubURL, GitHubHost: s.GitHubHost, ClientID: s.ClientID, InstallationID: s.InstallationID, KeyFile: s.KeyFile, ScaleSet: s.ScaleSet, RunnerGroupID: s.RunnerGroupID}
+	return config.Config{GitHubURL: s.GitHubURL, GitHubHost: s.GitHubHost, ClientID: s.ClientID, InstallationID: s.InstallationID, KeyFile: s.KeyFile, TokenFile: s.TokenFile, ScaleSet: s.ScaleSet, RunnerGroupID: s.RunnerGroupID}
 }
 func (s StandaloneConfig) Validate(c worker.Config) error {
 	if len(c.Profiles) != 1 || !c.IsLandlock() {
 		return fmt.Errorf("standalone GitHub mode requires one Landlock profile")
 	}
-	if !config.Name.MatchString(s.ScaleSet) || s.ClientID == "" || s.InstallationID <= 0 || s.RunnerGroupID < 1 || !filepath.IsAbs(s.KeyFile) {
+	if !config.Name.MatchString(s.ScaleSet) || s.RunnerGroupID < 1 {
 		return fmt.Errorf("GitHub App, queue and runner group required")
 	}
 	// Public GitHub is the default; GHES requires an explicit host opt-in.
 	if err := validateScope(s.GitHubURL, s.GitHubHost); err != nil {
 		return err
 	}
-	info, err := os.Stat(s.KeyFile)
-	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0077 != 0 {
-		return startupFailure("app-key-unreadable")
-	}
-	return nil
+	_, _, err := credentialPath(s.apiConfig())
+	return err
 }
 
 type sandboxEngine interface {
@@ -74,7 +72,7 @@ func RunStandalone(ctx context.Context, c worker.Config, s StandaloneConfig, cle
 	if os.Geteuid() == 0 {
 		return fmt.Errorf("standalone GitHub controller must be unprivileged")
 	}
-	c.ProtectedPaths = append(append([]string(nil), c.ProtectedPaths...), s.KeyFile)
+	c.ProtectedPaths = append(append([]string(nil), c.ProtectedPaths...), s.KeyFile, s.TokenFile)
 	if err := s.Validate(c); err != nil {
 		return err
 	}

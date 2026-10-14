@@ -82,9 +82,9 @@ cleans writable state and replenishes the pool.
 
 Failed provisioning destroys the reserved sandbox. A timeout/ambiguous JIT
 response is never retried against it. Failures back off before further admission.
-The controller's App key stays on the host; only per-runner JIT enters the sandbox.
+The controller's App key or PAT stays on the host; only per-runner JIT enters the sandbox.
 No JIT or credential values are logged. Startup failures include a fixed
-`reason` category: config-invalid, app-key-unreadable, github-auth-failed,
+`reason` category: config-invalid, app-key-unreadable, token-file-unreadable, github-auth-failed,
 scale-set-lookup-failed, scale-set-create-failed, scale-set-policy-invalid,
 engine-open-failed or engine-check-failed. SDK responses/raw errors are never
 printed. For lookup/auth failures, check the configured App, installation and
@@ -136,6 +136,32 @@ runner group allowed only this trusted acceptance workflow. This validates the
 new GitHub adapter on local ABI6 enforcing V5, not target GHES/ABI5 acceptance. Target-owner reports in
 [issue21](https://github.com/plover-digital/chickadee/issues/21) now establish real
 ABI5/GHES runner jobs and multi-slot broker operation, while
-[issue22](https://github.com/plover-digital/chickadee/issues/22) reports unsafe live
-workspace cleanup in that multi-slot deployment. Treat multi-slot host_access
-deployment as blocked until that issue is resolved and target re-tested.
+[issue22](https://github.com/plover-digital/chickadee/issues/22) was traced by the
+target operator to duplicate controllers on different nodes sharing state through
+a filesystem with host-local locks. After pinning services to one host, the target
+operator reports successful three-job concurrency. Keep state node-local and pin
+shared-home user services with `ConditionHost=`; filesystem locks alone cannot
+fence another host using `localflock`. Integrated standalone GHES acceptance
+still requires the target authentication and workflow test.
+
+## Repository PAT authentication
+
+For a trusted self-hosted repository controller that cannot install an App,
+replace all three `app_*` fields with `token_file: "/private/chickadee-pat"`.
+The modes are mutually exclusive; PAT mode accepts a repository URL only.
+Use a classic PAT with `repo` scope and repository administrator access, subject
+to enterprise/SSO policy. [GitHub documents the required runner permissions](https://docs.github.com/en/actions/how-tos/manage-runners/use-actions-runner-controller/authenticate-to-the-api).
+An App remains preferred when available: a PAT carries broader personal
+repository authority and is not a least-privilege runner credential.
+
+Store the token alone in a regular mode-0600 file outside this repository and
+sandbox mounts. The controller reads it at startup, protects its path just like
+the App key, and sends only fresh per-runner JIT into jobs. It does not log token
+contents or raw authentication errors. Rotate the token with a controlled drain
+and restart. `token-file-unreadable` distinguishes private-file failures from
+`github-auth-failed`; remote permission failures may appear at scale-set lookup.
+No PAT option is added to the VM JSON configuration or hosted service.
+
+For GHES 3.16, the target operator verified that `app_client_id` must contain the
+numeric App ID as a string, rather than the OAuth Client ID. The pinned client
+accepts an App ID in this field; consult your GHES version's requirements.

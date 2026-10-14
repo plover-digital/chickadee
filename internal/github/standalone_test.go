@@ -459,3 +459,45 @@ func TestJITResponseAfterRequestDeadlineRejectedWithLiveParent(t *testing.T) {
 		t.Fatal("request deadline not enforced independently", err)
 	}
 }
+
+func TestStandalonePATRejectsMixedAuthAndOrganizationScope(t *testing.T) {
+	c, s, _, _, _ := standaloneFixture(t)
+	s.TokenFile = filepath.Join(t.TempDir(), "token")
+	if err := os.WriteFile(s.TokenFile, []byte("nonsecret-fixture\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if s.Validate(c) == nil {
+		t.Fatal("mixed App/PAT accepted")
+	}
+	s.KeyFile, s.ClientID, s.InstallationID = "", "", 0
+	if err := s.Validate(c); err != nil {
+		t.Fatal(err)
+	}
+	value, pat, err := credentialFile(s.apiConfig())
+	if err != nil || !pat || value != "nonsecret-fixture" {
+		t.Fatal("PAT file not read/trimmed correctly", err)
+	}
+	s.GitHubURL = "https://github.com/example"
+	if s.Validate(c) == nil {
+		t.Fatal("organization PAT accepted by repository-only mode")
+	}
+	s.GitHubURL = "https://github.com/example/project"
+	if err := os.Chmod(s.TokenFile, 0640); err != nil {
+		t.Fatal(err)
+	}
+	if FailureCategory(s.Validate(c)) != "token-file-unreadable" {
+		t.Fatal("nonprivate token file accepted")
+	}
+	if err := os.Chmod(s.TokenFile, 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, data := range []string{"", " \n", "token\nsecond", strings.Repeat("x", 65537)} {
+		if err := os.WriteFile(s.TokenFile, []byte(data), 0600); err != nil {
+			t.Fatal(err)
+		}
+		_, _, err := credentialFile(s.apiConfig())
+		if FailureCategory(err) != "token-file-unreadable" {
+			t.Fatal("invalid token file accepted")
+		}
+	}
+}
