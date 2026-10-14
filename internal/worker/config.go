@@ -143,38 +143,29 @@ func (c Config) Validate() error {
 	} else if len(c.LandlockDenyPrefixes) > 0 {
 		return fmt.Errorf("Landlock policy on a VM worker")
 	}
+	workspaceSlots := make(map[string]int)
 	for _, p := range c.Profiles {
 		if p.HostAccess != nil {
 			if p.Machine != "landlock" {
 				return fmt.Errorf("host_access is only supported by Landlock")
 			}
 			for slot := 1; slot <= c.Budget.MaxVMs; slot++ {
+				work, err := p.HostAccess.Workspace(slot, c.Budget.MaxVMs)
+				if err != nil {
+					return err
+				}
+				if previous, ok := workspaceSlots[work]; ok && previous != slot {
+					return fmt.Errorf("host workspaces overlap across slots")
+				}
+				workspaceSlots[work] = slot
 				if _, err := landlockrunner.NormalizeAccess(p.HostAccess, slot, c.Budget.MaxVMs, c.protectedFor(p.ID, slot)); err != nil {
 					return err
 				}
 			}
 		}
 	}
-	// Different scheduler slots must never alias/nest, even across profiles.
-	for _, a := range c.Profiles {
-		if a.HostAccess == nil {
-			continue
-		}
-		for i := 1; i <= c.Budget.MaxVMs; i++ {
-			ap, _ := a.HostAccess.Workspace(i, c.Budget.MaxVMs)
-			for _, b := range c.Profiles {
-				if b.HostAccess == nil {
-					continue
-				}
-				for j := 1; j <= c.Budget.MaxVMs; j++ {
-					bp, _ := b.HostAccess.Workspace(j, c.Budget.MaxVMs)
-					if (ap == bp && i != j) || (ap != bp && (strings.HasPrefix(ap, bp+"/") || strings.HasPrefix(bp, ap+"/"))) {
-						return fmt.Errorf("host workspaces overlap across slots")
-					}
-				}
-			}
-		}
-	}
+	// NormalizeAccess rejects nested/overlapping peer paths; workspaceSlots
+	// above rejects an exact path reused by different scheduler slots.
 	if warms > c.Budget.MaxVMs || cpus > c.Budget.MaxCPUs || memory > c.Budget.MaxMemoryMiB {
 		return fmt.Errorf("warm capacity exceeds worker budget")
 	}

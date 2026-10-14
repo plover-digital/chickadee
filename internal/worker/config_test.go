@@ -295,3 +295,36 @@ func TestLandlockChecksIncludeEveryHostAndSealedProfile(t *testing.T) {
 		t.Fatal("sealed/mixed profile omitted", visited, err)
 	}
 }
+
+func TestHostWorkspaceCollisionAcrossProfilesAndSlots(t *testing.T) {
+	root, err := os.MkdirTemp("/var/tmp", "chickadee-cross-slot-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(root)
+	c := engineConfig(t)
+	c.Cgroup = &host.CgroupConfig{PidsMax: 128}
+	c.Profiles[0].Machine = "landlock"
+	c.Profiles[0].CPUs = 1
+	c.Profiles[0].MemoryMiB = 512
+	c.Profiles[0].Warm = 0
+	c.Budget = Budget{MaxVMs: 12, MaxCPUs: 12, MaxMemoryMiB: 12 * 512}
+	c.Profiles[0].HostAccess = &landlockrunner.HostAccess{WorkDir: filepath.Join(root, "slot-{slot}")}
+	other := c.Profiles[0]
+	other.ID = "other"
+	other.HostAccess = &landlockrunner.HostAccess{WorkDir: filepath.Join(root, "slot-1{slot}")}
+	c.Profiles = append(c.Profiles, other)
+	for _, p := range c.Profiles {
+		for slot := 1; slot <= 12; slot++ {
+			work, _ := p.HostAccess.Workspace(slot, 12)
+			os.Mkdir(work, 0700)
+		}
+	}
+	if err = c.Validate(); err == nil || !strings.Contains(err.Error(), "across slots") {
+		t.Fatal("cross-profile slot11/slot1 collision accepted", err)
+	}
+	c.Profiles[1].HostAccess = landlockrunner.CloneAccess(c.Profiles[0].HostAccess)
+	if err = c.Validate(); err != nil {
+		t.Fatal("same scheduler slot aliases rejected", err)
+	}
+}

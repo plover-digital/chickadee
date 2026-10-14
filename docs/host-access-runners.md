@@ -52,7 +52,9 @@ installed them; do not reflexively bind `/etc` subtrees. The `/var/run` alias
 supports client libraries that use legacy paths, independently of which service
 owns the socket. Public CAs and selected resolver/NSS files are mounted; private
 keys and unrelated home directories are absent. Exposed runtime trees must be
-free of secrets.
+free of secrets. Protected config, TLS, state and other management paths
+must also be outside the built-in `/usr`, `/bin`, `/sbin`, `/lib` and `/lib64`
+runtime trees; validation rejects those placements, including canonical aliases.
 Host userland is mutable: policy identity does not certify every runtime file.
 
 Operator `env` seeds the runner environment. PATH can select installed site
@@ -68,11 +70,12 @@ to the actual host runtime and are covered by real-job acceptance.
 ## Workspaces and concurrency
 
 A literal work_dir is valid with one slot, including standalone `-jit-stdin`.
-Multi-slot host access is **implemented, not yet target-validated on ABI5**.
-Two concurrent sandboxes/cleanup were tested locally on ABI6 with strict V5;
-the ABI5 owner exercised only standalone single-slot operation. Validate multiple
-warm slots, reservation/JIT paths, isolation and recovery on the actual site before
-expanding capacity. For concurrent workers, use exactly one `{slot}` token: existing scheduler slots
+Concurrent sandbox creation/cleanup/recovery is validated on both local ABI6/V5
+and the target ABI5 kernel. **Multi-slot through the worker API with real jobs on
+ABI5 remains unvalidated.** The target owner ran the two-sandbox engine test in
+addition to standalone single-slot fixtures; this does not prove end-to-end
+worker-API scheduling, warm-pool dispatch or concurrent real jobs. Validate those
+paths on the actual site before expanding deployment capacity. For concurrent workers, use exactly one `{slot}` token: existing scheduler slots
 expand it to decimal1–32. Precreate each directory as the service user, mode0700,
 empty, with no symlinks in any component. Workspaces must be outside `/usr`,
 `/bin`, `/sbin`, `/lib` and `/lib64`; their read-only runtime mounts would hide
@@ -85,12 +88,15 @@ executables, cwd, inputs and outputs. If an external executor resolves paths
 itself, the workspace must be on a shared filesystem visible at this identical
 path on both sides. Host/private namespace parents are not mounted wholesale and
 sibling slots remain hidden locally; same-UID remote access
-is not confined by this worker. `disk_gib` bounds only private tmpfs. It does not
+is not confined by this worker. `disk_gib` sets a separate size ceiling on each private tmpfs (`/job` and
+`/dev/shm`); shared-memory pages also count toward the execution memory cgroup. It does not
 cap shared disk consumption; the operator explicitly accepts the unbounded
 workspace and manages site storage capacity. An ordinary directory has no
 Chickadee-enforced disk quota: a workflow can fill its backing filesystem and
-disrupt other runners or management writes. Use site-managed quotas or separate
-storage to protect journals/logs and other workloads. This v1 neither validates
+disrupt other runners or management writes. Place `state_dir` (journal/logs) and `work_dir` on **different filesystems** when
+possible, so exhausting workspace storage does not exhaust controller storage.
+Site-managed quotas can additionally protect other workloads on the workspace
+filesystem. This v1 neither validates
 nor provisions those controls; it is an operator responsibility, not a disk-limit
 guarantee. Sealed/VM storage limits remain unchanged.
 
@@ -98,7 +104,10 @@ After kernel-confirmed whole-tree exit and guardian reaping, only contents of
 the matching pinned directory are deleted. The directory/parent are retained.
 Unmatched dirty state, changed ownership/mode/inode, policy mismatch or missing
 exit proof fail closed. Normal startup reaps matching owned crash state before
-requiring emptiness for a replacement; read-only checks never delete data.
+requiring emptiness for a replacement; read-only checks never delete workload data. Checks create one fixed scratch
+probe in an initially empty, exclusively locked workspace; after child exit the
+parent removes that probe and verifies emptiness. If the entire checker is killed
+abruptly, inspect any leftover `.chickadee-probe` before removing it manually.
 Drain before policy changes/upgrades. Version1 sealed markers remain recoverable;
 version2 host markers require the original policy, workspace and delegated unit.
 Unknown nonempty directories require operator inspection, not guessed deletion.
@@ -175,7 +184,10 @@ sandbox probes after validating listener/TLS settings. Both check modes are
 read-only; normal startup still reconciles matching owned crash state first. Socket connection proves reachability,
 not authentication, authorization or what the peer service can do. Site
 acceptance must verify the intended identity and authority separately.
-Reports expose no env/JIT values. Dirty workspaces fail this read-only check;
+The HOST_ACCESS line reports `cpu=quota` when CPU delegation is available, or
+`cpu=affinity-only(4,5,6,7)` with the configured worker pool when it is absent.
+The latter is mutable starting affinity, not a hard CPU limit. Reports expose no
+env/JIT values. Dirty workspaces fail this read-only check;
 normal worker startup can reconcile matching owned markers first.
 
 `job_timeout_seconds` covers the entire local Run, including time the workflow
@@ -285,7 +297,9 @@ The target owner re-verified an unpatched f0535aa build and reported successful
 single-slot functional/OOM cleanup plus GHE DNS, HTTPS with certificate verification,
 and required .NET library visibility ([follow-up](https://github.com/plover-digital/chickadee/pull/19#issuecomment-6172775096)).
 This removes known host-side obstacles; an actual runner-to-GHE fresh-JIT job
-still has not been exercised there. Multi-slot ABI5 operation is also outstanding.
+still has not been exercised there. The target owner also reported the two-sandbox cleanup/recovery kernel test
+passing on unpatched ABI5 ([engine evidence](https://github.com/plover-digital/chickadee/pull/19#issuecomment-6173055738)).
+Multi-slot worker-API dispatch with real jobs on ABI5 is still outstanding.
 
 Site acceptance should use a real fresh-JIT checkout/build, verify the exposed
 service identity/authority and external execution paths, and cover local path

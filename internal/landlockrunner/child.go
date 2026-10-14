@@ -26,7 +26,7 @@ func restrict() error { return restrictWithAccess(nil) }
 func restrictWithAccess(plan *AccessPlan) error {
 	// Runner path validation lists every ancestor. Permit directory metadata only
 	// in the already-private mount tree, without broad file read/write rights.
-	rules := []landlock.Rule{landlock.PathAccess(landlock.AccessFSSet(ll.AccessFSReadDir), "/"), landlock.RWDirs("/job").WithRefer(), landlock.RODirs("/proc", "/etc", "/image"), landlock.ROFiles("/engine"), landlock.RWFiles("/dev/null"), landlock.ROFiles("/dev/zero", "/dev/random", "/dev/urandom")}
+	rules := []landlock.Rule{landlock.PathAccess(landlock.AccessFSSet(ll.AccessFSReadDir), "/"), landlock.RWDirs("/job").WithRefer(), landlock.RWDirs("/dev/shm"), landlock.RODirs("/proc", "/etc", "/image"), landlock.ROFiles("/engine"), landlock.RWFiles("/dev/null"), landlock.ROFiles("/dev/zero", "/dev/random", "/dev/urandom")}
 	for _, dir := range []string{"/usr", "/bin", "/sbin", "/lib", "/lib64"} {
 		if _, err := os.Stat(dir); err == nil {
 			rules = append(rules, landlock.RODirs(dir))
@@ -286,6 +286,12 @@ func probeIsolationWithAccess(plan *AccessPlan) error {
 	if err := os.WriteFile("/job/allowed", []byte("ok"), 0600); err != nil {
 		return err
 	}
+	if err := os.WriteFile("/dev/shm/chickadee-probe", []byte("ok"), 0600); err != nil {
+		return fmt.Errorf("private shared memory is not writable")
+	}
+	if err := os.WriteFile("/dev/chickadee-denied", nil, 0600); err == nil {
+		return fmt.Errorf("device directory writable")
+	}
 	for _, p := range []string{"/root", "/run/docker.sock", "/etc/chickadee", "/sys", "/var/lib/chickadee"} {
 		if _, err := os.Stat(p); !os.IsNotExist(err) {
 			return fmt.Errorf("host management path visible")
@@ -366,13 +372,15 @@ func probeHostAccess(p *AccessPlan) error {
 	if os.Geteuid() != p.UID || os.Getegid() != p.GID {
 		return fmt.Errorf("host identity mismatch")
 	}
-	file, err := os.CreateTemp(p.WorkDir, ".chickadee-probe-")
+	file, err := os.OpenFile(p.WorkDir+"/.chickadee-probe", os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 	if err != nil {
 		return fmt.Errorf("host workspace is not writable")
 	}
 	name := file.Name()
 	file.Close()
-	defer os.Remove(name)
+	if err := os.Remove(name); err != nil {
+		return fmt.Errorf("host workspace probe removal failed")
+	}
 	for _, m := range p.Mounts {
 		if m.Kind != "socket" {
 			continue

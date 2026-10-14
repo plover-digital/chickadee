@@ -248,3 +248,19 @@ func TestWorkspaceRejectsLaterReadOnlyRuntimeMounts(t *testing.T) {
 		}
 	}
 }
+
+func TestProtectedRuntimePlacementsRejected(t *testing.T) {
+	a := &HostAccess{WorkDir: workspaceFixture(t)}
+	for _, runtime := range []string{"/usr", "/bin", "/sbin", "/lib", "/lib64"} {
+		if _, err := NormalizeAccess(a, 1, 1, []string{runtime + "/chickadee-private/key"}); err == nil || !strings.Contains(err.Error(), "built-in runtime") {
+			t.Fatal(runtime, err)
+		}
+	}
+	alias := filepath.Join(hostTemp(t), "runtime-alias")
+	if err := os.Symlink("/usr", alias); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := NormalizeAccess(a, 1, 1, []string{alias + "/chickadee-private/key"}); err == nil {
+		t.Fatal("canonical runtime key accepted")
+	}
+}
