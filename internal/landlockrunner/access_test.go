@@ -237,3 +237,14 @@ func TestProtectedSymlinkTraversalPreservesActualPath(t *testing.T) {
 		}
 	}
 }
+
+func TestWorkspaceRejectsLaterReadOnlyRuntimeMounts(t *testing.T) {
+	for _, root := range []string{"/usr", "/bin", "/sbin", "/lib", "/lib64"} {
+		for _, work := range []string{root, root + "/local/chickadee-work"} {
+			_, err := NormalizeAccess(&HostAccess{WorkDir: work}, 1, 1, nil)
+			if err == nil || !strings.Contains(err.Error(), "read-only runtime tree") {
+				t.Fatal("runtime-shadowed workspace not rejected during validation", work, err)
+			}
+		}
+	}
+}

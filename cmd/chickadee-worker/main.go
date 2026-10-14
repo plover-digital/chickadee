@@ -132,6 +132,9 @@ func run(path string, check bool) error {
 		if err = worker.CheckConfig(c.Config); err != nil {
 			return err
 		}
+		if check {
+			return worker.CheckLandlockSandboxes(c.Config)
+		}
 		if c.Profiles[0].HostAccess == nil {
 			if err = landlockrunner.CheckSandbox(c.Profiles[0].ImageDir, c.Profiles[0].DiskGiB); err != nil {
 				return err
