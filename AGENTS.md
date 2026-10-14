@@ -38,7 +38,16 @@ workerapi contract, with hosted fleet policy owned by Roost.
 
 - Warm VMs have no GitHub credentials. Never reuse a VM after credential intent.
 - GitHub matches jobs; reservation is not a VM-to-specific-job binding.
-- Enforce CPU, memory, disk, VM and customer limits. Retiring/uncertain VMs count.
+- Enforce configured VM/sealed CPU, memory, disk, VM and customer limits.
+  Retiring/uncertain executions count. Explicit trusted self-hosted `host_access`
+  has the reviewed v1 exceptions: disk_gib caps private tmpfs, not its disk-backed
+  workspace; site storage quotas/capacity are operator-owned. If CPU delegation
+  is absent, cpu_ids is initial affinity/allocation, not an enforced CPU ceiling.
+  Jobs can widen affinity within the parent cpuset. Never claim these exceptions
+  provide hard storage/CPU containment or enable them for hosted/untrusted jobs.
+  Memory/swap-zero/OOM/PID controls and whole-tree cleanup stay mandatory.
+  Keep these documented v1 semantics compatible with the agreed ABI5 site.
+  Discuss stricter optional host policies separately if needed.
 - Confirm QEMU has exited before deleting its disk. Preserve bounded private
   diagnostics where possible; guest messages and logs are untrusted.
 - Queue-only SIGHUP updates preserve jobs and compatible warm VMs. Image/global
