@@ -111,6 +111,11 @@ abruptly, inspect any leftover `.chickadee-probe` before removing it manually.
 Drain before policy changes/upgrades. Version1 sealed markers remain recoverable;
 version2 host markers require the original policy, workspace and delegated unit.
 Unknown nonempty directories require operator inspection, not guessed deletion.
+Assignment retries must match the live execution's complete profile, including
+`host_access`, not just its image/resource shape. Equivalent profile aliases are
+allowed. The durable VM ID binds the request to that execution and its owned
+policy marker. Restart recovery makes prior assignments terminal before admitting
+requests; terminal retries cannot execute or deliver credentials.
 After terminal exit proof, `work_folder` is removed from the private journal;
 assignment/VM tombstones remain. Existing terminal metadata is scrubbed atomically
 when the new worker opens it. This permits rollback to the preceding worker after
