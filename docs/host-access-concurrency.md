@@ -14,7 +14,8 @@ is shared, enabled lingering systemd user units can start on compute nodes as
 soon as a job starts that user's session. Pin both worker and any broker units
 with `ConditionHost=<runner-host>` in their `[Unit]` sections, or install units
 outside the shared home. Do not rely on host-local locks as distributed ownership.
-Host-identity fencing for recovery remains a follow-up; retaining unfamiliar
+Host-identity fencing for recovery is tracked in
+[issue #25](https://github.com/plover-digital/chickadee/issues/25); retaining unfamiliar
 state must take precedence over automatically deleting it.
 
 The opt-in real-kernel regression uses the existing authenticated worker API,
