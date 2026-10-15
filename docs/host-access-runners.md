@@ -192,7 +192,10 @@ workspace paths in the service's view. The host namespace means the worker's
 network namespace, so do not enable systemd `PrivateNetwork` for host access.
 On memory/pids-only sites request those delegated controllers and omit CPU/I/O
 unit settings that the site cannot provide; retain bounded parent memory/swap/tasks.
-Run the check through the final unit, not just an unrestricted shell.
+Run the check through the final unit, not just an unrestricted shell. Checks are
+offline operator actions: drain selected slots and complete initial checks before
+starting controllers against unbound workspaces. Checks validate existing host
+claims but never create ownership metadata or take a cross-host lease.
 
 Run inside the delegated service/scope:
 

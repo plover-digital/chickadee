@@ -94,7 +94,7 @@ func Workspace(path string) error {
 	if err != nil {
 		return err
 	}
-	return acquire(filepath.Join(filepath.Dir(path), "."+filepath.Base(path)+".chickadee-owner-v1"), who, func() error {
+	return acquire(workspaceClaimPath(path), who, func() error {
 		entries, err := os.ReadDir(path)
 		if err != nil {
 			return err
@@ -104,6 +104,25 @@ func Workspace(path string) error {
 		}
 		return nil
 	})
+}
+
+// CheckWorkspace validates an existing claim without creating one or syncing
+// metadata. An unbound initial check is an offline operator action, not a lease.
+func CheckWorkspace(path string) error {
+	who, err := Current()
+	if err != nil {
+		return err
+	}
+	claimPath := workspaceClaimPath(path)
+	if _, err = os.Lstat(claimPath); os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	return existing(claimPath, who, false)
+}
+func workspaceClaimPath(path string) string {
+	return filepath.Join(filepath.Dir(path), "."+filepath.Base(path)+".chickadee-owner-v1")
 }
 func private(path string, dir bool) error {
 	info, err := os.Lstat(path)
@@ -145,9 +164,13 @@ func acquire(path string, who Identity, fresh func() error) error {
 	if !os.IsExist(err) {
 		return err
 	}
-	if err = private(path, true); err != nil {
+	return existing(path, who, true)
+}
+func existing(path string, who Identity, durable bool) error {
+	if err := private(path, true); err != nil {
 		return err
 	}
+	var err error
 	p := filepath.Join(path, "identity.json")
 	if err = private(p, false); err != nil {
 		return fmt.Errorf("incomplete or unsafe host owner claim; retain state for operator inspection")
@@ -169,6 +192,9 @@ func acquire(path string, who Identity, fresh func() error) error {
 	}
 	if got.Identity.Host != who.Host {
 		return fmt.Errorf("state belongs to another host; stop duplicate controllers and use node-local state and workspaces")
+	}
+	if !durable {
+		return nil
 	}
 	// A previous creation may have written valid bytes but failed fsync. Recheck
 	// durability rather than allowing a restart to bypass unsupported storage.

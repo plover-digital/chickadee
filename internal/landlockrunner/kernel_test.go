@@ -259,3 +259,44 @@ func TestRealPreviousBootRecoveryRequiresAbsentCgroup(t *testing.T) {
 		t.Fatal("previous-boot workspace not cleared")
 	}
 }
+
+func TestRealReadOnlyWorkspacePreflightDoesNotClaim(t *testing.T) {
+	if os.Getenv("CHICKADEE_HOST_ACCESS_SMOKE") != "1" {
+		t.Skip("requires unprivileged namespaces and Landlock")
+	}
+	parent := hostTemp(t)
+	work := filepath.Join(parent, "slot-1")
+	if err := os.Mkdir(work, 0700); err != nil {
+		t.Fatal(err)
+	}
+	access := &HostAccess{WorkDir: work}
+	image := hostTemp(t)
+	// The probe mounts this path but never extracts or executes a runner bundle.
+	if err := os.WriteFile(filepath.Join(image, "runner.tar.gz"), nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	claim := filepath.Join(parent, ".slot-1.chickadee-owner-v1")
+	if err := CheckSandboxWithAccess(image, 8, access, 1, 1, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Lstat(claim); !os.IsNotExist(err) {
+		t.Fatal("successful real probe claimed unbound workspace")
+	}
+	entries, err := os.ReadDir(work)
+	if err != nil || len(entries) != 0 {
+		t.Fatal("successful real probe left scratch data")
+	}
+	sentinel := filepath.Join(work, "live")
+	if err := os.WriteFile(sentinel, []byte("keep"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := CheckSandboxWithAccess(image, 8, access, 1, 1, nil); err == nil {
+		t.Fatal("dirty workspace passed probe")
+	}
+	if _, err := os.Lstat(claim); !os.IsNotExist(err) {
+		t.Fatal("failed real probe poisoned unbound workspace")
+	}
+	if got, err := os.ReadFile(sentinel); err != nil || string(got) != "keep" {
+		t.Fatal("failed real probe changed live data")
+	}
+}

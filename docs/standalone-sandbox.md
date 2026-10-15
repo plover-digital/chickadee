@@ -50,7 +50,10 @@ permission. A valid label alone does not override those GitHub access policies.
 
 Use `-github -check` first under that unit to verify the configuration, key file
 permissions, pinned bundle, cgroup budget and real namespace/Landlock probes,
-without contacting GitHub. No `listen` or `tls` section is needed. Merely adding
+without contacting GitHub. Run this offline on drained slots; finish initial
+checks before any controller starts using unbound workspaces. Checks validate
+existing host ownership but do not create claims or provide a cross-host lease.
+No `listen` or `tls` section is needed. Merely adding
 `github` to the config does not activate this mode: `-github` is explicit, and
 ordinary keyless worker/one-shot operation rejects the credential-bearing config.
 

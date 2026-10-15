@@ -45,7 +45,7 @@ func CheckSandboxWithAccess(image string, diskGiB int, access *HostAccess, slot,
 	var workspace *Workspace
 	var extra []*os.File
 	if plan != nil {
-		w, err := LockWorkspace(plan.WorkDir)
+		w, err := lockWorkspaceForCheck(plan.WorkDir)
 		if err != nil {
 			return err
 		}

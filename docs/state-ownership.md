@@ -83,3 +83,12 @@ individual slots: the controller must create sibling claims, and per-slot
 `ReadWritePaths` makes the slots bind mounts. Guest permissions still cover only
 the slot. Filesystem aliases or cloned machine identities must not be used to
 present one workspace as independently owned slots.
+
+Preflight is an offline operator action. It validates existing workspace claims
+(including refusing a foreign or incomplete claim) before any scratch probe, but
+does not create or sync ownership metadata. A failed dirty-workspace check leaves
+an unbound slot unbound. Complete initial checks before starting any controller
+using those unbound slots; a first check and first startup on another node must
+not run concurrently. A read-only check is not a distributed lease. Later checks
+use established same-host claims and require the selected slots to be drained;
+normal engine startup remains responsible for durable ownership claims.

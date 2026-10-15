@@ -72,11 +72,20 @@ func ClaimWorkspace(path string) error {
 	return stateowner.Workspace(path)
 }
 func LockWorkspace(path string) (*Workspace, error) {
+	return lockWorkspace(path, false)
+}
+func lockWorkspaceForCheck(path string) (*Workspace, error) { return lockWorkspace(path, true) }
+func lockWorkspace(path string, checking bool) (*Workspace, error) {
 	f, err := openWorkspace(path)
 	if err != nil {
 		return nil, err
 	}
-	if err = stateowner.Workspace(path); err != nil {
+	if checking {
+		err = stateowner.CheckWorkspace(path)
+	} else {
+		err = stateowner.Workspace(path)
+	}
+	if err != nil {
 		f.Close()
 		return nil, err
 	}
