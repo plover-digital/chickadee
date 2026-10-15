@@ -133,6 +133,23 @@ func openEngine(c Config, start startMachine, reap func(string) error, check fun
 	if err := c.Validate(); err != nil {
 		return nil, err
 	}
+	if err := claimHostState(c.StateDir); err != nil {
+		return nil, err
+	}
+	if c.IsLandlock() {
+		if err := landlockrunner.CheckOwnership(c.StateDir); err != nil {
+			return nil, err
+		}
+		plans, err := c.accessPlans()
+		if err != nil {
+			return nil, err
+		}
+		for _, plan := range plans {
+			if err := landlockrunner.ClaimWorkspace(plan.WorkDir); err != nil {
+				return nil, err
+			}
+		}
+	}
 	j, err := Open(c.StateDir, c.Identity)
 	if err != nil {
 		return nil, err

@@ -112,8 +112,10 @@ requiring emptiness for a replacement; read-only checks never delete workload da
 probe in an initially empty, exclusively locked workspace; after child exit the
 parent removes that probe and verifies emptiness. If the entire checker is killed
 abruptly, inspect any leftover `.chickadee-probe` before removing it manually.
-Drain before policy changes/upgrades. Version1 sealed markers remain recoverable;
-version2 host markers require the original policy, workspace and delegated unit.
+Drain before policy changes/upgrades. Version3 sandbox markers bind host and boot
+identity; host_access recovery also requires the original policy, workspace and
+delegated unit. Legacy version1/2 markers require the controlled upgrade in the
+[ownership guide](state-ownership.md); they are not adopted.
 Unknown nonempty directories require operator inspection, not guessed deletion.
 Assignment retries must match the live execution's complete profile, including
 `host_access`, not just its image/resource shape. Equivalent profile aliases are
@@ -171,14 +173,29 @@ per-execution overhead and controller headroom. Any explicitly requested I/O
 weight/limits require a usable io controller.
 
 If adapting [the sealed worker unit](../deploy/chickadee-landlock-worker.service),
-add the precreated workspace paths to `ReadWritePaths`: its `ProtectSystem=strict`
-otherwise makes shared disk paths read-only. Keep management directories private.
+add the dedicated, service-owned workspace **parent** to `ReadWritePaths`, not
+individual slots. For the examples, `/shared/work` must be service-owned mode0700,
+with ordinary `slot-1`, `slot-2`, etc. directories underneath it:
+
+```ini
+[Service]
+ReadWritePaths=/shared/work
+```
+
+`ProtectSystem=strict` otherwise prevents creating persistent sibling ownership
+claims. Per-slot `ReadWritePaths` also creates slot bind mounts, which ownership
+checks deliberately reject. Do not expose a broad shared filesystem or management
+directory as writable. This permission is for the controller; guest writes remain
+restricted to their configured slot. Keep management directories private.
 `ProtectHome` and `PrivateTmp` must also permit the operator-selected runtime and
 workspace paths in the service's view. The host namespace means the worker's
 network namespace, so do not enable systemd `PrivateNetwork` for host access.
 On memory/pids-only sites request those delegated controllers and omit CPU/I/O
 unit settings that the site cannot provide; retain bounded parent memory/swap/tasks.
-Run the check through the final unit, not just an unrestricted shell.
+Run the check through the final unit, not just an unrestricted shell. Checks are
+offline operator actions: drain selected slots and complete initial checks before
+starting controllers against unbound workspaces. Checks validate existing host
+claims but never create ownership metadata or take a cross-host lease.
 
 Run inside the delegated service/scope:
 
@@ -326,3 +343,6 @@ the local timeout too. A prefix-installed slurm.conf needs its actual prefix pat
 not an automatic `/etc/slurm` bind. Lustre and MPI were used in the validation
 record above; other filesystems and external services follow the same generic
 path, authority and lifecycle rules. No scheduler adapter is implemented.
+
+Linux ownership claims and the required controlled upgrade from unbound state
+are documented in [single-host state ownership](state-ownership.md).

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/plover-digital/chickadee/internal/config"
 	"github.com/plover-digital/chickadee/internal/host"
+	"github.com/plover-digital/chickadee/internal/stateowner"
 	"github.com/plover-digital/chickadee/internal/usage"
 	"github.com/plover-digital/chickadee/workerapi"
 	"log/slog"
@@ -60,6 +61,9 @@ type Ownership struct{ lock *os.File }
 
 func (o *Ownership) Close() error { return o.lock.Close() }
 func Acquire(c config.Config) (owner *Ownership, err error) {
+	if err := stateowner.State(c.StateDir); err != nil {
+		return nil, err
+	}
 	for _, d := range []string{c.StateDir, filepath.Join(c.StateDir, "vms"), filepath.Join(c.StateDir, "records"), filepath.Join(c.StateDir, "logs")} {
 		if e := os.MkdirAll(d, 0700); e != nil {
 			return nil, e

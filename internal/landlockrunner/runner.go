@@ -24,6 +24,7 @@ import (
 	"github.com/plover-digital/chickadee/internal/config"
 	"github.com/plover-digital/chickadee/internal/host"
 	"github.com/plover-digital/chickadee/internal/protocol"
+	"github.com/plover-digital/chickadee/internal/stateowner"
 	"golang.org/x/sys/unix"
 )
 
@@ -224,14 +225,29 @@ func StartWithAccess(ctx context.Context, c config.Config, id string, denied []s
 	if !sandboxID.MatchString(id) || c.Machine != "landlock" || c.Cgroup == nil {
 		return nil, fmt.Errorf("invalid Landlock execution configuration")
 	}
+	identity, err := stateowner.Current()
+	if err != nil {
+		return nil, err
+	}
+	if err := stateowner.State(c.StateDir); err != nil {
+		return nil, err
+	}
 	if err := CheckPolicyFor(access != nil); err != nil {
 		return nil, err
 	}
 	var prefixes []netip.Prefix
-	var err error
 	if access == nil {
 		prefixes, err = deniedAddresses(denied)
 		if err != nil {
+			return nil, err
+		}
+	}
+	plan, err := NormalizeAccess(access, slot, maxSlots, protectedPaths(c.StateDir, c.ImageDir, protected))
+	if err != nil {
+		return nil, err
+	}
+	if plan != nil {
+		if err := ClaimWorkspace(plan.WorkDir); err != nil {
 			return nil, err
 		}
 	}
@@ -241,10 +257,6 @@ func StartWithAccess(ctx context.Context, c config.Config, id string, denied []s
 	}
 	m := &Runner{dir: dir, wait: make(chan struct{}), exited: make(chan struct{})}
 	fail := func(err error) (*Runner, error) { return m, err }
-	plan, err := NormalizeAccess(access, slot, maxSlots, protectedPaths(c.StateDir, c.ImageDir, protected))
-	if err != nil {
-		return fail(err)
-	}
 	m.plan = plan
 	if plan != nil {
 		m.workspace, err = LockWorkspace(plan.WorkDir)
@@ -259,9 +271,8 @@ func StartWithAccess(ctx context.Context, c config.Config, id string, denied []s
 	if err != nil {
 		return fail(err)
 	}
-	value := sandboxMarker{Version: 1, Backend: "landlock", ID: id, CgroupPath: groupPath}
+	value := sandboxMarker{Owner: identity, Version: 3, Backend: "landlock", ID: id, CgroupPath: groupPath}
 	if plan != nil {
-		value.Version = 2
 		value.AccessHash = plan.Hash
 		value.WorkDir = plan.WorkDir
 		value.Device = m.workspace.Device
@@ -542,41 +553,80 @@ func (m *Runner) Cleanup() error {
 // caller. cgroup.kill and populated0 confirm every descendant exited, even if
 // the guardian/controller died. Unknown state fails closed without PID kills.
 func Reap(state string, c *host.CgroupConfig) error { return ReapWithAccess(state, c, nil) }
-func ReapWithAccess(state string, c *host.CgroupConfig, plans []*AccessPlan) error {
-	root := filepath.Join(state, "vms")
-	entries, err := os.ReadDir(root)
+
+// CheckOwnership performs a read-only runtime preflight before cgroup setup or
+// journal generation changes. No execution is adopted based on local absence.
+func CheckOwnership(state string) error {
+	identity, err := stateowner.Current()
 	if err != nil {
 		return err
 	}
+	_, err = readSandboxMarkers(state, identity)
+	return err
+}
+func readSandboxMarkers(state string, identity stateowner.Identity) ([]sandboxMarker, error) {
+	root := filepath.Join(state, "vms")
+	entries, err := os.ReadDir(root)
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	values := make([]sandboxMarker, 0, len(entries))
 	for _, entry := range entries {
 		id := entry.Name()
 		if !sandboxID.MatchString(id) || !entry.IsDir() {
-			return fmt.Errorf("unknown process runner state")
+			return nil, fmt.Errorf("unknown process runner state")
 		}
 		dir := filepath.Join(root, id)
 		info, err := os.Lstat(dir)
 		if err != nil || info.Mode().Perm()&0077 != 0 {
-			return fmt.Errorf("invalid sandbox runtime ownership")
+			return nil, fmt.Errorf("invalid sandbox runtime ownership")
 		}
 		st, ok := info.Sys().(*syscall.Stat_t)
 		if !ok || st.Uid != uint32(os.Geteuid()) {
-			return fmt.Errorf("invalid sandbox owner")
+			return nil, fmt.Errorf("invalid sandbox owner")
 		}
 		marker := filepath.Join(dir, "sandbox.json")
 		info, err = os.Lstat(marker)
 		if err != nil || !info.Mode().IsRegular() || info.Size() > 16384 || info.Mode().Perm()&0077 != 0 {
-			return fmt.Errorf("sandbox identity unavailable")
+			return nil, fmt.Errorf("sandbox identity unavailable")
 		}
 		raw, err := os.ReadFile(marker)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		var value sandboxMarker
-		if json.Unmarshal(raw, &value) != nil || (value.Version != 1 && value.Version != 2) || value.Backend != "landlock" || value.ID != id {
-			return fmt.Errorf("sandbox identity mismatch")
+		if json.Unmarshal(raw, &value) != nil || value.Version != 3 || value.Backend != "landlock" || value.ID != id {
+			return nil, fmt.Errorf("sandbox identity mismatch")
 		}
+		if value.Owner.Host != identity.Host || !value.Owner.Valid() {
+			return nil, fmt.Errorf("sandbox host identity mismatch; retain state")
+		}
+		values = append(values, value)
+	}
+	return values, nil
+}
+func ReapWithAccess(state string, c *host.CgroupConfig, plans []*AccessPlan) error {
+	if err := stateowner.State(state); err != nil {
+		return err
+	}
+	identity, err := stateowner.Current()
+	if err != nil {
+		return err
+	}
+	root := filepath.Join(state, "vms")
+	values, err := readSandboxMarkers(state, identity)
+	if err != nil {
+		return err
+	}
+	// Validate every host marker before touching any execution or workspace.
+	for _, value := range values {
+		id := value.ID
+		dir := filepath.Join(root, id)
 		var workspace *Workspace
-		if value.Version == 2 {
+		if value.AccessHash != "" {
 			valid := false
 			for _, plan := range plans {
 				if plan.Hash == value.AccessHash && plan.WorkDir == value.WorkDir {
@@ -602,7 +652,14 @@ func ReapWithAccess(state string, c *host.CgroupConfig, plans []*AccessPlan) err
 			return fmt.Errorf("sandbox belongs to a different delegated unit; retain state")
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		err = host.RecoverExecutionGroup(ctx, c, id)
+		if value.Owner.Boot != identity.Boot {
+			if _, statErr := os.Stat(expected); !os.IsNotExist(statErr) {
+				cancel()
+				return fmt.Errorf("reboot recovery found unexpected execution cgroup; retain state")
+			}
+		} else {
+			err = host.RecoverExecutionGroup(ctx, c, id)
+		}
 		cancel()
 		if err != nil {
 			return err
@@ -621,14 +678,15 @@ func ReapWithAccess(state string, c *host.CgroupConfig, plans []*AccessPlan) err
 }
 
 type sandboxMarker struct {
-	Version    int    `json:"version"`
-	Backend    string `json:"backend"`
-	ID         string `json:"id"`
-	CgroupPath string `json:"cgroup_path"`
-	AccessHash string `json:"access_hash,omitempty"`
-	WorkDir    string `json:"work_dir,omitempty"`
-	Device     uint64 `json:"workspace_device,omitempty"`
-	Inode      uint64 `json:"workspace_inode,omitempty"`
+	Owner      stateowner.Identity `json:"owner"`
+	Version    int                 `json:"version"`
+	Backend    string              `json:"backend"`
+	ID         string              `json:"id"`
+	CgroupPath string              `json:"cgroup_path"`
+	AccessHash string              `json:"access_hash,omitempty"`
+	WorkDir    string              `json:"work_dir,omitempty"`
+	Device     uint64              `json:"workspace_device,omitempty"`
+	Inode      uint64              `json:"workspace_inode,omitempty"`
 }
 type mountIdentity struct {
 	target string

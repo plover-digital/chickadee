@@ -9,6 +9,7 @@ import (
 	"github.com/plover-digital/chickadee/internal/config"
 	"github.com/plover-digital/chickadee/internal/host"
 	"github.com/plover-digital/chickadee/internal/protocol"
+	"github.com/plover-digital/chickadee/internal/stateowner"
 	"net"
 	"os"
 	"path/filepath"
@@ -58,7 +59,7 @@ func (b *testBackend) Remove(ctx context.Context, name string) error {
 func TestPoolSerialLifecycle(t *testing.T) {
 	for _, fail := range []bool{false, true} {
 		t.Run(map[bool]string{false: "completed", true: "ambiguous-jit"}[fail], func(t *testing.T) {
-			c := config.Config{StateDir: privateTemp(t), Warm: 1, Max: 1, ScaleSet: "chickadee", JobSeconds: 60}
+			c := config.Config{StateDir: boundStateTemp(t), Warm: 1, Max: 1, ScaleSet: "chickadee", JobSeconds: 60}
 			demand := make(chan int, 4)
 			b := &testBackend{demand: demand, fail: fail}
 			ctx, cancel := context.WithCancel(context.Background())
@@ -138,7 +139,7 @@ func TestPoolSerialLifecycle(t *testing.T) {
 	}
 }
 func TestRestartReconciliationRetainsFailedRemovals(t *testing.T) {
-	c := config.Config{StateDir: privateTemp(t), ScaleSet: "chickadee"}
+	c := config.Config{StateDir: boundStateTemp(t), ScaleSet: "chickadee"}
 	_ = os.MkdirAll(filepath.Join(c.StateDir, "records"), 0700)
 	_ = os.MkdirAll(filepath.Join(c.StateDir, "vms"), 0700)
 	r := host.Record{ID: "0123456789abcdef", Name: "chickadee-0123456789abcdef"}
@@ -174,7 +175,7 @@ func (b *removalFailure) Remove(context.Context, string) error {
 }
 
 func TestAcquireCleansDisksAndEnforcesSingleOwner(t *testing.T) {
-	c := config.Config{StateDir: privateTemp(t)}
+	c := config.Config{StateDir: boundStateTemp(t)}
 	old := filepath.Join(c.StateDir, "vms", "old", "disk.qcow2")
 	if e := os.MkdirAll(filepath.Dir(old), 0700); e != nil {
 		t.Fatal(e)
@@ -197,7 +198,7 @@ func TestAcquireCleansDisksAndEnforcesSingleOwner(t *testing.T) {
 	}
 }
 func TestDelayedRegistrationIntentRetained(t *testing.T) {
-	c := config.Config{StateDir: privateTemp(t), ScaleSet: "chickadee"}
+	c := config.Config{StateDir: boundStateTemp(t), ScaleSet: "chickadee"}
 	_ = os.MkdirAll(filepath.Join(c.StateDir, "records"), 0700)
 	_ = os.MkdirAll(filepath.Join(c.StateDir, "vms"), 0700)
 	r := host.Record{ID: "0123456789abcdef", Name: "chickadee-0123456789abcdef", NotBefore: time.Now().Add(time.Hour)}
@@ -250,9 +251,17 @@ func privateTemp(t *testing.T) string {
 	}
 	return dir
 }
+func boundStateTemp(t *testing.T) string {
+	t.Helper()
+	dir := privateTemp(t)
+	if err := stateowner.State(dir); err != nil {
+		t.Fatal(err)
+	}
+	return dir
+}
 
 func TestChangedGitHubScopeCannotDiscardOldState(t *testing.T) {
-	c := config.Config{StateDir: privateTemp(t), ScaleSet: "chickadee", GitHubURL: "https://github.com/new-org", RunnerGroupID: 1}
+	c := config.Config{StateDir: boundStateTemp(t), ScaleSet: "chickadee", GitHubURL: "https://github.com/new-org", RunnerGroupID: 1}
 	for _, d := range []string{"records", "vms"} {
 		if e := os.Mkdir(filepath.Join(c.StateDir, d), 0700); e != nil {
 			t.Fatal(e)
