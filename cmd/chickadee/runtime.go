@@ -276,26 +276,5 @@ func writeReloadResult(dir, digest string, reloadErr error) error {
 // A queue outage clears its outstanding demand and retries independently.
 // Existing credentialed VMs and unrelated queues keep running.
 func pollWithRetry(ctx context.Context, values chan<- int, delay time.Duration, poll func(context.Context, chan<- int) error) error {
-	for {
-		err := poll(ctx, values)
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-		// Do not log API error bodies: upstream messages can contain sensitive data.
-		slog.Warn("Queue demand listener unavailable; preserving existing jobs and retrying")
-		_ = err
-		select {
-		case values <- 0:
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-		timer := time.NewTimer(delay)
-		select {
-		case <-timer.C:
-		case <-ctx.Done():
-			timer.Stop()
-			return ctx.Err()
-		}
-		delay = min(30*time.Second, delay*2)
-	}
+	return github.PollWithRetry(ctx, values, delay, poll)
 }

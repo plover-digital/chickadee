@@ -170,6 +170,21 @@ For GHES 3.16, the target operator verified that `app_client_id` must contain th
 numeric App ID as a string, rather than the OAuth Client ID. The pinned client
 accepts an App ID in this field; consult your GHES version's requirements.
 
+## Listener failures and reconnects
+
+Standalone sandbox and VM controllers report fixed listener reason codes:
+`listener-session-failed`, `listener-get-message-failed`,
+`listener-acquire-failed` and `listener-acknowledgement-failed`. Unknown errors
+use `listener-unavailable`; raw SDK responses and credential contents are omitted.
+A reason identifies the failed phase, not its remote cause.
+
+Reconnect delays increase from 2 seconds to at most 30 seconds. A successful
+complete message iteration (including acquisition and acknowledgement), or an
+empty successful long-poll, resets the delay. Merely creating a session does not.
+Shutdown cancels the wait. A failed session clears outstanding local demand while
+preserving credentialed executions. Reconnection does not replay an ambiguous
+acquisition locally; GitHub remains authoritative for assigned demand.
+
 ## Burst demand and stopping
 
 The shared scale-set client acquires every offered job request before acknowledging
