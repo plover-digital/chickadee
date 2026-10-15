@@ -952,3 +952,38 @@ func TestReservationRetryBindsLiveAccessPolicy(t *testing.T) {
 		})
 	}
 }
+
+func TestRetireReservationPreservesSpentJobsAndCleanupBudget(t *testing.T) {
+	c := engineConfig(t)
+	e, f := testEngine(t, c)
+	record := reserveEngine(t, e, c.Identity, "retire-undelivered", "medium")
+	if _, err := e.Seal(c.Identity, record.Request.AssignmentID); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.RetireReservation(c.Identity, record.Request.AssignmentID); err != nil {
+		t.Fatal(err)
+	}
+	eventually(t, func() bool {
+		r, err := e.Status(c.Identity, record.Request.AssignmentID)
+		return err == nil && r.State == Terminal
+	})
+	record = reserveEngine(t, e, c.Identity, "keep-spent", "medium")
+	if _, err := e.Seal(c.Identity, record.Request.AssignmentID); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.Deliver(c.Identity, record.Request.AssignmentID, "e30="); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.RetireReservation(c.Identity, record.Request.AssignmentID); !errors.Is(err, ErrConsumed) {
+		t.Fatal("spent job retired", err)
+	}
+	f.mu.Lock()
+	vm := f.vms[record.Request.VMID]
+	f.mu.Unlock()
+	select {
+	case <-vm.exit:
+		t.Fatal("active runner stopped")
+	default:
+	}
+	vm.complete()
+}

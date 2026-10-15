@@ -108,3 +108,7 @@ disposable VM runners and does not offer process sandboxes.
 Optional [host-access profiles](docs/host-access-runners.md) support strict ABI5,
 site tools, socket authority, host networking and separate fixed slot workspaces
 for trusted self-hosted workflows. They are not available on chickadee.run.
+
+For automatic GitHub demand polling with a sandbox pool, see
+[standalone sandbox runners](docs/standalone-sandbox.md). One controller drives
+one queue/profile without Roost or a worker API listener.

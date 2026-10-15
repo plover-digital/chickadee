@@ -61,6 +61,8 @@ type CgroupConfig struct {
 }
 
 type Config struct {
+	TokenFile       string        `json:"-"` // Standalone sandbox PAT only; never accepted by VM JSON.
+	GitHubHost      string        `json:"-"` // Explicit trusted API host; VM JSON remains github.com-only.
 	WorkerProfileID string        `json:"-"`
 	Cgroup          *CgroupConfig `json:"cgroup,omitempty"`
 	// AssignedCPUs is local execution metadata, never accepted from JSON.

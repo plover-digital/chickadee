@@ -5,6 +5,9 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"github.com/plover-digital/chickadee/internal/github"
+	"github.com/plover-digital/chickadee/internal/host"
+	"github.com/plover-digital/chickadee/internal/landlockrunner"
 	"github.com/plover-digital/chickadee/internal/worker"
 	"github.com/plover-digital/chickadee/workerapi"
 	"os"
@@ -88,5 +91,45 @@ func TestCPUPreflightModeReportsEnforcementBoundary(t *testing.T) {
 	}
 	if got := cpuModeSummary(false, []int{4, 5, 6, 7}); got != "cpu=affinity-only(4,5,6,7)" {
 		t.Fatal(got)
+	}
+}
+
+func TestStandaloneConfigProtectsAppKeyAndRequiresExplicitMode(t *testing.T) {
+	root, err := os.MkdirTemp("/var/tmp", "chickadee-standalone-config-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(root)
+	work := filepath.Join(root, "work")
+	tools := filepath.Join(root, "tools")
+	os.Mkdir(work, 0700)
+	os.Mkdir(tools, 0700)
+	key := filepath.Join(tools, "app.pem")
+	if err := os.WriteFile(key, []byte("nonsecret fixture"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	c := configuration{Config: worker.Config{Version: 1, Identity: worker.Identity{WorkerID: "local", BrokerID: "standalone", Generation: 1}, StateDir: filepath.Join(root, "state"), Cgroup: &host.CgroupConfig{PidsMax: 128}, Profiles: []worker.Profile{{ID: "sandbox", Digest: strings.Repeat("a", 64), ImageDir: filepath.Join(root, "image"), Machine: "landlock", CPUs: 1, MemoryMiB: 512, DiskGiB: 8, HostAccess: &landlockrunner.HostAccess{WorkDir: work}}}, Budget: worker.Budget{MaxVMs: 1, MaxCPUs: 1, MaxMemoryMiB: 512}, BootTimeoutSeconds: 60, JobTimeoutSeconds: 600, ReservationTimeoutSeconds: 120}, GitHub: &github.StandaloneConfig{GitHubURL: "https://github.com/example", ClientID: "fixture", InstallationID: 1, KeyFile: key, ScaleSet: "sandbox", RunnerGroupID: 1}}
+	p := filepath.Join(root, "config.json")
+	write := func() {
+		t.Helper()
+		data, err := json.Marshal(c)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, data, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write()
+	if _, err := load(p); err != nil {
+		t.Fatal("standalone config without TLS rejected", err)
+	}
+	if err := run(p, true); err == nil || !strings.Contains(err.Error(), "explicit -github") {
+		t.Fatal("credential config exposed worker API", err)
+	}
+	c.Profiles[0].HostAccess.ROPaths = []string{tools}
+	write()
+	if _, err := load(p); err == nil {
+		t.Fatal("App key parent exposed to sandbox")
 	}
 }

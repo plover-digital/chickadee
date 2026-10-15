@@ -26,6 +26,9 @@ func runJITOnce(path string) error {
 	if err != nil {
 		return err
 	}
+	if c.GitHub != nil {
+		return fmt.Errorf("github configuration requires -github mode")
+	}
 	if !c.IsLandlock() || len(c.Profiles) != 1 || c.Budget.MaxVMs != 1 {
 		return fmt.Errorf("one-shot mode requires one Landlock profile and one slot")
 	}

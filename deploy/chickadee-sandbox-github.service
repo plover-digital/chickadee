@@ -1,0 +1,36 @@
+[Unit]
+Description=Chickadee standalone GitHub sandbox runner controller
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=chickadee-landlock
+Group=chickadee-landlock
+ExecStart=/usr/local/bin/chickadee-worker -config /etc/chickadee-sandbox/config.json -github
+Restart=on-failure
+RestartSec=10
+KillMode=mixed
+TimeoutStopSec=900
+UMask=0077
+StateDirectory=chickadee-sandbox-github
+StateDirectoryMode=0700
+Delegate=cpu memory pids io
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelModules=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+ReadOnlyPaths=/var/lib/chickadee-landlock-images
+# For host_access also allow the reviewed, precreated slot workspaces.
+ReadWritePaths=/var/lib/chickadee-sandbox-github
+MemoryMax=5G
+MemorySwapMax=0
+CPUQuota=200%
+TasksMax=640
+LimitNOFILE=1024
+
+[Install]
+WantedBy=multi-user.target

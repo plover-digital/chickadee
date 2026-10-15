@@ -656,6 +656,39 @@ func (e *Engine) Deliver(identity Identity, assignmentID, jit string) error {
 	}()
 	return nil
 }
+
+// RetireReservation destroys an undelivered execution after failed provisioning.
+// It never releases capacity before normal cleanup and cannot cancel spent jobs.
+// This is a local adapter method, not a new worker API operation.
+func (e *Engine) RetireReservation(identity Identity, assignmentID string) error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if err := e.identityLocked(identity); err != nil {
+		return err
+	}
+	record, v, err := e.findLocked(assignmentID)
+	if err != nil {
+		return err
+	}
+	if record.Request.Identity != identity {
+		return ErrFenced
+	}
+	if record.State == Terminal {
+		return nil
+	}
+	if record.State == DeliveryIntent {
+		return ErrConsumed
+	}
+	if v == nil {
+		return ErrTransition
+	}
+	if v.state != "retiring" {
+		v.state = "retiring"
+		go e.cleanup(v)
+	}
+	return nil
+}
+
 func (e *Engine) Status(identity Identity, assignmentID string) (Record, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
