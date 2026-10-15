@@ -220,7 +220,7 @@ func pollMessages(ctx context.Context, session messageSession, max int, desired 
 		// dropping excess IDs here strands them after DeleteMessage.
 		var ids []int64
 		for _, j := range m.JobAvailableMessages {
-			if j == nil {
+			if j == nil || j.RunnerRequestID <= 0 {
 				return startupFailure("listener-message-invalid")
 			}
 			ids = append(ids, j.RunnerRequestID)

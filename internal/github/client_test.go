@@ -194,21 +194,30 @@ func TestBurstAcquiresAllBeforeAcknowledgementWithOneRunnerSlot(t *testing.T) {
 
 func TestMalformedAvailabilityRejectsWholeMessageBeforeSideEffects(t *testing.T) {
 	for _, capacity := range []int{0, 1, 3} {
-		for _, nilIndex := range []int{0, 1, 2} {
-			t.Run(fmt.Sprintf("capacity-%d/nil-%d", capacity, nilIndex), func(t *testing.T) {
-				jobs := []*scaleset.JobAvailable{{JobMessageBase: scaleset.JobMessageBase{RunnerRequestID: 41}}, {JobMessageBase: scaleset.JobMessageBase{RunnerRequestID: 42}}, {JobMessageBase: scaleset.JobMessageBase{RunnerRequestID: 43}}}
-				jobs[nilIndex] = nil
-				s := &delayedSession{message: &scaleset.RunnerScaleSetMessage{MessageID: 7, Statistics: &scaleset.RunnerScaleSetStatistic{TotalAssignedJobs: 3}, JobAvailableMessages: jobs}, acquiring: make(chan []int64, 1), release: make(chan struct{}), acknowledged: make(chan struct{}, 1)}
-				close(s.release)
-				desired := make(chan int, 1)
-				err := pollMessages(context.Background(), s, capacity, desired)
-				if FailureCategory(err) != "listener-message-invalid" || err.Error() != "listener-message-invalid" {
-					t.Fatal("malformed message lost bounded category", err)
-				}
-				if len(s.acquiring) != 0 || len(s.acknowledged) != 0 || len(desired) != 0 {
-					t.Fatal("malformed message caused partial acquisition, acknowledgement or demand")
-				}
-			})
+		for _, invalid := range []struct {
+			name string
+			job  *scaleset.JobAvailable
+		}{
+			{"null", nil}, {"missing-id", &scaleset.JobAvailable{}},
+			{"zero-id", &scaleset.JobAvailable{JobMessageBase: scaleset.JobMessageBase{RunnerRequestID: 0}}},
+			{"negative-id", &scaleset.JobAvailable{JobMessageBase: scaleset.JobMessageBase{RunnerRequestID: -1}}},
+		} {
+			for _, index := range []int{0, 1, 2} {
+				t.Run(fmt.Sprintf("capacity-%d/%s-%d", capacity, invalid.name, index), func(t *testing.T) {
+					jobs := []*scaleset.JobAvailable{{JobMessageBase: scaleset.JobMessageBase{RunnerRequestID: 41}}, {JobMessageBase: scaleset.JobMessageBase{RunnerRequestID: 42}}, {JobMessageBase: scaleset.JobMessageBase{RunnerRequestID: 43}}}
+					jobs[index] = invalid.job
+					s := &delayedSession{message: &scaleset.RunnerScaleSetMessage{MessageID: 7, Statistics: &scaleset.RunnerScaleSetStatistic{TotalAssignedJobs: 3}, JobAvailableMessages: jobs}, acquiring: make(chan []int64, 1), release: make(chan struct{}), acknowledged: make(chan struct{}, 1)}
+					close(s.release)
+					desired := make(chan int, 1)
+					err := pollMessages(context.Background(), s, capacity, desired)
+					if FailureCategory(err) != "listener-message-invalid" || err.Error() != "listener-message-invalid" {
+						t.Fatal("malformed message lost bounded category", err)
+					}
+					if len(s.acquiring) != 0 || len(s.acknowledged) != 0 || len(desired) != 0 {
+						t.Fatal("malformed message caused partial acquisition, acknowledgement or demand")
+					}
+				})
+			}
 		}
 	}
 }
