@@ -359,5 +359,11 @@ func cpuModeSummary(hasQuota bool, ids []int) string {
 
 func logPreflightFailure(err error) {
 	code, remedy := preflight.Report(err)
+	if code == "config-or-preflight-invalid" {
+		if category := github.FailureCategory(err); category != "" {
+			code = category
+			remedy = "Check the configured authentication mode and private credential file ownership, permissions and readability; keep credentials out of logs."
+		}
+	}
 	slog.Error("local preflight failed", "reason", code, "remedy", remedy)
 }

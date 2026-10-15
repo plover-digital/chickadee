@@ -249,6 +249,7 @@ slot directories; it does not print the offending directory.
 | `cgroup-memory-small` | Cover guest budget, per-VM overhead and controller headroom. |
 | `bubblewrap-missing` | Install supported bubblewrap and correct the service `PATH`. |
 | `sandbox-probe-failed` | Verify supported bubblewrap, configured Landlock ABI and kernel namespace support. |
+| `app-key-unreadable` / `token-file-unreadable` / `config-invalid` | Check authentication mode and private credential ownership, permissions and readability. |
 | `config-or-preflight-invalid` | Inspect the private configuration and the service environment; no unclassified error text is published. |
 
 These categories do not relax any check. No config, journal or worker API version
