@@ -138,18 +138,7 @@ func acquire(path string, who Identity, fresh func() error) error {
 		if ce != nil {
 			return ce
 		}
-		for _, p := range []string{path, filepath.Dir(path)} {
-			d, e := os.Open(p)
-			if e != nil {
-				return e
-			}
-			e = d.Sync()
-			d.Close()
-			if e != nil {
-				return e
-			}
-		}
-		return nil
+		return syncDirectories(path)
 	}
 	if !os.IsExist(err) {
 		return err
@@ -178,6 +167,25 @@ func acquire(path string, who Identity, fresh func() error) error {
 	}
 	if got.Identity.Host != who.Host {
 		return fmt.Errorf("state belongs to another host; stop duplicate controllers and use node-local state and workspaces")
+	}
+	// A previous creation may have written valid bytes but failed fsync. Recheck
+	// durability rather than allowing a restart to bypass unsupported storage.
+	if err := f.Sync(); err != nil {
+		return fmt.Errorf("host owner file durability unavailable; retain state")
+	}
+	return syncDirectories(path)
+}
+func syncDirectories(path string) error {
+	for _, p := range []string{path, filepath.Dir(path)} {
+		d, err := os.Open(p)
+		if err != nil {
+			return err
+		}
+		err = d.Sync()
+		d.Close()
+		if err != nil {
+			return fmt.Errorf("host owner directory durability unavailable; use supported storage")
+		}
 	}
 	return nil
 }
