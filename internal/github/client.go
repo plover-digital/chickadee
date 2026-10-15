@@ -22,6 +22,10 @@ type startupFailure string
 
 func (e startupFailure) Error() string { return string(e) }
 func FailureCategory(err error) string {
+	var listener listenerFailure
+	if errors.As(err, &listener) {
+		return listener.category
+	}
 	var stage startupFailure
 	if errors.As(err, &stage) {
 		return string(stage)
@@ -179,7 +183,7 @@ func (c *Client) Remove(ctx context.Context, name string) error {
 func (c *Client) Poll(ctx context.Context, owner string, max int, desired chan<- int) error {
 	session, e := c.API.MessageSessionClient(ctx, c.SetID, owner)
 	if e != nil {
-		return fmt.Errorf("message session creation failed")
+		return listenerFailure{category: "listener-session-failed"}
 	}
 	defer func() {
 		closeCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -207,12 +211,14 @@ type messageSession interface {
 
 func pollMessages(ctx context.Context, session messageSession, max int, desired chan<- int) error {
 	last := 0
+	healthy := false
 	for {
 		m, e := session.GetMessage(ctx, last, max)
 		if e != nil {
-			return fmt.Errorf("demand poll failed")
+			return listenerFailure{category: "listener-get-message-failed", healthy: healthy}
 		}
 		if m == nil {
+			healthy = true
 			continue
 		}
 		// Acquire every offered request before acknowledging the message. Local
@@ -234,14 +240,15 @@ func pollMessages(ctx context.Context, session messageSession, max int, desired 
 		if len(ids) > 0 {
 			started := time.Now()
 			if _, e = session.AcquireJobs(ctx, ids); e != nil {
-				return fmt.Errorf("job acquisition failed")
+				return listenerFailure{category: "listener-acquire-failed", healthy: healthy}
 			}
 			slog.Info("Scale-set acquisition completed", "duration_ms", time.Since(started).Milliseconds(), "requests", len(ids))
 		}
 		if e = session.DeleteMessage(ctx, m.MessageID); e != nil {
-			return fmt.Errorf("message acknowledgement failed")
+			return listenerFailure{category: "listener-acknowledgement-failed", healthy: healthy}
 		}
 		last = m.MessageID
+		healthy = true
 	}
 }
 func maxInt(a, b int) int {

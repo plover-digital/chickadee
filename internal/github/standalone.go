@@ -245,25 +245,9 @@ func requestSandboxJIT(parent context.Context, b sandboxBackend, name, path stri
 }
 
 func pollSandbox(ctx context.Context, s StandaloneConfig, max int, b sandboxBackend, out chan<- int) {
-	for ctx.Err() == nil {
-		if err := b.Poll(ctx, s.ScaleSet, max, out); ctx.Err() != nil {
-			return
-		} else if err != nil {
-			slog.Warn("GitHub demand listener unavailable; retrying")
-		}
-		select {
-		case out <- 0:
-		case <-ctx.Done():
-			return
-		}
-		timer := time.NewTimer(2 * time.Second)
-		select {
-		case <-timer.C:
-		case <-ctx.Done():
-			timer.Stop()
-			return
-		}
-	}
+	_ = PollWithRetry(ctx, out, 2*time.Second, func(ctx context.Context, out chan<- int) error {
+		return b.Poll(ctx, s.ScaleSet, max, out)
+	})
 }
 func runStandalone(parent context.Context, c worker.Config, s StandaloneConfig, e sandboxEngine, b sandboxBackend, dir string, cleanup bool) error {
 	if cleanup {
