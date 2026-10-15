@@ -221,3 +221,56 @@ func TestMalformedAvailabilityRejectsWholeMessageBeforeSideEffects(t *testing.T)
 		}
 	}
 }
+
+func TestAvailableBatchSafetyBoundIsIndependentOfRunnerCapacity(t *testing.T) {
+	for _, capacity := range []int{0, 1, maxAvailableJobs} {
+		for _, size := range []int{maxAvailableJobs, maxAvailableJobs + 1} {
+			t.Run(fmt.Sprintf("capacity-%d/size-%d", capacity, size), func(t *testing.T) {
+				jobs := make([]*scaleset.JobAvailable, size)
+				for i := range jobs {
+					jobs[i] = &scaleset.JobAvailable{JobMessageBase: scaleset.JobMessageBase{RunnerRequestID: int64(i + 1)}}
+				}
+				s := &delayedSession{message: &scaleset.RunnerScaleSetMessage{MessageID: 7, Statistics: &scaleset.RunnerScaleSetStatistic{TotalAssignedJobs: size}, JobAvailableMessages: jobs}, acquiring: make(chan []int64, 1), release: make(chan struct{}), acknowledged: make(chan struct{}, 1)}
+				close(s.release)
+				desired := make(chan int, 1)
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				defer cancel()
+				done := make(chan error, 1)
+				go func() { done <- pollMessages(ctx, s, capacity, desired) }()
+				if size > maxAvailableJobs {
+					err := <-done
+					if FailureCategory(err) != "listener-message-too-large" || err.Error() != "listener-message-too-large" {
+						t.Fatal("oversized batch lost fixed error", err)
+					}
+					if len(s.acquiring) != 0 || len(s.acknowledged) != 0 || len(desired) != 0 {
+						t.Fatal("oversized batch caused partial side effects")
+					}
+					return
+				}
+				select {
+				case ids := <-s.acquiring:
+					if len(ids) != size {
+						t.Fatal("batch truncated", len(ids))
+					}
+					for i, id := range ids {
+						if id != int64(i+1) {
+							t.Fatal("offered request changed or dropped")
+						}
+					}
+				case <-ctx.Done():
+					t.Fatal("boundary batch was not acquired")
+				}
+				select {
+				case <-s.acknowledged:
+				case <-ctx.Done():
+					t.Fatal("boundary batch was not acknowledged")
+				}
+				if got := <-desired; got != min(capacity, size) {
+					t.Fatal("capacity demand semantics changed", got)
+				}
+				cancel()
+				<-done
+			})
+		}
+	}
+}
