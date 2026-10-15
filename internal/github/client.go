@@ -209,6 +209,10 @@ type messageSession interface {
 	DeleteMessage(context.Context, int) error
 }
 
+// maxAvailableJobs is a local safety ceiling, not a GitHub protocol limit.
+// Reject oversized batches atomically; never truncate acquired demand to capacity.
+const maxAvailableJobs = 10000
+
 func pollMessages(ctx context.Context, session messageSession, max int, desired chan<- int) error {
 	last := 0
 	healthy := false
@@ -220,6 +224,9 @@ func pollMessages(ctx context.Context, session messageSession, max int, desired 
 		if m == nil {
 			healthy = true
 			continue
+		}
+		if len(m.JobAvailableMessages) > maxAvailableJobs {
+			return startupFailure("listener-message-too-large")
 		}
 		// Acquire every offered request before acknowledging the message. Local
 		// capacity limits credentialed runners, not ownership of queued demand;
