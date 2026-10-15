@@ -4,6 +4,7 @@ package landlockrunner
 
 import (
 	"fmt"
+	"github.com/plover-digital/chickadee/internal/preflight"
 	"io"
 	"os"
 	"path/filepath"
@@ -35,7 +36,7 @@ func openWorkspace(path string) (*os.File, error) {
 	// Resolve no symlinks in ANY component, atomically, on the supported Linux hosts.
 	fd, err := unix.Openat2(unix.AT_FDCWD, path, &unix.OpenHow{Flags: unix.O_RDONLY | unix.O_DIRECTORY | unix.O_CLOEXEC, Resolve: unix.RESOLVE_NO_SYMLINKS})
 	if err != nil {
-		return nil, fmt.Errorf("workspace must be a direct directory without symlink components")
+		return nil, preflight.New("workspace-path")
 	}
 	f := os.NewFile(uintptr(fd), "workspace")
 	info, err := f.Stat()
@@ -46,7 +47,7 @@ func openWorkspace(path string) (*os.File, error) {
 	st, ok := info.Sys().(*syscall.Stat_t)
 	if !ok || st.Uid != uint32(os.Geteuid()) || info.Mode().Perm() != 0700 {
 		f.Close()
-		return nil, fmt.Errorf("workspace must be service-owned mode 0700")
+		return nil, preflight.New("workspace-permissions")
 	}
 	return f, nil
 }
@@ -57,7 +58,7 @@ func LockWorkspace(path string) (*Workspace, error) {
 	}
 	if err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
 		f.Close()
-		return nil, fmt.Errorf("workspace is already in use")
+		return nil, preflight.New("workspace-busy")
 	}
 	info, _ := f.Stat()
 	st := info.Sys().(*syscall.Stat_t)
@@ -103,7 +104,7 @@ func (w *Workspace) Empty() error {
 	defer entries.Close()
 	names, err := entries.Readdirnames(1)
 	if len(names) > 0 {
-		return fmt.Errorf("workspace is not empty; recovery or operator inspection required")
+		return preflight.New("workspace-not-empty")
 	}
 	if err != nil && err != io.EOF {
 		return err

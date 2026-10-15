@@ -228,3 +228,32 @@ Tracked follow-ups: [cross-host recovery fencing (#25)](https://github.com/plove
 [listener diagnostics/backoff (#27)](https://github.com/plover-digital/chickadee/issues/27),
 [actionable preflight checks (#28)](https://github.com/plover-digital/chickadee/issues/28),
 and [journal retention (#29)](https://github.com/plover-digital/chickadee/issues/29).
+
+## Fixed preflight failure reports
+
+`-github -check`, `-check-landlock` and worker `-check` report a fixed `reason`
+and `remedy` for recognized local failures. They withhold config paths, config
+values, credential contents, remote errors and child stderr. For example,
+`reason=workspace-permissions` instructs you to precreate service-owned mode 0700
+slot directories; it does not print the offending directory.
+
+| Reason | Operator action |
+| --- | --- |
+| `workspace-permissions` | Precreate every slot directory as the service user, mode 0700. |
+| `workspace-path` | Check the configured directories exist and no parent component is a symlink. |
+| `workspace-busy` | Drain the existing owner; never remove live workspace locks or contents. |
+| `workspace-not-empty` | Inspect retained state and complete recovery before retrying. |
+| `cgroup-root` | Run inside the actual delegated unit; correct or omit a stale explicit root. |
+| `cgroup-ownership` | Use the service account and a delegated root owned by that account. |
+| `cgroup-memory-unbounded` | Set explicit unit `MemoryMax`. |
+| `cgroup-memory-small` | Cover guest budget, per-VM overhead and controller headroom. |
+| `bubblewrap-missing` | Install supported bubblewrap and correct the service `PATH`. |
+| `sandbox-probe-failed` | Verify supported bubblewrap, kernel namespaces and the configured Landlock ABI (process workers) or KVM access (VM workers). |
+| `app-key-unreadable` / `token-file-unreadable` / `config-invalid` | Check authentication mode and private credential ownership, permissions and readability. |
+| `config-or-preflight-invalid` | Inspect the private configuration and the service environment; no unclassified error text is published. |
+
+These categories do not relax any check. No config, journal or worker API version
+changes. Run the check in the same delegation/resource/PATH environment as the
+service; a separate `ExecStartPre` process is not assumed to have equivalent
+cgroup state. A check is not a repair command and does not authorize deleting
+retained state. Successful capability reports remain as documented above.
