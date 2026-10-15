@@ -87,6 +87,8 @@ func state(root string, who Identity) error {
 
 // Workspace claims live beside the guest-writable directory, never inside it.
 // Different state directories therefore cannot bypass foreign-host fencing.
+// The caller must validate a private direct slot with no mount boundary between
+// the slot and its parent (landlockrunner uses parent-anchored openat2).
 func Workspace(path string) error {
 	who, err := Current()
 	if err != nil {

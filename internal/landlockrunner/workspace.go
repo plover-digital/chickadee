@@ -38,7 +38,7 @@ func openWorkspace(path string) (*os.File, error) {
 	// Resolve no symlinks in ANY component, atomically, on the supported Linux hosts.
 	parent, err := unix.Openat2(unix.AT_FDCWD, filepath.Dir(path), &unix.OpenHow{Flags: unix.O_RDONLY | unix.O_DIRECTORY | unix.O_CLOEXEC, Resolve: unix.RESOLVE_NO_SYMLINKS})
 	if err != nil {
-		return nil, fmt.Errorf("workspace parent must be a direct directory")
+		return nil, preflight.New("workspace-path")
 	}
 	// The sibling owner claim must share the workspace's storage. Reject bind
 	// mounts and filesystem mountpoints rather than leaving the claim host-local.

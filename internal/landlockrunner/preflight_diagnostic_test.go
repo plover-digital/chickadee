@@ -17,6 +17,10 @@ func TestWorkspacePreflightCategories(t *testing.T) {
 	if code != "workspace-permissions" {
 		t.Fatal(code)
 	}
+	code, _ = preflight.Report(ValidateWorkspace(dir + "/missing-parent/slot"))
+	if code != "workspace-path" {
+		t.Fatalf("missing parent diagnostic: %s", code)
+	}
 	code, _ = preflight.Report(ValidateWorkspace(dir + "/missing-private-path"))
 	if code != "workspace-path" {
 		t.Fatal(code)
