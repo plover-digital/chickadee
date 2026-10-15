@@ -24,6 +24,8 @@ ProtectKernelModules=yes
 RestrictSUIDSGID=yes
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
 ReadOnlyPaths=/var/lib/chickadee-landlock-images
+# For host_access add its dedicated service-owned parent, not individual slots.
+# Example additional setting: ReadWritePaths=/shared/work
 ReadWritePaths=/var/lib/chickadee-landlock
 MemoryMax=5G
 MemorySwapMax=0

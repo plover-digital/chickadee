@@ -56,8 +56,11 @@ ordinary keyless worker/one-shot operation rejects the credential-bearing config
 
 The [example systemd unit](../deploy/chickadee-sandbox-github.service) has a bounded
 sealed-runtime baseline. Adapt memory/CPU/tasks limits and bundle paths to your
-profile. For host_access, add the precreated workspace paths to `ReadWritePaths`
-and use the actual supported delegation, as described in the host-access guide.
+profile. For host_access, add the dedicated service-owned workspace parent
+(for example `ReadWritePaths=/shared/work`) rather than individual slots, and
+use the actual supported delegation, as described in the host-access guide. The
+parent must be writable by the controller to create sibling ownership claims;
+individual slots must be ordinary directories, not systemd per-slot bind mounts.
 
 A workflow targets the scale-set name:
 

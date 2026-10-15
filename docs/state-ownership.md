@@ -77,5 +77,9 @@ The kernel's `openat2(RESOLVE_NO_XDEV)` check rejects a slot that is itself a
 filesystem or bind mount: its sibling ownership claim could otherwise live on a
 different host-local filesystem. Mount shared storage at the parent directory
 and create ordinary slot directories underneath it. Symlink aliases are also
-rejected. Filesystem aliases or cloned machine identities must not be used to
+rejected. In hardened systemd units, grant `ReadWritePaths` for the dedicated,
+service-owned mode0700 workspace parent (for example `/shared/work`), rather than
+individual slots: the controller must create sibling claims, and per-slot
+`ReadWritePaths` makes the slots bind mounts. Guest permissions still cover only
+the slot. Filesystem aliases or cloned machine identities must not be used to
 present one workspace as independently owned slots.
