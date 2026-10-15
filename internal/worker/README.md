@@ -41,3 +41,7 @@ immutable shape, persistence failures on either side of commit, confirmed cleanu
 requirements, file ownership/symlinks, malformed state and exhaustion. Crash
 injection tests model journal interruption; they do not certify power-loss
 behavior of every host filesystem.
+
+Linux state and host_access workspace ownership are fenced before recovery;
+see [single-host ownership and upgrade instructions](../../docs/state-ownership.md).
+The ownership claim is separate from the version 1 reservation journal and API.

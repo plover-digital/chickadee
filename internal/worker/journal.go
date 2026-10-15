@@ -137,6 +137,9 @@ func Open(dir string, identity Identity) (*Journal, error) {
 	if err != nil || !ownedPrivate(info, false) {
 		return nil, fmt.Errorf("journal directory must be owned, private and not a symlink")
 	}
+	if err := claimHostState(dir); err != nil {
+		return nil, err
+	}
 	lock, err := privateFile(filepath.Join(dir, "lock"), syscall.O_CREAT|syscall.O_RDWR)
 	if err != nil {
 		return nil, err

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/plover-digital/chickadee/internal/stateowner"
 	"golang.org/x/sys/unix"
 )
 
@@ -34,7 +35,14 @@ func openWorkspace(path string) (*os.File, error) {
 		return nil, fmt.Errorf("invalid workspace path")
 	}
 	// Resolve no symlinks in ANY component, atomically, on the supported Linux hosts.
-	fd, err := unix.Openat2(unix.AT_FDCWD, path, &unix.OpenHow{Flags: unix.O_RDONLY | unix.O_DIRECTORY | unix.O_CLOEXEC, Resolve: unix.RESOLVE_NO_SYMLINKS})
+	parent, err := unix.Openat2(unix.AT_FDCWD, filepath.Dir(path), &unix.OpenHow{Flags: unix.O_RDONLY | unix.O_DIRECTORY | unix.O_CLOEXEC, Resolve: unix.RESOLVE_NO_SYMLINKS})
+	if err != nil {
+		return nil, fmt.Errorf("workspace parent must be a direct directory")
+	}
+	// The sibling owner claim must share the workspace's storage. Reject bind
+	// mounts and filesystem mountpoints rather than leaving the claim host-local.
+	fd, err := unix.Openat2(parent, filepath.Base(path), &unix.OpenHow{Flags: unix.O_RDONLY | unix.O_DIRECTORY | unix.O_CLOEXEC, Resolve: unix.RESOLVE_NO_SYMLINKS | unix.RESOLVE_NO_XDEV})
+	unix.Close(parent)
 	if err != nil {
 		return nil, preflight.New("workspace-path")
 	}
@@ -51,9 +59,21 @@ func openWorkspace(path string) (*os.File, error) {
 	}
 	return f, nil
 }
+func ClaimWorkspace(path string) error {
+	f, err := openWorkspace(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return stateowner.Workspace(path)
+}
 func LockWorkspace(path string) (*Workspace, error) {
 	f, err := openWorkspace(path)
 	if err != nil {
+		return nil, err
+	}
+	if err = stateowner.Workspace(path); err != nil {
+		f.Close()
 		return nil, err
 	}
 	if err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {

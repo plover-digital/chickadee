@@ -14,6 +14,7 @@ import (
 
 	"github.com/plover-digital/chickadee/internal/config"
 	"github.com/plover-digital/chickadee/internal/host"
+	"github.com/plover-digital/chickadee/internal/stateowner"
 )
 
 func TestMain(m *testing.M) {
@@ -40,6 +41,9 @@ func TestRealHostAccessConcurrentCleanupAndRecovery(t *testing.T) {
 		t.Fatal(err)
 	}
 	state := hostTemp(t)
+	if err := stateowner.State(state); err != nil {
+		t.Fatal(err)
+	}
 	os.Mkdir(filepath.Join(state, "vms"), 0700)
 	root := hostTemp(t)
 	for i := 1; i <= 2; i++ {

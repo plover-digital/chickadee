@@ -326,3 +326,6 @@ the local timeout too. A prefix-installed slurm.conf needs its actual prefix pat
 not an automatic `/etc/slurm` bind. Lustre and MPI were used in the validation
 record above; other filesystems and external services follow the same generic
 path, authority and lifecycle rules. No scheduler adapter is implemented.
+
+Linux ownership claims and the required controlled upgrade from unbound state
+are documented in [single-host state ownership](state-ownership.md).
