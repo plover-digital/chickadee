@@ -23,6 +23,8 @@ Install on a dedicated Ubuntu 24.04 amd64 host by following
 [installation](docs/install.md), including GitHub App setup. Installation only
 copies files; applying networking and starting the service are explicit steps.
 No repository publication or network changes are performed by building or testing.
+Existing deployments must follow the [ownership upgrade steps](docs/state-ownership.md)
+before replacing the Linux controller; populated unbound state is refused.
 
 The host uses the official [actions/scaleset Go client](https://github.com/actions/scaleset/tree/v0.4.0)
 for GitHub App authentication, demand polling, acquisition, and JIT configuration.
