@@ -89,7 +89,7 @@ func main() {
 				slog.Error("registration cleanup deferred by late-JIT guard; retry after NotBefore")
 			} else {
 				if *check {
-					logPreflightFailure(err)
+					logPreflightFailure(err, reason)
 					os.Exit(1)
 				}
 				if category := github.FailureCategory(err); category != "" {
@@ -113,7 +113,7 @@ func main() {
 			err = worker.CheckLandlockSandboxes(c.Config)
 		}
 		if err != nil {
-			logPreflightFailure(err)
+			logPreflightFailure(err, "")
 			os.Exit(1)
 		}
 		hasCPU, err := host.HasCPUController(c.Cgroup)
@@ -149,7 +149,7 @@ func main() {
 	}
 	if err := run(*path, *check); err != nil {
 		if *check {
-			logPreflightFailure(err)
+			logPreflightFailure(err, "")
 		} else {
 			slog.Error("worker stopped; inspect local configuration and bounded diagnostics")
 		}
@@ -357,9 +357,12 @@ func cpuModeSummary(hasQuota bool, ids []int) string {
 	return "cpu=affinity-only(" + strings.Join(parts, ",") + ")"
 }
 
-func logPreflightFailure(err error) {
+func logPreflightFailure(err error, fallback string) {
 	code, remedy := preflight.Report(err)
-	if code == "config-or-preflight-invalid" {
+	if code == "config-or-preflight-invalid" && (fallback == "config-invalid" || fallback == "engine-check-failed") {
+		code = fallback
+	}
+	if code == "config-or-preflight-invalid" || code == "config-invalid" || code == "engine-check-failed" {
 		if category := github.FailureCategory(err); category != "" {
 			code = category
 			remedy = "Check the configured authentication mode and private credential file ownership, permissions and readability; keep credentials out of logs."

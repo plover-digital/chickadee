@@ -3,12 +3,15 @@
 package host
 
 import (
+	"context"
 	"fmt"
+	"github.com/plover-digital/chickadee/internal/preflight"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 	"unsafe"
 )
 
@@ -142,11 +145,22 @@ func CheckSandbox() error {
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command("bwrap", append(args, "-sandbox-probe="+root)...)
-	cmd.Env = processEnv()
-	out, err := cmd.CombinedOutput()
+	return runSandboxProbe(append(args, "-sandbox-probe="+root))
+}
+
+func runSandboxProbe(args []string) error {
+	bwrap, err := exec.LookPath("bwrap")
 	if err != nil {
-		return fmt.Errorf("QEMU isolation preflight failed: %s", out)
+		return preflight.New("bubblewrap-missing")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, bwrap, args...)
+	cmd.Env = processEnv()
+	// Output is untrusted and unnecessary for a fixed diagnostic. Leaving both
+	// streams nil discards them without an unbounded CombinedOutput allocation.
+	if err := cmd.Run(); err != nil {
+		return preflight.New("sandbox-probe-failed")
 	}
 	return nil
 }

@@ -248,7 +248,7 @@ slot directories; it does not print the offending directory.
 | `cgroup-memory-unbounded` | Set explicit unit `MemoryMax`. |
 | `cgroup-memory-small` | Cover guest budget, per-VM overhead and controller headroom. |
 | `bubblewrap-missing` | Install supported bubblewrap and correct the service `PATH`. |
-| `sandbox-probe-failed` | Verify supported bubblewrap, configured Landlock ABI and kernel namespace support. |
+| `sandbox-probe-failed` | Verify supported bubblewrap, kernel namespaces and the configured Landlock ABI (process workers) or KVM access (VM workers). |
 | `app-key-unreadable` / `token-file-unreadable` / `config-invalid` | Check authentication mode and private credential ownership, permissions and readability. |
 | `config-or-preflight-invalid` | Inspect the private configuration and the service environment; no unclassified error text is published. |
 

@@ -24,7 +24,7 @@ func TestPreflightLogUsesFixedLocalReport(t *testing.T) {
 	var output bytes.Buffer
 	slog.SetDefault(slog.New(slog.NewJSONHandler(&output, nil)))
 	for _, err := range []error{errors.New("PRIVATE_TOKEN /private/config\nFORGED"), fmt.Errorf("PRIVATE_KEY: %w", preflight.New("workspace-permissions"))} {
-		logPreflightFailure(err)
+		logPreflightFailure(err, "")
 	}
 	text := output.String()
 	for _, unsafe := range []string{"PRIVATE_TOKEN", "PRIVATE_KEY", "/private/config", "FORGED"} {
@@ -74,7 +74,7 @@ func TestCheckLogPreservesGitHubCredentialCategory(t *testing.T) {
 			t.Fatal("unsafe credential fixture accepted")
 		}
 		output.Reset()
-		logPreflightFailure(err)
+		logPreflightFailure(err, "")
 		text := output.String()
 		if !strings.Contains(text, want) {
 			t.Fatalf("lost credential diagnostic: %s", text)
@@ -82,5 +82,28 @@ func TestCheckLogPreservesGitHubCredentialCategory(t *testing.T) {
 		if strings.Contains(text, root) || strings.Contains(text, "PRIVATE_CREDENTIAL_CONTENT") {
 			t.Fatal("credential or path leaked")
 		}
+	}
+}
+
+func TestGitHubCheckKeepsConfigStageWithoutRawErrors(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "private-config.json")
+	if err := os.WriteFile(path, []byte("{PRIVATE_CONFIG_CONTENT"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	_, err := load(path)
+	if err == nil {
+		t.Fatal("malformed config accepted")
+	}
+	old := slog.Default()
+	defer slog.SetDefault(old)
+	var out bytes.Buffer
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&out, nil)))
+	logPreflightFailure(err, "config-invalid")
+	if !strings.Contains(out.String(), `"reason":"config-invalid"`) {
+		t.Fatal("lost safe config-stage reason")
+	}
+	if strings.Contains(out.String(), root) || strings.Contains(out.String(), "PRIVATE_CONFIG_CONTENT") {
+		t.Fatal("config leaked")
 	}
 }

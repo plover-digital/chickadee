@@ -20,7 +20,7 @@ var messages = map[string]message{
 	"cgroup-memory-unbounded": {"delegated memory.max must be explicitly bounded", "Set an explicit MemoryMax on the service unit and run the check in that unit."},
 	"cgroup-memory-small":     {"delegated memory.max must cover guest budget, per-VM overhead and controller headroom", "Increase the unit MemoryMax or reduce the guest budget and per-runner overhead."},
 	"bubblewrap-missing":      {"bubblewrap is required", "Install supported bubblewrap and set the service PATH to select it."},
-	"sandbox-probe-failed":    {"Landlock/namespace preflight failed; refusing unsandboxed execution", "Check the service PATH selects supported bubblewrap and that the kernel permits the configured Landlock ABI and namespaces. Child output is withheld."},
+	"sandbox-probe-failed":    {"sandbox isolation preflight failed; refusing unsandboxed execution", "Check the service PATH selects supported bubblewrap and the kernel permits required namespaces, Landlock ABI (process workers) and KVM access (VM workers). Child output is withheld."},
 }
 
 // New accepts only predefined categories; unknown categories remain generic.
