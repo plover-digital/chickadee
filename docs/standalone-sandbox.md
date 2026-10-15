@@ -142,7 +142,11 @@ a filesystem with host-local locks. After pinning services to one host, the targ
 operator reports successful three-job concurrency. Keep state node-local and pin
 shared-home user services with `ConditionHost=`; filesystem locks alone cannot
 fence another host using `localflock`. Integrated standalone GHES acceptance
-still requires the target authentication and workflow test.
+has now passed on the target: a three-job burst was served sequentially with
+one slot and concurrently with three slots, using PAT authentication on GHES
+and ABI5. Each slot was cleaned and the credential-free warm pool replenished.
+The target workload's application failures also occur outside the sandbox; this
+is runner-lifecycle acceptance, not a claim that those application tests passed.
 
 ## Repository PAT authentication
 
@@ -181,3 +185,31 @@ prove job execution has begun, so idle credentials can delay stop until the job
 lifecycle timeout. Do not infer idle state from a local credential or RUNNING frame,
 or force-remove a runner based only on a sampled GitHub busy flag: job assignment
 can race that check. Safe idle-runner shutdown remains a lifecycle follow-up.
+
+## Check the deployed service environment
+
+Run `-github -check` as the service user with the same delegated cgroup, explicit
+memory/PID limits and `PATH` as the service, not in an ordinary login shell.
+In particular, verify that `PATH` selects the supported bubblewrap executable.
+For a user-service deployment, adapt the bounds from your actual unit:
+
+```sh
+systemd-run --user --wait --pipe -p Delegate=yes -p MemoryMax=5G \
+  -p MemorySwapMax=0 -p TasksMax=640 \
+  --setenv=PATH=/usr/local/bin:/usr/bin:/bin \
+  /usr/local/bin/chickadee-worker -github -check \
+  -config /etc/chickadee-sandbox/config.json
+```
+
+Use the same service account and properties as your installed unit; the example
+does not grant another account access to its state or credentials. Precreate each
+host_access workspace as a mode-0700 directory owned by the service user. A plain
+`mkdir` commonly produces mode0755, which the private-workspace check rejects.
+Current failure codes deliberately omit raw SDK errors and credential contents;
+more actionable bounded preflight diagnostics remain follow-up work.
+
+Tracked follow-ups: [cross-host recovery fencing (#25)](https://github.com/plover-digital/chickadee/issues/25),
+[safe idle-runner drain (#26)](https://github.com/plover-digital/chickadee/issues/26),
+[listener diagnostics/backoff (#27)](https://github.com/plover-digital/chickadee/issues/27),
+[actionable preflight checks (#28)](https://github.com/plover-digital/chickadee/issues/28),
+and [journal retention (#29)](https://github.com/plover-digital/chickadee/issues/29).

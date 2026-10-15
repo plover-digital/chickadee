@@ -324,7 +324,9 @@ func runStandalone(parent context.Context, c worker.Config, s StandaloneConfig, 
 			go func() {
 				defer wg.Done()
 				err := provisionSandbox(provision, c, s, e, b, dir, id)
-				if err != nil {
+				if err != nil && (errors.Is(err, context.Canceled) || errors.Is(provision.Err(), context.Canceled)) {
+					slog.Info("Runner provisioning canceled", "assignment", id)
+				} else if err != nil {
 					slog.Warn("Runner provisioning failed", "assignment", id)
 				}
 				select {
