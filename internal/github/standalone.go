@@ -162,7 +162,43 @@ func reconcileSandbox(ctx context.Context, c worker.Config, s StandaloneConfig, 
 	}
 	return nil
 }
-func provisionSandbox(ctx context.Context, c worker.Config, s StandaloneConfig, e sandboxEngine, b sandboxBackend, dir, id string) error {
+
+// A delivery claim and an explicit cancellation share one lock. Once delivery
+// wins that claim, cancellation cannot turn the execution back into an unused
+// reservation. Parent cancellation is checked again while holding the lock.
+type sandboxProvision struct {
+	mu         sync.Mutex
+	ctx        context.Context
+	parent     context.Context
+	stop       context.CancelFunc
+	stopParent func() bool
+}
+
+func newSandboxProvision(parent context.Context) *sandboxProvision {
+	ctx, stop := context.WithCancel(context.WithoutCancel(parent))
+	p := &sandboxProvision{ctx: ctx, parent: parent, stop: stop}
+	p.stopParent = context.AfterFunc(parent, p.cancel)
+	return p
+}
+func (p *sandboxProvision) cancel() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.stop()
+}
+func (p *sandboxProvision) close() { p.stopParent(); p.cancel() }
+func (p *sandboxProvision) commit(deliver func() error) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if err := p.parent.Err(); err != nil {
+		return err
+	}
+	if err := p.ctx.Err(); err != nil {
+		return err
+	}
+	return deliver()
+}
+func provisionSandbox(p *sandboxProvision, c worker.Config, s StandaloneConfig, e sandboxEngine, b sandboxBackend, dir, id string) error {
+	ctx := p.ctx
 	reserve, cancel := context.WithTimeout(ctx, time.Duration(c.BootTimeoutSeconds+5)*time.Second)
 	record, err := e.Reserve(reserve, c.Identity, id, c.Profiles[0].ID)
 	cancel()
@@ -190,7 +226,7 @@ func provisionSandbox(ctx context.Context, c worker.Config, s StandaloneConfig, 
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if err := e.Deliver(c.Identity, id, jit); err != nil {
+	if err := p.commit(func() error { return e.Deliver(c.Identity, id, jit) }); err != nil {
 		return err
 	}
 	slog.Info("Runner credential intent committed", "assignment", id, "runner", name, "execution", record.Request.VMID)
@@ -317,14 +353,15 @@ func runStandalone(parent context.Context, c worker.Config, s StandaloneConfig, 
 		}
 		for active < desired && !time.Now().Before(nextProvision) {
 			id := host.NewID()
-			provision, stop := context.WithCancel(ctx)
-			pending[id] = stop
+			provision := newSandboxProvision(ctx)
+			pending[id] = provision.cancel
 			active++
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
+				defer provision.close()
 				err := provisionSandbox(provision, c, s, e, b, dir, id)
-				if err != nil && (errors.Is(err, context.Canceled) || errors.Is(provision.Err(), context.Canceled)) {
+				if err != nil && (errors.Is(err, context.Canceled) || errors.Is(provision.ctx.Err(), context.Canceled)) {
 					slog.Info("Runner provisioning canceled", "assignment", id)
 				} else if err != nil {
 					slog.Warn("Runner provisioning failed", "assignment", id)

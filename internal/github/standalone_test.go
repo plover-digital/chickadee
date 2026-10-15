@@ -222,7 +222,9 @@ func TestSandboxAmbiguousJITRetiresWithoutDelivery(t *testing.T) {
 	c, s, e, b, dir := standaloneFixture(t)
 	b.failJIT = true
 	id := host.NewID()
-	if err := provisionSandbox(context.Background(), c, s, e, b, dir, id); err == nil {
+	control := newSandboxProvision(context.Background())
+	defer control.close()
+	if err := provisionSandbox(control, c, s, e, b, dir, id); err == nil {
 		t.Fatal("ambiguous JIT accepted")
 	}
 	e.mu.Lock()
@@ -374,7 +376,9 @@ func TestCancelledProvisioningNeverDeliversLateJIT(t *testing.T) {
 	defer cancel()
 	done := make(chan error, 1)
 	id := host.NewID()
-	go func() { done <- provisionSandbox(ctx, c, s, e, b, dir, id) }()
+	control := newSandboxProvision(ctx)
+	defer control.close()
+	go func() { done <- provisionSandbox(control, c, s, e, b, dir, id) }()
 	select {
 	case <-b.started:
 	case <-time.After(3 * time.Second):
@@ -568,5 +572,42 @@ func TestDemandFallCancelsUndeliveredProvisioning(t *testing.T) {
 		}
 	case <-time.After(3 * time.Second):
 		t.Fatal("canceled provisioning did not drain")
+	}
+}
+
+func TestProvisionCancellationSerializesWithDeliveryClaim(t *testing.T) {
+	p := newSandboxProvision(context.Background())
+	defer p.close()
+	entered, release, finished, cancelStarted, cancelDone := make(chan struct{}), make(chan struct{}), make(chan error, 1), make(chan struct{}), make(chan struct{})
+	go func() { finished <- p.commit(func() error { close(entered); <-release; return nil }) }()
+	<-entered
+	go func() { close(cancelStarted); p.cancel(); close(cancelDone) }()
+	<-cancelStarted
+	select {
+	case <-cancelDone:
+		t.Fatal("cancellation crossed an accepted delivery claim")
+	case <-time.After(25 * time.Millisecond):
+	}
+	if p.ctx.Err() != nil {
+		t.Fatal("context canceled inside delivery claim")
+	}
+	close(release)
+	if err := <-finished; err != nil {
+		t.Fatal(err)
+	}
+	<-cancelDone
+	called := false
+	if err := p.commit(func() error { called = true; return nil }); !errors.Is(err, context.Canceled) || called {
+		t.Fatal("delivery accepted after cancellation", err)
+	}
+}
+func TestParentCancellationPreventsDeliveryWithoutWaitingForCallback(t *testing.T) {
+	parent, cancel := context.WithCancel(context.Background())
+	p := newSandboxProvision(parent)
+	defer p.close()
+	cancel()
+	called := false
+	if err := p.commit(func() error { called = true; return nil }); !errors.Is(err, context.Canceled) || called {
+		t.Fatal("parent cancellation lost", err)
 	}
 }
