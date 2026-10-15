@@ -5,6 +5,7 @@ package host
 import (
 	"fmt"
 	"github.com/plover-digital/chickadee/internal/config"
+	"github.com/plover-digital/chickadee/internal/preflight"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -66,7 +67,7 @@ func delegatedRoot(c *CgroupConfig) (string, error) {
 		root = c.Root
 	}
 	if root == "/sys/fs/cgroup" || !(current == root || current == filepath.Join(root, "controller")) {
-		return "", fmt.Errorf("cgroup root must own this service process or its controller leaf")
+		return "", preflight.New("cgroup-root")
 	}
 	info, err := os.Lstat(root)
 	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
@@ -74,7 +75,7 @@ func delegatedRoot(c *CgroupConfig) (string, error) {
 	}
 	stat, ok := info.Sys().(*syscall.Stat_t)
 	if !ok || stat.Uid != uint32(os.Geteuid()) {
-		return "", fmt.Errorf("delegated cgroup root must belong to service user")
+		return "", preflight.New("cgroup-ownership")
 	}
 	var fs syscall.Statfs_t
 	if err := syscall.Statfs(root, &fs); err != nil || fs.Type != 0x63677270 {
@@ -356,11 +357,11 @@ func CheckCgroupBudget(c *CgroupConfig, guestMemoryMiB, maxVMs int) error {
 }
 func checkParentMemory(value string, required int64) error {
 	if value == "max" {
-		return fmt.Errorf("delegated memory.max must be explicitly bounded")
+		return preflight.New("cgroup-memory-unbounded")
 	}
 	limit, err := strconv.ParseInt(value, 10, 64)
 	if err != nil || limit <= 0 || limit < required {
-		return fmt.Errorf("delegated memory.max must cover guest budget, per-VM overhead and controller headroom")
+		return preflight.New("cgroup-memory-small")
 	}
 	return nil
 }

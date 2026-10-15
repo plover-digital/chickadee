@@ -3,9 +3,9 @@
 package landlockrunner
 
 import (
-	"bytes"
 	"context"
 	"fmt"
+	"github.com/plover-digital/chickadee/internal/preflight"
 	"io"
 	"os"
 	"os/exec"
@@ -82,8 +82,7 @@ func CheckSandboxWithAccess(image string, diskGiB int, access *HostAccess, slot,
 	cmd.ExtraFiles = extra
 	cmd.Env = []string{"PATH=/usr/bin:/bin", "LANG=C.UTF-8"}
 	cmd.Stdout = io.Discard
-	var debug bytes.Buffer
-	cmd.Stderr = &debug
+	cmd.Stderr = io.Discard
 	runErr := cmd.Run()
 	if workspace != nil {
 		// The probe has no descendants; bwrap has exited before anchored cleanup.
@@ -98,7 +97,7 @@ func CheckSandboxWithAccess(image string, diskGiB int, access *HostAccess, slot,
 		}
 	}
 	if runErr != nil {
-		return fmt.Errorf("Landlock/namespace preflight failed; refusing unsandboxed execution: %.2048s", debug.String())
+		return preflight.New("sandbox-probe-failed")
 	}
 	return nil
 }

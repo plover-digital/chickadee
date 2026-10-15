@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/plover-digital/chickadee/internal/preflight"
 	"io"
 	"log/slog"
 	"net"
@@ -32,7 +33,7 @@ func CheckPolicy() error { return CheckPolicyFor(false) }
 func BubblewrapPath() (string, error) {
 	path, err := exec.LookPath("bwrap")
 	if err != nil {
-		return "", fmt.Errorf("bubblewrap is required")
+		return "", preflight.New("bubblewrap-missing")
 	}
 	return filepath.Abs(path)
 }
@@ -46,7 +47,7 @@ func CheckPolicyFor(integrated bool) error {
 		return fmt.Errorf("Landlock ABI%d or newer is required", minimum)
 	}
 	if _, err = BubblewrapPath(); err != nil {
-		return fmt.Errorf("bubblewrap is required")
+		return preflight.New("bubblewrap-missing")
 	}
 	return nil
 }
