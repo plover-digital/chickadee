@@ -166,6 +166,10 @@ func acquire(path string, who Identity, fresh func() error) error {
 		return err
 	}
 	defer f.Close()
+	info, err := f.Stat()
+	if err != nil || info.Size() > 1024 {
+		return fmt.Errorf("invalid or oversized host owner claim; retain state")
+	}
 	dec := json.NewDecoder(io.LimitReader(f, 1025))
 	dec.DisallowUnknownFields()
 	var got claim

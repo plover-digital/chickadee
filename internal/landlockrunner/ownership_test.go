@@ -76,3 +76,9 @@ func TestSameHostPreviousBootMarkerPassesHostPreflight(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestWorkspaceMountPointRequiresStorageAtParent(t *testing.T) {
+	if _, err := openWorkspace("/proc"); err == nil || !strings.Contains(err.Error(), "mount storage at its parent") {
+		t.Fatalf("mount point was not rejected by the kernel boundary check: %v", err)
+	}
+}

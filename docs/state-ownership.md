@@ -56,6 +56,8 @@ state/workspaces used by this version.
 3. Configure a **fresh empty state directory** and fresh empty workspace slots.
    Assign a fresh worker ID and retire the old worker identity at the broker
    before using a fresh journal, so old consumed assignments cannot be replayed.
+   For worker API deployments, issue a worker certificate with the matching new
+   worker URI identity and update the broker TLS peer identity/configuration too.
    Start only the intended host with the new binary. It claims these directories
    automatically. Do not copy a populated unbound state tree into the new one.
 4. Start other nodes with their own directories and distinct worker identities;

@@ -159,3 +159,26 @@ func TestUnsafeOwnerMetadataRefused(t *testing.T) {
 		t.Fatal("symlink claim accepted")
 	}
 }
+
+func TestOversizedOwnerClaimRejectsTrailingPayload(t *testing.T) {
+	p := root(t)
+	if err := state(p, first); err != nil {
+		t.Fatal(err)
+	}
+	owner := filepath.Join(p, "host-owner-v1", "identity.json")
+	raw, err := os.ReadFile(owner)
+	if err != nil {
+		t.Fatal(err)
+	}
+	oversized := append(append(raw, bytes.Repeat([]byte(" "), 2048)...), []byte(`{"version":99}`)...)
+	if err := os.WriteFile(owner, oversized, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := state(p, first); err == nil {
+		t.Fatal("oversized claim accepted at decoder limit")
+	}
+	got, err := os.ReadFile(owner)
+	if err != nil || !bytes.Equal(got, oversized) {
+		t.Fatal("refusal rewrote invalid claim")
+	}
+}

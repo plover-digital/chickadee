@@ -3,6 +3,7 @@
 package landlockrunner
 
 import (
+	"errors"
 	"fmt"
 	"github.com/plover-digital/chickadee/internal/preflight"
 	"io"
@@ -43,6 +44,9 @@ func openWorkspace(path string) (*os.File, error) {
 	// mounts and filesystem mountpoints rather than leaving the claim host-local.
 	fd, err := unix.Openat2(parent, filepath.Base(path), &unix.OpenHow{Flags: unix.O_RDONLY | unix.O_DIRECTORY | unix.O_CLOEXEC, Resolve: unix.RESOLVE_NO_SYMLINKS | unix.RESOLVE_NO_XDEV})
 	unix.Close(parent)
+	if errors.Is(err, unix.EXDEV) {
+		return nil, fmt.Errorf("workspace slot must not be a filesystem or bind mount; mount storage at its parent")
+	}
 	if err != nil {
 		return nil, preflight.New("workspace-path")
 	}

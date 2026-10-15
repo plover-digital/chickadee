@@ -173,3 +173,89 @@ func TestRealSealedSharedMemory(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// This models a previous-boot marker without rebooting the test host. An exact
+// cgroup in the new boot is unexpected and must not be killed or adopted.
+func TestRealPreviousBootRecoveryRequiresAbsentCgroup(t *testing.T) {
+	if os.Getenv("CHICKADEE_HOST_ACCESS_SMOKE") != "1" {
+		t.Skip("requires isolated delegated unit")
+	}
+	cg := &host.CgroupConfig{AllowMissingCPUAndIO: true, PidsMax: 128}
+	if err := host.PrepareCgroup(cg); err != nil {
+		t.Fatal(err)
+	}
+	state := hostTemp(t)
+	if err := stateowner.State(state); err != nil {
+		t.Fatal(err)
+	}
+	id := "1234567890abcdef"
+	dir := filepath.Join(state, "vms", id)
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	work := filepath.Join(hostTemp(t), "slot-1")
+	if err := os.Mkdir(work, 0700); err != nil {
+		t.Fatal(err)
+	}
+	plan, err := NormalizeAccess(&HostAccess{WorkDir: work}, 1, 1, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	workspace, err := LockWorkspace(work)
+	if err != nil {
+		t.Fatal(err)
+	}
+	owner, err := stateowner.Current()
+	if err != nil {
+		t.Fatal(err)
+	}
+	owner.Boot = "11111111-1111-1111-1111-111111111111"
+	expected, err := host.ExecutionGroupPath(cg, id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	value := sandboxMarker{Version: 3, Backend: "landlock", ID: id, Owner: owner, CgroupPath: expected, AccessHash: plan.Hash, WorkDir: work, Device: workspace.Device, Inode: workspace.Inode}
+	workspace.Close()
+	raw, err := json.Marshal(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	marker := filepath.Join(dir, "sandbox.json")
+	if err := os.WriteFile(marker, raw, 0600); err != nil {
+		t.Fatal(err)
+	}
+	sentinel := filepath.Join(work, "live")
+	if err := os.WriteFile(sentinel, []byte("preserve"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	group, err := host.NewExecutionGroup(cg, id, 1, 512)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer group.Remove()
+	if err := ReapWithAccess(state, cg, []*AccessPlan{plan}); err == nil {
+		t.Fatal("previous-boot marker adopted existing cgroup")
+	}
+	if got, err := os.ReadFile(sentinel); err != nil || string(got) != "preserve" {
+		t.Fatal("refusal changed workspace")
+	}
+	if got, err := os.ReadFile(marker); err != nil || string(got) != string(raw) {
+		t.Fatal("refusal changed runtime marker")
+	}
+	if _, err := os.Stat(expected); err != nil {
+		t.Fatal("refusal removed cgroup")
+	}
+	if err := group.Remove(); err != nil {
+		t.Fatal(err)
+	}
+	if err := ReapWithAccess(state, cg, []*AccessPlan{plan}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+		t.Fatal("previous-boot runtime retained after safe recovery")
+	}
+	entries, err := os.ReadDir(work)
+	if err != nil || len(entries) != 0 {
+		t.Fatal("previous-boot workspace not cleared")
+	}
+}
