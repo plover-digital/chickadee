@@ -19,10 +19,12 @@ sudo apt-get install -y qemu-system-x86 qemu-utils libguestfs-tools isc-dhcp-cli
   iproute2 util-linux bubblewrap python3 curl gpgv ubuntu-keyring xz-utils build-essential linux-image-generic
 ```
 
-Install Go **1.26.3** from the official [Go downloads](https://go.dev/dl/) after
+Install Go **1.26.9** from the official [Go downloads](https://go.dev/dl/) after
 verifying its published checksum. The pinned scale-set module declares Go 1.25.3
-and brings newer transitive module requirements; this project uses 1.26.3 for
+and brings newer transitive module requirements; this project uses 1.26.9 for
 its documented build and CI. Keep Go's default module checksum database enabled.
+See [Go security baseline](go-security.md) for reproducible source/binary scans
+and controlled upgrade/rollback requirements.
 
 Clone this repository locally, then:
 
