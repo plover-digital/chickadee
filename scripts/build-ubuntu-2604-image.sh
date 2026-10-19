@@ -163,7 +163,7 @@ if [[ $profile == developer ]]; then
  extras=(tool-inputs.json extra-inputs.json compatibility.json)
 fi
 printf '{"disk_gib":%s,"os":"ubuntu","os_version":"26.04","architecture":"amd64","machine":"q35","ubuntu_release":"%s","snapshot":"%s","runner":"%s","kernel":"%s","software_profile":"%s"}\n' "$disk_gib" "$release" "$snapshot" "$runner" "$version" "$profile" > "$out/manifest.json"
-go version -m "$work/chickadee-guest" > "$out/guest-build.txt"
+GOTOOLCHAIN=go1.27.2 go version -m "$work/chickadee-guest" > "$out/guest-build.txt"
 (cd "$out" && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt package-provenance.json guest-build.txt build-inputs.json "${extras[@]}" > SHA256SUMS)
 chmod 0444 "$out"/*
 echo 'Ubuntu 26.04 q35 bundle built; require READY and real-job validation before changing a default.'

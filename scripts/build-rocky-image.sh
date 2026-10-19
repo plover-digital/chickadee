@@ -147,7 +147,7 @@ cp guest/images/rocky-102-rpms.json "$out/rpm-inputs.json"
 cp guest/images/rocky-102-developer-packages.txt "$out/developer-packages.txt"
 cp build/rocky-downloads/tool-inputs.json "$out/tool-inputs.json"
 printf '{"disk_gib":48,"os":"rocky","os_version":"10.2","architecture":"amd64","machine":"q35","minimum_cpu":"x86-64-v3","source_image":"%s","source_sha256":"%s","runner":"%s","kernel":"%s","software_profile":"native-developer-baseline"}\n' "$source_name" "$source_sha" "$runner" "$version" > "$out/manifest.json"
-go version -m "build/chickadee-guest" > "$out/guest-build.txt"
+GOTOOLCHAIN=go1.27.2 go version -m "build/chickadee-guest" > "$out/guest-build.txt"
 (cd "$out" && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt package-provenance.json guest-build.txt rpm-inputs.json tool-inputs.json developer-packages.txt > SHA256SUMS)
 chmod 0444 "$out"/*
 echo 'Rocky 10.2 q35 bundle built; perform READY and real-job validation before deployment.'

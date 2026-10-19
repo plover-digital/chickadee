@@ -70,7 +70,7 @@ rm "$out/working.qcow2"
 guestfish --ro -a "$out/base.qcow2" -m /dev/sda download /image-packages.txt "$out/packages.txt"
 guestfish --ro -a "$out/base.qcow2" -m /dev/sda download /image-package-provenance.json "$out/package-provenance.json"
 guestfish --ro -a "$out/base.qcow2" -m /dev/sda download /etc/chickadee/image-compatibility.json "$out/compatibility.json"
-go version -m build/github-compatible/chickadee-guest > "$out/guest-build.txt"
+GOTOOLCHAIN=go1.27.2 go version -m build/github-compatible/chickadee-guest > "$out/guest-build.txt"
 python3 - "$source_dir" "$out" <<'PY'
 import hashlib,json,pathlib,shutil,sys
 src,out=map(pathlib.Path,sys.argv[1:]);m=json.load(open(src/'manifest.json'))
