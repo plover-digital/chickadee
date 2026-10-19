@@ -126,7 +126,10 @@ virt-customize --no-network --memsize 2048 -a build/rocky-base.qcow2 \
  --upload guest/chickadee-network.service:/etc/systemd/system/chickadee-network.service \
  --upload guest/chickadee-bootstrap.service:/etc/systemd/system/chickadee-bootstrap.service \
  --upload build/rocky-provision.sh:/tmp/chickadee-provision.sh \
+ --upload guest/package-provenance.py:/tmp/chickadee-package-provenance.py \
  --run-command 'bash /tmp/chickadee-provision.sh' \
+ --run-command 'python3 /tmp/chickadee-package-provenance.py > /image-package-provenance.json' \
+ --delete /tmp/chickadee-package-provenance.py \
  --delete /tmp/chickadee-provision.sh --no-selinux-relabel
 # /boot is still a separate filesystem in the source GPT layout; inspect mounts
 # it for extraction even though guests only need the root partition at runtime.
@@ -136,6 +139,7 @@ version=${kernel#/boot/vmlinuz-}
 guestfish --ro -a build/rocky-base.qcow2 -m /dev/sda4 -m /dev/sda3:/boot download "$kernel" "$out/vmlinuz-$version"
 guestfish --ro -a build/rocky-base.qcow2 -m /dev/sda4 -m /dev/sda3:/boot download "/boot/initramfs-$version.img" "$out/initrd-$version"
 guestfish --ro -a build/rocky-base.qcow2 -m /dev/sda4 -m /dev/sda3:/boot download /image-packages.txt "$out/packages.txt"
+guestfish --ro -a build/rocky-base.qcow2 -m /dev/sda4 -m /dev/sda3:/boot download /image-package-provenance.json "$out/package-provenance.json"
 ln -s "vmlinuz-$version" "$out/vmlinuz"
 ln -s "initrd-$version" "$out/initrd"
 mv build/rocky-base.qcow2 "$out/base.qcow2"
@@ -144,6 +148,6 @@ cp guest/images/rocky-102-developer-packages.txt "$out/developer-packages.txt"
 cp build/rocky-downloads/tool-inputs.json "$out/tool-inputs.json"
 printf '{"disk_gib":48,"os":"rocky","os_version":"10.2","architecture":"amd64","machine":"q35","minimum_cpu":"x86-64-v3","source_image":"%s","source_sha256":"%s","runner":"%s","kernel":"%s","software_profile":"native-developer-baseline"}\n' "$source_name" "$source_sha" "$runner" "$version" > "$out/manifest.json"
 go version -m "build/chickadee-guest" > "$out/guest-build.txt"
-(cd "$out" && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt guest-build.txt rpm-inputs.json tool-inputs.json developer-packages.txt > SHA256SUMS)
+(cd "$out" && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt package-provenance.json guest-build.txt rpm-inputs.json tool-inputs.json developer-packages.txt > SHA256SUMS)
 chmod 0444 "$out"/*
 echo 'Rocky 10.2 q35 bundle built; perform READY and real-job validation before deployment.'

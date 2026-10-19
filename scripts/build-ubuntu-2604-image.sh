@@ -134,10 +134,14 @@ virt-customize --memsize 2048 -a "$work/base.qcow2" \
  --upload guest/chickadee-network.service:/etc/systemd/system/chickadee-network.service \
  --upload guest/chickadee-bootstrap.service:/etc/systemd/system/chickadee-bootstrap.service \
  --upload "$work/provision.sh":/tmp/chickadee-provision.sh \
+ --upload guest/package-provenance.py:/tmp/chickadee-package-provenance.py \
  --run-command 'bash /tmp/chickadee-provision.sh' \
+ --run-command 'python3 /tmp/chickadee-package-provenance.py > /image-package-provenance.json' \
+ --delete /tmp/chickadee-package-provenance.py \
  --delete /tmp/chickadee-provision.sh --delete /etc/resolv.conf \
  --write /etc/resolv.conf:"nameserver 1.1.1.1"
 guestfish --ro -a "$work/base.qcow2" -m /dev/sda download /image-packages.txt "$out/packages.txt"
+guestfish --ro -a "$work/base.qcow2" -m /dev/sda download /image-package-provenance.json "$out/package-provenance.json"
 kernel=$(guestfish --ro -a "$work/base.qcow2" -m /dev/sda glob-expand '/boot/vmlinuz-*')
 [[ $kernel != *$'\n'* && $kernel == /boot/vmlinuz-* ]]
 version=${kernel#/boot/vmlinuz-}
@@ -160,6 +164,6 @@ if [[ $profile == developer ]]; then
 fi
 printf '{"disk_gib":%s,"os":"ubuntu","os_version":"26.04","architecture":"amd64","machine":"q35","ubuntu_release":"%s","snapshot":"%s","runner":"%s","kernel":"%s","software_profile":"%s"}\n' "$disk_gib" "$release" "$snapshot" "$runner" "$version" "$profile" > "$out/manifest.json"
 go version -m "$work/chickadee-guest" > "$out/guest-build.txt"
-(cd "$out" && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt guest-build.txt build-inputs.json "${extras[@]}" > SHA256SUMS)
+(cd "$out" && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt package-provenance.json guest-build.txt build-inputs.json "${extras[@]}" > SHA256SUMS)
 chmod 0444 "$out"/*
 echo 'Ubuntu 26.04 q35 bundle built; require READY and real-job validation before changing a default.'

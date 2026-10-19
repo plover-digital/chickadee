@@ -57,6 +57,9 @@ virt-customize -a "$out/working.qcow2" \
   --run-command 'mkdir -p /tmp/github-extra-downloads; tar -xf /tmp/github-extra-tools.tar -C /tmp/github-extra-downloads' \
   --run-command 'python3 /tmp/install-github-extra-tools.py --lock /tmp/github-extra-lock.json --install /tmp/github-extra-downloads' \
   --delete /tmp/github-extra-downloads --delete /tmp/github-extra-lock.json --delete /tmp/github-extra-tools.tar --delete /tmp/install-github-extra-tools.py \
+  --upload guest/package-provenance.py:/tmp/chickadee-package-provenance.py \
+  --run-command 'python3 /tmp/chickadee-package-provenance.py > /image-package-provenance.json' \
+  --delete /tmp/chickadee-package-provenance.py \
   --run-command 'rm -f /var/lib/systemd/random-seed /var/lib/dbus/machine-id; truncate -s 0 /etc/machine-id' \
   --delete /etc/resolv.conf --write /etc/resolv.conf:'nameserver 1.1.1.1'
 # Discard deleted temporary archive blocks, then compact qcow2 physical file length.
@@ -65,6 +68,7 @@ virt-sparsify --in-place "$out/working.qcow2"
 qemu-img convert -f qcow2 -O qcow2 -o compat=1.1 "$out/working.qcow2" "$out/base.qcow2"
 rm "$out/working.qcow2"
 guestfish --ro -a "$out/base.qcow2" -m /dev/sda download /image-packages.txt "$out/packages.txt"
+guestfish --ro -a "$out/base.qcow2" -m /dev/sda download /image-package-provenance.json "$out/package-provenance.json"
 guestfish --ro -a "$out/base.qcow2" -m /dev/sda download /etc/chickadee/image-compatibility.json "$out/compatibility.json"
 go version -m build/github-compatible/chickadee-guest > "$out/guest-build.txt"
 python3 - "$source_dir" "$out" <<'PY'

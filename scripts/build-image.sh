@@ -60,7 +60,7 @@ rm -f /etc/apt/sources.list /etc/apt/sources.list.d/*
 printf '%s\n' 'deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/$snapshot noble main universe' 'deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/$snapshot noble-updates main universe' 'deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/$snapshot noble-security main universe' > /etc/apt/sources.list
 apt-get -o Acquire::Retries=3 -o APT::Update::Error-Mode=any update
 apt-get dist-upgrade -y
-apt-get install -y --no-install-recommends linux-image-generic initramfs-tools ca-certificates git curl build-essential iproute2 libicu74 libssl3t64 zlib1g libkrb5-3 liblttng-ust1t64
+apt-get install -y --no-install-recommends linux-image-generic initramfs-tools ca-certificates git curl build-essential iproute2 libicu74 libssl3t64 zlib1g libkrb5-3 liblttng-ust1t64 python3
 # The imported root tar has no VM partition table or bootloader requirement.
 e2label /dev/sda chickadee
 printf 'LABEL=chickadee / ext4 defaults 0 1\n' > /etc/fstab
@@ -99,12 +99,16 @@ virt-customize -a build/base.qcow2 \
   --upload guest/chickadee-network.service:/etc/systemd/system/chickadee-network.service \
   --upload guest/chickadee-bootstrap.service:/etc/systemd/system/chickadee-bootstrap.service \
   --upload build/provision.sh:/tmp/chickadee-provision.sh \
+ --upload guest/package-provenance.py:/tmp/chickadee-package-provenance.py \
   --run-command 'bash /tmp/chickadee-provision.sh' \
+ --run-command 'python3 /tmp/chickadee-package-provenance.py > /image-package-provenance.json' \
+ --delete /tmp/chickadee-package-provenance.py \
   --delete /tmp/chickadee-provision.sh \
   --delete /etc/resolv.conf \
   --write /etc/resolv.conf:"nameserver 1.1.1.1"
 # Inspect the sole installed kernel, then retain versioned artifacts plus fixed names for QEMU.
 guestfish --ro -a build/base.qcow2 -m /dev/sda download /image-packages.txt images/packages.txt
+guestfish --ro -a build/base.qcow2 -m /dev/sda download /image-package-provenance.json images/package-provenance.json
 kernel=$(guestfish --ro -a build/base.qcow2 -m /dev/sda glob-expand '/boot/vmlinuz-*')
 [[ $kernel != *$'\n'* && $kernel == /boot/vmlinuz-* ]]
 version=${kernel#/boot/vmlinuz-}
@@ -115,6 +119,6 @@ ln -s "initrd-$version" images/initrd
 mv build/base.qcow2 images/base.qcow2
 printf '{"disk_gib":16,"os":"ubuntu","os_version":"24.04","architecture":"amd64","machine":"microvm","ubuntu_release":"%s","snapshot":"%s","runner":"%s","kernel":"%s"}\n' "$release" "$snapshot" "$runner" "$version" > images/manifest.json
 go version -m "build/chickadee-guest" > "images/guest-build.txt"
-(cd images && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt guest-build.txt > SHA256SUMS)
+(cd images && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt package-provenance.json guest-build.txt > SHA256SUMS)
 chmod 0444 images/*
 echo 'Image built. Keep the manifest and checksums with these immutable artifacts.'
