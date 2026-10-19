@@ -39,8 +39,21 @@ make vulncheck
 The toolchain directive and hosted CI use Go1.26.9. Language minimum1.25.3 is
 retained. The legacy worker links the standard library and this module; it has
 no linked x/sys dependency. `make vulncheck` installs pinned govulncheck v1.9.0,
-scans source and all three exact build outputs, and records database timestamp,
+requires a clean committed checkout, builds/scans a temporary Git source
+snapshot and all three exact build outputs, and records database timestamp,
 compiler/scanner metadata and checksums under ignored `build/vulncheck`.
+Tracked edits, untracked files and ignored generated Go/assembly/module inputs
+are rejected before building/evidence. Ignored binaries/reports are allowed.
+Workspace discovery is disabled and external source/module overrides rejected.
+Provided binaries are explicitly marked as externally built and require their
+own source/build provenance.
+
+GitHub schedules run only on the default branch. The default-main vulnerability
+workflow explicitly checks out `maintenance/worker-f59d919` for scheduled/manual
+maintenance scans and retains separately named artifacts. This branch only
+triggers push/PR/manual checks; a cron here would never execute. Merge this
+maintenance implementation before enabling the default-main scheduled job.
+
 The live vulnerability database changes; a retained snapshot is required for
 identical historical findings (`GOVULNDB` selects it). Scans are reachability
 evidence, not proof of exploitation or absence of unknown issues.
