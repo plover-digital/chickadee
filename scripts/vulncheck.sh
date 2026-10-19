@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Scan an immutable committed source snapshot and exact candidate binaries.
 set -euo pipefail
+# Ignore persisted go env -w settings, especially source/module overlays.
+export GOENV=off
 cd "$(dirname "$0")/.."
 ./scripts/check-go-source.sh
 source_commit=$(git rev-parse HEAD)
@@ -31,8 +33,9 @@ scanner="$scratch/tools/govulncheck"
 {
   date -u '+checked_at=%Y-%m-%dT%H:%M:%SZ'
   printf 'source_commit=%s\nsource_mode=git-archive\nbinaries_built_from_snapshot=%s\n' "$source_commit" "$build"
+  printf 'GOENV=%s\n' "$GOENV"
   go version
-  CGO_ENABLED=0 go env -json GOOS GOARCH CGO_ENABLED GOTOOLCHAIN GOFLAGS GOWORK
+  CGO_ENABLED=0 go env -json GOOS GOARCH CGO_ENABLED GOTOOLCHAIN GOFLAGS GOWORK GOENV
   "$scanner" -version
   printf 'database=%s\n' "$database"
 } > "$output/environment.txt"

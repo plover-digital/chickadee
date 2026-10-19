@@ -44,7 +44,8 @@ snapshot and all three exact build outputs, and records database timestamp,
 compiler/scanner metadata and checksums under ignored `build/vulncheck`.
 Tracked edits, untracked files and ignored generated Go/assembly/module inputs
 are rejected before building/evidence. Ignored binaries/reports are allowed.
-Workspace discovery is disabled and external source/module overrides rejected.
+Workspace discovery and persisted Go settings are disabled (`GOWORK=off`,
+`GOENV=off`); explicit external source/module overrides are rejected.
 Provided binaries are explicitly marked as externally built and require their
 own source/build provenance.
 
