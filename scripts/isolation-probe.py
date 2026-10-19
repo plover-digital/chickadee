@@ -7,11 +7,40 @@ import os
 import re
 from pathlib import Path
 import socket
+import shutil
 import subprocess
 
 
+SYSTEM_IP_PATHS = ('/usr/sbin/ip', '/sbin/ip')
+
+
+class ProbeCommandError(Exception):
+    """A fixed reason code; command output and arguments stay private."""
+    def __init__(self, reason):
+        self.reason = reason
+        super().__init__(reason)
+
+
 def command(args):
-    return subprocess.run(args, capture_output=True, text=True, timeout=5, check=True).stdout
+    name = args[0] if args[0] in {'ip', 'findmnt'} else 'command'
+    if args[0] == 'ip':
+        # The Rocky runner's default PATH lacks sbin. Querying
+        # routes/addresses needs no privilege and must not silently be skipped.
+        executable = shutil.which('ip')
+        if executable is None:
+            executable = next((path for path in SYSTEM_IP_PATHS
+                               if Path(path).is_file() and os.access(path, os.X_OK)), None)
+        if executable is None:
+            raise ProbeCommandError('ip_unavailable')
+        args = [executable, *args[1:]]
+    try:
+        return subprocess.run(args, capture_output=True, text=True, timeout=5, check=True).stdout
+    except FileNotFoundError:
+        raise ProbeCommandError(name + '_unavailable') from None
+    except subprocess.TimeoutExpired:
+        raise ProbeCommandError(name + '_timeout') from None
+    except (OSError, subprocess.SubprocessError):
+        raise ProbeCommandError(name + '_failed') from None
 
 
 def canaries(value):
@@ -159,6 +188,9 @@ def main():
                   'limitations': ['No guest-only negative probe proves filtering.', 'KVM and hard host limits require operator process/cgroup evidence.']}
         print(json.dumps(result, sort_keys=True))
         return int(any(r['outcome'] == 'reachable_isolation_failure' for r in result['canaries']))
+    except ProbeCommandError as error:
+        print(json.dumps({'schema_version': 1, 'error': 'isolation_probe_failed', 'reason': error.reason}))
+        return 1
     except (ValueError, OSError, subprocess.SubprocessError, KeyError):
         print(json.dumps({'schema_version': 1, 'error': 'isolation_probe_failed'}))
         return 1
