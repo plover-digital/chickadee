@@ -1,0 +1,78 @@
+name: Rocky native fresh-runner acceptance
+on:
+  workflow_dispatch:
+    inputs:
+      size:
+        description: Existing Rocky profile size
+        type: choice
+        options: [small, medium]
+        default: small
+      expected_kernel:
+        description: Exact accepted candidate kernel release
+        type: string
+        required: true
+        default: 6.12.0-211.66.1.el10_2.x86_64
+permissions:
+  contents: read
+# Operator correlates both runner identities with the accepted immutable bundle
+# and worker records. This workflow creates no queue mapping or extra listener.
+jobs:
+  first:
+    if: github.repository == 'plover-digital/chickadee' && github.ref == 'refs/heads/main'
+    runs-on: ${{ inputs.size == 'small' && 'chickadee-small-rocky-102' || 'chickadee-medium-rocky-102' }}
+    timeout-minutes: 10
+    outputs:
+      runner: ${{ steps.identity.outputs.runner }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify native profile and runner identity
+        id: identity
+        env:
+          PROFILE_SIZE: ${{ inputs.size }}
+          EXPECTED_KERNEL: ${{ inputs.expected_kernel }}
+          CURRENT_RUNNER: ${{ runner.name }}
+        run: bash scripts/rocky-replacement-smoke.sh
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.0.0
+        with:
+          node-version: '24.21.0'
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.2'
+          cache: false
+      - name: Verify selected cached runtimes
+        run: |
+          set -eu
+          test "$(node --version)" = v24.21.0
+          test "$(GOTOOLCHAIN=local go env GOVERSION)" = go1.27.2
+  second:
+    needs: first
+    if: github.repository == 'plover-digital/chickadee' && github.ref == 'refs/heads/main'
+    runs-on: ${{ inputs.size == 'small' && 'chickadee-small-rocky-102' || 'chickadee-medium-rocky-102' }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify native profile and runner identity
+        id: identity
+        env:
+          PROFILE_SIZE: ${{ inputs.size }}
+          EXPECTED_KERNEL: ${{ inputs.expected_kernel }}
+          CURRENT_RUNNER: ${{ runner.name }}
+          EXPECT_REPLACEMENT: '1'
+          PREVIOUS_RUNNER: ${{ needs.first.outputs.runner }}
+        run: bash scripts/rocky-replacement-smoke.sh
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.0.0
+        with:
+          node-version: '24.21.0'
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.2'
+          cache: false
+      - name: Verify selected cached runtimes
+        run: |
+          set -eu
+          test "$(node --version)" = v24.21.0
+          test "$(GOTOOLCHAIN=local go env GOVERSION)" = go1.27.2
