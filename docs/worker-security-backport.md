@@ -94,3 +94,11 @@ its `status.txt` is `running`, `complete`, or `failed exit=N`. Only `complete`
 means the entire attempt succeeded. Earlier attempts remain identified in their
 own directories, including partial failure evidence; caller files are preserved.
 Do not treat older root-level reports from previous script versions as current.
+
+Each attempt uses a fresh private `GOMODCACHE` for both application dependencies
+and pinned scanner installation. Previously extracted modules in the caller's
+cache are never used or modified. Evidence records the effective cache path and
+`module_cache_policy=fresh-per-attempt-cleaned-on-exit`. Cleanup makes only the
+private scratch tree writable before removing downloaded read-only modules.
+This requires fresh downloads per attempt; the ordinary Go build cache remains
+available. Keep Go's checksum verification enabled for release scans.
