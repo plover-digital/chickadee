@@ -13,6 +13,10 @@ class PackageProvenance(unittest.TestCase):
         self.assertEqual(result[0]['version'], '0.9.0-1ubuntu0.3')
         self.assertEqual(result[0]['source_version'], '0.9.0-1ubuntu0.3')
 
+    def test_held_installed_packages_are_not_omitted(self):
+        result = provenance.parse_packages('hi \theld\t1\tamd64\theld\t1\n', 'deb')
+        self.assertEqual(result[0]['name'], 'held')
+
     def test_rpm_preserves_epoch_architecture_and_source_rpm(self):
         result = provenance.parse_packages('package\t1:2.3-4.el10_2\tx86_64\tpackage-2.3-4.el10_2.src.rpm\n', 'rpm')
         self.assertEqual(result[0]['version'], '1:2.3-4.el10_2')

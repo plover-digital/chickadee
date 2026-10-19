@@ -17,7 +17,7 @@ def parse_packages(output, kind):
             if len(fields) != 6:
                 raise ValueError('invalid dpkg inventory row')
             status, name, version, arch, source, source_version = fields
-            if not status.startswith('ii'):
+            if len(status) < 2 or status[1] != 'i':
                 continue
         elif kind == 'rpm':
             if len(fields) != 4:
