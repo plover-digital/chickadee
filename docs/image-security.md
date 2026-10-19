@@ -115,3 +115,20 @@ No worker API or configuration schema change is intended. Bundle manifests keep
 the current fields and disk/machine profiles; standalone operation requires no
 hosted account. Source review, artifact acceptance and deployed acceptance are
 separate gates. Keep host inventory and exact deployment paths in private ops.
+
+### Developer fresh-runner acceptance
+
+After the existing medium Ubuntu26 queue has the reviewed developer bundle,
+run [developer-replacement-smoke.yml](../.github/workflows/developer-replacement-smoke.yml)
+on `main`. Its two sequential jobs require different runner identities and check
+Ubuntu26, four CPUs, 8 GiB allocation, developer toolcache, defaults and guest
+isolation. Docker is required for this profile; its socket must be on the guest
+root or runtime filesystem and the probe uses that explicit Unix socket.
+Correlate the logged kernel and bootstrap hash with private worker records and
+the immutable bundle digest. Different runner names alone do not prove QEMU
+exit or disk deletion: verify those worker lifecycle records separately.
+
+This complements `ubuntu-2604-smoke.yml` runtime coverage. It does not authorize
+queue remapping or deployment, and it cannot validate the minimal profile.
+The generic `chickadee-smoke.yml` rejects Docker sockets and must not be treated
+as developer-profile acceptance.
