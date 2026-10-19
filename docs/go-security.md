@@ -38,7 +38,8 @@ VULNCHECK_OUTPUT=build/release-scan ./scripts/vulncheck.sh /path/to/candidate/bi
 The script never executes those binaries. Tracked edits, untracked files and
 ignored generated Go/assembly/module inputs are rejected before building or
 recording evidence; ordinary ignored binaries/reports are allowed. Workspace
-discovery is disabled and external source/module overrides are rejected.
+discovery and persisted Go environment settings are disabled (`GOWORK=off`,
+`GOENV=off`); explicit external source/module overrides are rejected.
 The immutable snapshot prevents concurrent checkout edits from changing the
 scanned source. Evidence explicitly states whether binaries were built from that
 snapshot; provided release binaries require their own source/build provenance. It records compiler and scanner

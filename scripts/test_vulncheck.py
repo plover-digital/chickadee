@@ -1,5 +1,7 @@
 """Exercise scan failure propagation without a network or a Go compilation."""
 import os
+import json
+import shutil
 from pathlib import Path
 import subprocess
 import tempfile
@@ -9,7 +11,7 @@ SCRIPT = Path(__file__).with_name('vulncheck.sh').resolve()
 
 
 class VulnerabilityCheckTests(unittest.TestCase):
-    def run_scan(self, failure='', dirty='', build=False):
+    def run_scan(self, failure='', dirty='', build=False, ambient_config=False):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             repo = root / 'repo'
@@ -53,6 +55,8 @@ if [[ -n "$FAIL_SCAN" && "$*" == *"$FAIL_SCAN"* ]]; then exit 3; fi
 if [[ "$1" == install ]]; then
   test "$2" = 'golang.org/x/vuln/cmd/govulncheck@v1.9.0' || exit 9
   cp "$FAKE_SCANNER" "$GOBIN/govulncheck"
+elif [[ "$1" == env && -n "${REAL_GO:-}" ]]; then
+  "$REAL_GO" "$@"
 else
   echo 'test build metadata'
 fi
@@ -61,6 +65,7 @@ fi
             make = tools / 'make'
             make.write_text('''#!/usr/bin/env bash
 set -eu
+test "$GOENV" = off
 test "$(cat input.go)" = 'package input'
 printf snapshot > "$BUILD_MARKER"
 ''')
@@ -70,6 +75,22 @@ printf snapshot > "$BUILD_MARKER"
             env = dict(os.environ, PATH=f'{tools}:{os.environ["PATH"]}',
                        FAKE_SCANNER=str(scanner), FAIL_SCAN=failure, BUILD_MARKER=str(marker),
                        VULNCHECK_OUTPUT=str(output))
+            if ambient_config:
+                real_go = shutil.which('go')
+                if not real_go:
+                    self.skipTest('Go needed to verify persisted environment behavior')
+                config = root / 'ambient-goenv'
+                overlay = root / 'external-overlay.json'
+                outside = root / 'outside.go'
+                outside.write_text('package externally_replaced\n')
+                overlay.write_text(json.dumps({'Replace': {str(repo / 'input.go'): str(outside)}}))
+                expected = '-overlay=' + str(overlay)
+                config.write_text('GOFLAGS=' + expected + '\n')
+                env['GOENV'] = str(config)
+                env['REAL_GO'] = real_go
+                env.pop('GOFLAGS', None)
+                before = subprocess.check_output([real_go, 'env', 'GOFLAGS'], env=env, text=True)
+                self.assertEqual(before.strip(), expected)
             result = subprocess.run(['bash', str(repo / 'scripts' / 'vulncheck.sh'), *(['--build'] if build else []), str(binaries)],
                                     env=env, capture_output=True, text=True)
             reports = {p.name: p.read_text() for p in output.iterdir()} if output.exists() else {}
@@ -86,6 +107,15 @@ printf snapshot > "$BUILD_MARKER"
             self.assertIn('-mode=binary', reports[f'{name}.txt'])
             self.assertIn(f'{name}.sha256', reports)
             self.assertIn(f'{name}.build.txt', reports)
+
+    def test_persisted_goenv_overlay_is_disabled(self):
+        result, reports = self.run_scan(build=True, ambient_config=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(reports.get('build-marker'), 'snapshot')
+        self.assertIn('GOENV=off\n', reports['environment.txt'])
+        self.assertIn('"GOENV": ""', reports['environment.txt'])
+        self.assertIn('"GOFLAGS": ""', reports['environment.txt'])
+        self.assertNotIn('external-overlay', reports['environment.txt'])
 
     def test_dirty_inputs_are_rejected_before_evidence(self):
         for dirty in ('tracked', 'untracked', 'ignored-source'):
