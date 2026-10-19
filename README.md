@@ -15,7 +15,7 @@ an ephemeral VM. Warm-VM failure and idle controller-crash recovery were checked
 Clean Ubuntu install/reboot/uninstall and fuller adversarial network/restart
 acceptance still remain. See [validation status](docs/validation.md).
 
-Build with Go 1.26.3 on Linux amd64:
+Build with Go 1.26.9 on Linux amd64:
 
 ```sh
 make build test

@@ -18,10 +18,26 @@ scanner_version=v1.9.0
 # Workspace discovery and source overlays must not change the committed inputs.
 export GOWORK=off
 mkdir -p "$output" "$bin_dir"
-output=$(cd "$output" && pwd)
+output_root=$(cd "$output" && pwd)
+# Never reuse reports or delete caller files. Each attempt owns a new directory;
+# current identifies this attempt even if build/install/metadata fails early.
+output=$(mktemp -d "$output_root/run-XXXXXXXX")
+printf 'running\n' > "$output/status.txt"
+printf '%s\n' "${output##*/}" > "$output/current.tmp"
+mv -f "$output/current.tmp" "$output_root/current"
+scratch=
+finish() {
+  local result=$?
+  if [[ $result == 0 ]]; then
+    printf 'complete\n' > "$output/status.txt"
+  else
+    printf 'failed exit=%s\n' "$result" > "$output/status.txt"
+  fi
+  if [[ -n "$scratch" ]]; then rm -rf "$scratch"; fi
+}
+trap finish EXIT
 bin_dir=$(cd "$bin_dir" && pwd)
 scratch=$(mktemp -d)
-trap 'rm -rf "$scratch"' EXIT
 mkdir -p "$scratch/source" "$scratch/tools"
 git archive "$source_commit" | tar -x -C "$scratch/source"
 cd "$scratch/source"

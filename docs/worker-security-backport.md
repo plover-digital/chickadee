@@ -87,3 +87,10 @@ it remains vulnerable and is a temporary recovery measure. Never run it or this
 maintenance binary against newly claimed state. A future full ownership upgrade
 requires its separately documented fresh-state/identity migration and coordinated
 broker/certificate changes. This compatibility release does not close that work.
+
+Each scan attempt writes a fresh `run-*` directory under `VULNCHECK_OUTPUT`
+(default `build/vulncheck`). The `current` file names the latest attempt;
+its `status.txt` is `running`, `complete`, or `failed exit=N`. Only `complete`
+means the entire attempt succeeded. Earlier attempts remain identified in their
+own directories, including partial failure evidence; caller files are preserved.
+Do not treat older root-level reports from previous script versions as current.
