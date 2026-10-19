@@ -11,14 +11,19 @@ SCRIPT = Path(__file__).with_name('vulncheck.sh').resolve()
 
 
 class VulnerabilityCheckTests(unittest.TestCase):
-    def run_scan(self, failure='', dirty='', build=False, ambient_config=False, early_failure=''):
+    def run_scan(self, failure='', dirty='', build=False, ambient_config=False, early_failure='',
+                 package_driver='', disable_driver_policy=False):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             repo = root / 'repo'
             (repo / 'scripts').mkdir(parents=True)
             for name in ('vulncheck.sh', 'check-go-source.sh'):
                 target = repo / 'scripts' / name
-                target.write_bytes(SCRIPT.with_name(name).read_bytes())
+                contents = SCRIPT.with_name(name).read_text()
+                if name == 'vulncheck.sh' and disable_driver_policy:
+                    contents = contents.replace('export GOPACKAGESDRIVER=off',
+                                                ': # negative control: driver policy removed')
+                target.write_text(contents)
                 target.chmod(0o755)
             (repo / '.gitignore').write_text('/bin/\n/build/\n')
             (repo / 'input.go').write_text('package input\n')
@@ -46,6 +51,17 @@ class VulnerabilityCheckTests(unittest.TestCase):
             scanner = root / 'scanner'
             scanner.write_text('''#!/usr/bin/env bash
 if [[ "$*" == "-version" ]]; then echo 'scanner v1.9.0'; exit 0; fi
+# Lightweight stand-in for go/packages driver selection; no network or compile.
+if [[ "$*" == *'./...'* && "${TEST_PACKAGE_DRIVER:-}" == 1 ]]; then
+  driver=${GOPACKAGESDRIVER:-}
+  if [[ -z "$driver" ]]; then driver=$(command -v gopackagesdriver || true); fi
+  if [[ -n "$driver" && "$driver" != off ]]; then
+    "$driver"
+    exit $?
+  fi
+  test "$(cat input.go)" = 'package input' || exit 8
+  echo 'archived source graph'
+fi
 printf '%s CGO=%s\n' "$*" "${CGO_ENABLED:-unset}"
 if [[ -n "$FAIL_SCAN" && "$*" == *"$FAIL_SCAN"* ]]; then exit 3; fi
 ''')
@@ -78,6 +94,22 @@ printf snapshot > "$BUILD_MARKER"
             env = dict(os.environ, PATH=f'{tools}:{os.environ["PATH"]}',
                        FAKE_SCANNER=str(scanner), FAIL_SCAN=failure, BUILD_MARKER=str(marker),
                        VULNCHECK_OUTPUT=str(output))
+            driver_marker = root / 'driver-used'
+            if package_driver:
+                driver = tools / ('explicit-driver' if package_driver == 'explicit'
+                                  else 'gopackagesdriver')
+                driver.write_text('#!/usr/bin/env bash\n'
+                                  'printf invoked > "$DRIVER_MARKER"\n'
+                                  'echo "substituted external graph"\n')
+                driver.chmod(0o755)
+                env.update(TEST_PACKAGE_DRIVER='1', DRIVER_MARKER=str(driver_marker))
+                env['GOPACKAGESDRIVER'] = str(driver) if package_driver == 'explicit' else ''
+                # A direct scanner call proves each ambient selection reaches the sentinel.
+                probe = subprocess.run([str(scanner), './...'], cwd=repo, env=env,
+                                       capture_output=True, text=True)
+                self.assertEqual(probe.returncode, 0, probe.stderr)
+                self.assertTrue(driver_marker.exists())
+                driver_marker.unlink()
             if ambient_config:
                 real_go = shutil.which('go')
                 if not real_go:
@@ -113,6 +145,8 @@ printf snapshot > "$BUILD_MARKER"
                 self.assertTrue(reports['status.txt'].startswith('failed'))
                 self.assertNotIn('source.txt', reports)
                 self.assertNotIn('chickadee-worker.txt', reports)
+            if driver_marker.exists():
+                reports['driver-used'] = driver_marker.read_text()
             if marker.exists():
                 reports['build-marker'] = marker.read_text()
             return result, reports
@@ -142,6 +176,22 @@ printf snapshot > "$BUILD_MARKER"
         self.assertIn('"GOENV": ""', reports['environment.txt'])
         self.assertIn('"GOFLAGS": ""', reports['environment.txt'])
         self.assertNotIn('external-overlay', reports['environment.txt'])
+
+    def test_external_package_drivers_cannot_substitute_archived_graph(self):
+        for mode in ('explicit', 'path'):
+            with self.subTest(mode=mode):
+                result, reports = self.run_scan(package_driver=mode)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertNotIn('driver-used', reports)
+                self.assertIn('archived source graph', reports['source.txt'])
+                self.assertNotIn('substituted external graph', reports['source.txt'])
+                self.assertIn('GOPACKAGESDRIVER=off\n', reports['environment.txt'])
+                # Demonstrate the false-success evidence this regression prevents.
+                result, reports = self.run_scan(package_driver=mode, disable_driver_policy=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(reports['driver-used'], 'invoked')
+                self.assertIn('substituted external graph', reports['source.txt'])
+                self.assertEqual(reports['status.txt'], 'complete\n')
 
     def test_dirty_inputs_are_rejected_before_evidence(self):
         for dirty in ('tracked', 'untracked', 'ignored-source'):

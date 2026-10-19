@@ -3,6 +3,9 @@
 set -euo pipefail
 # Ignore persisted go env -w settings, especially source/module overlays.
 export GOENV=off
+# go/packages must use the Go command, never an ambient external package graph.
+# Unsetting this variable would still allow PATH discovery of gopackagesdriver.
+export GOPACKAGESDRIVER=off
 # This release graph is public. Authenticate every module, including scanner
 # transitive dependencies and downloaded toolchains, against Go's built-in key.
 # Explicit GONOSUMDB overrides the default inherited from GOPRIVATE.
@@ -62,6 +65,7 @@ scanner="$scratch/tools/govulncheck"
   printf 'source_commit=%s\nsource_mode=git-archive\nbinaries_built_from_snapshot=%s\n' "$source_commit" "$build"
   printf 'module_cache_policy=fresh-per-attempt-cleaned-on-exit\n'
   printf 'GOENV=%s\n' "$GOENV"
+  printf 'GOPACKAGESDRIVER=%s\n' "$GOPACKAGESDRIVER"
   go version
   CGO_ENABLED=0 go env -json GOOS GOARCH CGO_ENABLED GOTOOLCHAIN GOFLAGS GOWORK GOENV GOMODCACHE GO111MODULE GOSUMDB GONOSUMDB GOINSECURE
   "$scanner" -version
