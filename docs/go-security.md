@@ -25,16 +25,23 @@ make build test
 make vulncheck
 ```
 
-`make vulncheck` builds the three binaries using the normal release build flags,
+`make vulncheck` requires a clean committed checkout, then builds the three
+binaries from a temporary `git archive` snapshot using the normal release flags,
 installs exactly `govulncheck v1.9.0` into a temporary directory, and scans both
-`./...` source (with `CGO_ENABLED=0`, matching those binaries) and each actual
+`./...` source from that same snapshot (with `CGO_ENABLED=0`) and each actual
 binary. To inspect already-built release artifacts without rebuilding them:
 
 ```sh
 VULNCHECK_OUTPUT=build/release-scan ./scripts/vulncheck.sh /path/to/candidate/bin
 ```
 
-The script never executes those binaries. It records compiler and scanner
+The script never executes those binaries. Tracked edits, untracked files and
+ignored generated Go/assembly/module inputs are rejected before building or
+recording evidence; ordinary ignored binaries/reports are allowed. Workspace
+discovery is disabled and external source/module overrides are rejected.
+The immutable snapshot prevents concurrent checkout edits from changing the
+scanned source. Evidence explicitly states whether binaries were built from that
+snapshot; provided release binaries require their own source/build provenance. It records compiler and scanner
 versions, source commit, target platform, database URL/modification time,
 binary SHA-256 checksums and embedded build metadata. Reports default to the
 ignored `build/vulncheck/` directory. Use a fresh output directory per candidate
@@ -43,7 +50,12 @@ than the scanner's compiler, determines its embedded standard-library version.
 Source scans use the compiler selected for that invocation.
 
 The hosted `Go vulnerability checks` workflow runs on pushes, PRs, manual
-dispatch and weekly, preserving reports even on failure. No self-hosted runner
+dispatch and weekly, preserving reports even on failure. Because GitHub only
+runs schedules from the default branch, its additional maintenance job explicitly
+checks out `maintenance/worker-f59d919` on scheduled/manual runs and keeps its
+reports in a separately named artifact. The maintenance workflow itself has no
+cron trigger. Merge the maintenance scanning implementation before relying on
+this default-branch dispatch. No self-hosted runner
 or deployment credentials are needed. Reachable source symbols and symbols
 present in binaries fail the check; verbose reports separately list affected
 packages/modules without reachable symbols. Binary scanning has less precise

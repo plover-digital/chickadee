@@ -22,5 +22,5 @@ image-ubuntu-2604:
 image-minimal-ubuntu-2404:
 	./scripts/build-image.sh
 
-vulncheck: build
-	./scripts/vulncheck.sh "$(BIN_DIR)"
+vulncheck:
+	./scripts/vulncheck.sh --build "$(BIN_DIR)"
