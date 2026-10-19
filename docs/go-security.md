@@ -119,3 +119,27 @@ cache are never used or modified. Evidence records the effective cache path and
 private scratch tree writable before removing downloaded read-only modules.
 This requires fresh downloads per attempt; the ordinary Go build cache remains
 available. Keep Go's checksum verification enabled for release scans.
+
+### Public module authentication policy
+
+Before any build/install, scans enforce `GO111MODULE=on`,
+`GOSUMDB=sum.golang.org`, `GONOSUMDB=none`, and `GOINSECURE=none`.
+The standard Go toolchain's built-in checksum-database key authenticates public
+module downloads, including the scanner's transitive graph and downloaded Go
+toolchains. Committed application `go.sum` entries remain trusted source inputs.
+Private or unauthenticated dependency graphs are not supported for release
+attestation. This overrides disabled/custom checksum databases and exclusion
+patterns, including `GOPRIVATE`'s implicit `GONOSUMDB` default.
+
+`GOPROXY`, `GONOPROXY`, and `GOPRIVATE` may still select proxy versus direct
+transport; neither transport bypasses the enforced checksum policy. Proxy URLs
+and private patterns are not written into environment metadata. A proxy may
+mirror checksum records, but cannot substitute the database signing key.
+The policy follows the [Go module authentication reference](https://go.dev/ref/mod#authenticating).
+
+The environment boundary also disables persisted Go settings and workspace
+selection, rejects external source/module overlays, and uses a fresh module
+cache. It assumes a trusted installed Go executable/toolchain and ordinary local
+build cache; it does not attest a compromised compiler or hostile local operator.
+The vulnerability database remains a separately selected scan input, recorded
+with the findings. No repository or service-wide Go settings are changed.

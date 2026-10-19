@@ -3,6 +3,10 @@
 set -euo pipefail
 # Ignore persisted go env -w settings, especially source/module overlays.
 export GOENV=off
+# This release graph is public. Authenticate every module, including scanner
+# transitive dependencies and downloaded toolchains, against Go's built-in key.
+# Explicit GONOSUMDB overrides the default inherited from GOPRIVATE.
+export GO111MODULE=on GOSUMDB=sum.golang.org GONOSUMDB=none GOINSECURE=none
 cd "$(dirname "$0")/.."
 ./scripts/check-go-source.sh
 source_commit=$(git rev-parse HEAD)
@@ -59,7 +63,7 @@ scanner="$scratch/tools/govulncheck"
   printf 'module_cache_policy=fresh-per-attempt-cleaned-on-exit\n'
   printf 'GOENV=%s\n' "$GOENV"
   go version
-  CGO_ENABLED=0 go env -json GOOS GOARCH CGO_ENABLED GOTOOLCHAIN GOFLAGS GOWORK GOENV GOMODCACHE
+  CGO_ENABLED=0 go env -json GOOS GOARCH CGO_ENABLED GOTOOLCHAIN GOFLAGS GOWORK GOENV GOMODCACHE GO111MODULE GOSUMDB GONOSUMDB GOINSECURE
   "$scanner" -version
   printf 'database=%s\n' "$database"
 } > "$output/environment.txt"
