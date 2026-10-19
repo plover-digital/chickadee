@@ -147,3 +147,21 @@ This complements `ubuntu-2604-smoke.yml` runtime coverage. It does not authorize
 queue remapping or deployment, and it cannot validate the minimal profile.
 The generic `chickadee-smoke.yml` rejects Docker sockets and must not be treated
 as developer-profile acceptance.
+
+## Rocky profile acceptance
+
+After staging the accepted Rocky bundle through a controlled worker drain, use
+`rocky-replacement-smoke.yml` on `main` with `size=small` and then `size=medium`,
+and `expected_kernel` set to the candidate's exact kernel release. Each dispatch
+runs two sequential jobs on the existing native Rocky label, verifies the actual
+CPU/memory shape, enforcing SELinux, guest-reported kernel, native tools and
+Go/Node caches, and requires different runner identities. It does not require a
+Docker daemon or claim Ubuntu developer parity. The toolcache default is Go
+1.27.2; callers needing older unsupported releases must explicitly install them.
+
+Correlate both runner identities with worker records and the exact immutable
+bundle; routing to another host's old image is not candidate acceptance. Verify
+actual QEMU exit, disk/cgroup cleanup and replacement in worker evidence. A
+standalone 1-vCPU/2-GiB boot check does not establish the live small (2/4096) or
+medium (4/8192) worker profile, networking or real-job behavior. Dispatch only in
+the coordinated rollout slot, preserving the single existing GitHub listener.
