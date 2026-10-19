@@ -165,3 +165,22 @@ actual QEMU exit, disk/cgroup cleanup and replacement in worker evidence. A
 standalone 1-vCPU/2-GiB boot check does not establish the live small (2/4096) or
 medium (4/8192) worker profile, networking or real-job behavior. Dispatch only in
 the coordinated rollout slot, preserving the single existing GitHub listener.
+
+### Ubuntu developer replacement acceptance
+
+The manual `ubuntu-developer-replacement-smoke.yml` workflow selects an existing
+Ubuntu 24.04 or 26.04 small/medium label and requires the candidate's exact kernel
+release. It runs two sequential jobs and rejects reuse of the first runner. Both
+jobs check OS, UID, CPU/memory shape, kernel, native developer tools, installed
+Go/Node/Python caches, profile-specific Node/Clang defaults and a guest-local
+Docker daemon with Compose/Buildx. Setup actions exercise the selected caches.
+The existing Ubuntu26-medium `developer-replacement-smoke.yml` invocation keeps
+its defaults; the new workflow supplies the additional required kernel gate.
+
+Correlate each runner with the intended worker and immutable bundle digest,
+then verify registration, QEMU, overlay and cgroup cleanup and replacement.
+Workflow success alone does not prove placement or broad network isolation.
+Run the existing image compatibility workflow for Ubuntu24 and Ubuntu26 runtime
+workflow for broader tool exercises. Never map the minimal image to these
+48 GiB developer profiles. Dispatch only after coordinated artifact acceptance
+and routing; the workflow creates no new listener, queue mapping or access grant.
