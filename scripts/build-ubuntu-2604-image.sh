@@ -56,7 +56,7 @@ with (root/lock['root_filename']).open('rb') as data:assert hashlib.file_digest(
 PY
 [[ -e $downloads/runner.tar.gz ]] || fetch "https://github.com/actions/runner/releases/download/v$runner/actions-runner-linux-x64-$runner.tar.gz" "$downloads/runner.tar.gz"
 printf '%s  %s\n' "$runner_sha" "$downloads/runner.tar.gz" | sha256sum --check
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o "$work/chickadee-guest" ./cmd/chickadee-guest
+GOTOOLCHAIN=go1.27.2 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o "$work/chickadee-guest" ./cmd/chickadee-guest
 xz --decompress --stdout "$downloads/$root_tar" > "$work/root.tar"
 export LIBGUESTFS_BACKEND=direct
 if [[ -r /dev/kvm && -w /dev/kvm ]]; then export LIBGUESTFS_BACKEND_SETTINGS=force_kvm; else export LIBGUESTFS_BACKEND_SETTINGS=force_tcg; fi
@@ -80,6 +80,7 @@ pathlib.Path('/etc/apt/sources.list').write_text(''.join(f'deb [signed-by=/usr/s
 PY
 apt-get -o Acquire::Retries=3 -o APT::Update::Error-Mode=any update
 packages=$(python3 -c 'import json; print(" ".join(json.load(open("/tmp/ubuntu-2604-inputs.json"))["minimal_packages"]))')
+apt-get dist-upgrade -y
 apt-get install -y --no-install-recommends $packages
 e2label /dev/sda chickadee
 printf 'LABEL=chickadee / ext4 defaults 0 1\n' > /etc/fstab
@@ -133,10 +134,14 @@ virt-customize --memsize 2048 -a "$work/base.qcow2" \
  --upload guest/chickadee-network.service:/etc/systemd/system/chickadee-network.service \
  --upload guest/chickadee-bootstrap.service:/etc/systemd/system/chickadee-bootstrap.service \
  --upload "$work/provision.sh":/tmp/chickadee-provision.sh \
+ --upload guest/package-provenance.py:/tmp/chickadee-package-provenance.py \
  --run-command 'bash /tmp/chickadee-provision.sh' \
+ --run-command 'python3 /tmp/chickadee-package-provenance.py > /image-package-provenance.json' \
+ --delete /tmp/chickadee-package-provenance.py \
  --delete /tmp/chickadee-provision.sh --delete /etc/resolv.conf \
  --write /etc/resolv.conf:"nameserver 1.1.1.1"
 guestfish --ro -a "$work/base.qcow2" -m /dev/sda download /image-packages.txt "$out/packages.txt"
+guestfish --ro -a "$work/base.qcow2" -m /dev/sda download /image-package-provenance.json "$out/package-provenance.json"
 kernel=$(guestfish --ro -a "$work/base.qcow2" -m /dev/sda glob-expand '/boot/vmlinuz-*')
 [[ $kernel != *$'\n'* && $kernel == /boot/vmlinuz-* ]]
 version=${kernel#/boot/vmlinuz-}
@@ -158,6 +163,7 @@ if [[ $profile == developer ]]; then
  extras=(tool-inputs.json extra-inputs.json compatibility.json)
 fi
 printf '{"disk_gib":%s,"os":"ubuntu","os_version":"26.04","architecture":"amd64","machine":"q35","ubuntu_release":"%s","snapshot":"%s","runner":"%s","kernel":"%s","software_profile":"%s"}\n' "$disk_gib" "$release" "$snapshot" "$runner" "$version" "$profile" > "$out/manifest.json"
-(cd "$out" && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt build-inputs.json "${extras[@]}" > SHA256SUMS)
+GOTOOLCHAIN=go1.27.2 go version -m "$work/chickadee-guest" > "$out/guest-build.txt"
+(cd "$out" && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt package-provenance.json guest-build.txt build-inputs.json "${extras[@]}" > SHA256SUMS)
 chmod 0444 "$out"/*
 echo 'Ubuntu 26.04 q35 bundle built; require READY and real-job validation before changing a default.'

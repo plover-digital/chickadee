@@ -13,6 +13,7 @@ policy.write_text('#!/bin/sh\nexit 101\n');policy.chmod(0o755)
 os.environ['DEBIAN_FRONTEND']='noninteractive'
 try:
     run('apt-get','-o','Acquire::Retries=3','-o','APT::Update::Error-Mode=any','update')
+    run('apt-get','dist-upgrade','-y')
     packages=[lock['package_aliases'].get(p,p) for p in lock['apt_packages']+lock['developer_packages']]
     run('apt-get','install','-y','--no-install-recommends',*sorted(set(packages)))
 finally:

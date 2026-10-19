@@ -13,7 +13,10 @@ mkdir -p "$out" build/github-compatible/downloads
 python3 - "$source_dir" <<'PY'
 import json,pathlib,sys
 m=json.load(open(pathlib.Path(sys.argv[1])/'manifest.json'))
-assert m.get('ubuntu_release') or (m.get('os')=='ubuntu' and m.get('os_version')=='24.04'), 'Ubuntu 24.04 source required'
+assert m.get('os')=='ubuntu' and m.get('os_version')=='24.04', 'Ubuntu 24.04 source required'
+lock=json.load(open('guest/images/github-ubuntu-2404.json'))
+assert m.get('snapshot')==lock['ubuntu_snapshot'], 'Rebuild the minimal image with the same security snapshot first'
+assert m.get('runner')=='2.337.0', 'Rebuild the minimal image with the reviewed available runner first'
 PY
 # Inputs are exact official release assets; verify even already-cached downloads.
 python3 scripts/fetch-image-tools.py guest/images/github-ubuntu-2404.json build/github-compatible/downloads
@@ -36,7 +39,7 @@ extra=json.load(open('guest/images/github-extra-tools.json'))
 with tarfile.open('build/github-compatible/extra-tools.tar','w') as tar:
  for e in extra['tools']:tar.add(pathlib.Path('build/github-compatible/extra-downloads')/e['filename'],arcname=e['filename'])
 PY
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o build/github-compatible/chickadee-guest ./cmd/chickadee-guest
+GOTOOLCHAIN=go1.27.2 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o build/github-compatible/chickadee-guest ./cmd/chickadee-guest
 virt-customize -a "$out/working.qcow2" \
   --upload build/github-compatible/chickadee-guest:/usr/local/bin/chickadee-guest \
   --upload guest/network.sh:/usr/local/bin/chickadee-network \
@@ -54,6 +57,9 @@ virt-customize -a "$out/working.qcow2" \
   --run-command 'mkdir -p /tmp/github-extra-downloads; tar -xf /tmp/github-extra-tools.tar -C /tmp/github-extra-downloads' \
   --run-command 'python3 /tmp/install-github-extra-tools.py --lock /tmp/github-extra-lock.json --install /tmp/github-extra-downloads' \
   --delete /tmp/github-extra-downloads --delete /tmp/github-extra-lock.json --delete /tmp/github-extra-tools.tar --delete /tmp/install-github-extra-tools.py \
+  --upload guest/package-provenance.py:/tmp/chickadee-package-provenance.py \
+  --run-command 'python3 /tmp/chickadee-package-provenance.py > /image-package-provenance.json' \
+  --delete /tmp/chickadee-package-provenance.py \
   --run-command 'rm -f /var/lib/systemd/random-seed /var/lib/dbus/machine-id; truncate -s 0 /etc/machine-id' \
   --delete /etc/resolv.conf --write /etc/resolv.conf:'nameserver 1.1.1.1'
 # Discard deleted temporary archive blocks, then compact qcow2 physical file length.
@@ -62,7 +68,9 @@ virt-sparsify --in-place "$out/working.qcow2"
 qemu-img convert -f qcow2 -O qcow2 -o compat=1.1 "$out/working.qcow2" "$out/base.qcow2"
 rm "$out/working.qcow2"
 guestfish --ro -a "$out/base.qcow2" -m /dev/sda download /image-packages.txt "$out/packages.txt"
+guestfish --ro -a "$out/base.qcow2" -m /dev/sda download /image-package-provenance.json "$out/package-provenance.json"
 guestfish --ro -a "$out/base.qcow2" -m /dev/sda download /etc/chickadee/image-compatibility.json "$out/compatibility.json"
+GOTOOLCHAIN=go1.27.2 go version -m build/github-compatible/chickadee-guest > "$out/guest-build.txt"
 python3 - "$source_dir" "$out" <<'PY'
 import hashlib,json,pathlib,shutil,sys
 src,out=map(pathlib.Path,sys.argv[1:]);m=json.load(open(src/'manifest.json'))

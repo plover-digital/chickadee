@@ -27,12 +27,12 @@ Inputs are pinned in [ubuntu-2604.json](../guest/images/ubuntu-2604.json),
 [github-extra-ubuntu-2604.json](../guest/images/github-extra-ubuntu-2604.json).
 The Canonical base is the
 [20260927 release](https://cloud-images.ubuntu.com/releases/resolute/release-20260927/),
-with package snapshot `20260930T000000Z`. The comparison target is GitHub's
+with package snapshot `20261019T000000Z`. The comparison target is GitHub's
 [Ubuntu 26.04 image inventory 20260927.149.1](https://github.com/actions/runner-images/blob/5f7588b285eccc2edbeb1cd79d65ee0b577e4b4a/images/ubuntu/Ubuntu2604-Readme.md).
 
-The developer profile provides Go 1.24/1.25/1.26 toolcache versions, Node 22/24,
+The developer profile provides Go 1.26/1.27 toolcache versions, Node 22/24,
 and Python 3.10–3.14 archives built specifically for Ubuntu 26.04. Ubuntu 24.04
-Python archives are not copied into this image. Defaults are Go 1.26.8,
+Python archives are not copied into this image. Defaults are Go 1.27.2,
 Node 24.21.0 and Java 17; Java 11, 21 and 25 are also available. Native Python
 follows Ubuntu's Python 3.14 package, and setup-python can select the pinned
 toolcache versions. The profile includes compilers, Docker inside the guest,
@@ -49,3 +49,5 @@ after READY and real-job validation. It does not happen automatically during
 image construction. The
 [Ubuntu 26.04 smoke workflow](../.github/workflows/ubuntu-2604-smoke.yml) exercises
 the toolcache, setup actions, Bun, compilers and the guest-local Docker daemon.
+
+See [image security refresh](image-security.md) for advisory status and acceptance gates.

@@ -4,9 +4,9 @@
   "upstream_commit": "5f7588b285eccc2edbeb1cd79d65ee0b577e4b4a",
   "upstream_image_version": "20260927.149.1",
   "upstream_inventory_sha256": "399e83b527896bb2b3a2bbbc33ef80c460004b1c33fe955b8cbd67598607d25a",
-  "ubuntu_snapshot": "20260930T000000Z",
+  "ubuntu_snapshot": "20261019T000000Z",
   "disk_gib": 48,
-  "default_go": "1.26.8",
+  "default_go": "1.27.2",
   "default_node": "24.21.0",
   "apt_packages": [
     "bzip2",
@@ -84,26 +84,18 @@
   "tools": [
     {
       "name": "go",
-      "version": "1.24.13",
-      "filename": "go-1.24.13-linux-x64.tar.gz",
-      "url": "https://github.com/actions/go-versions/releases/download/1.24.13-21696107652/go-1.24.13-linux-x64.tar.gz",
-      "sha256": "01e37808a5c595e4102769772361bbd7656921d6c0039d60f39da82796cd7246",
+      "version": "1.26.9",
+      "filename": "go-1.26.9-linux-x64.tar.gz",
+      "url": "https://github.com/actions/go-versions/releases/download/1.26.9-37875104533/go-1.26.9-linux-x64.tar.gz",
+      "sha256": "3d4726070211e7870ab65cb863067888dd643e8f9ae18be4d9edcce902ffbee8",
       "platform": "linux-x64"
     },
     {
       "name": "go",
-      "version": "1.25.14",
-      "filename": "go-1.25.14-linux-x64.tar.gz",
-      "url": "https://github.com/actions/go-versions/releases/download/1.25.14-32325191436/go-1.25.14-linux-x64.tar.gz",
-      "sha256": "29d783221624ee02465b6a5f63f4bffeaa1bc155f956030d7c3e64760ea1e0c8",
-      "platform": "linux-x64"
-    },
-    {
-      "name": "go",
-      "version": "1.26.8",
-      "filename": "go-1.26.8-linux-x64.tar.gz",
-      "url": "https://github.com/actions/go-versions/releases/download/1.26.8-33583485350/go-1.26.8-linux-x64.tar.gz",
-      "sha256": "3a6e3aba21292e2cbe15235364a85b88531635cd910ac1453ce03f258dff3c1f",
+      "version": "1.27.2",
+      "filename": "go-1.27.2-linux-x64.tar.gz",
+      "url": "https://github.com/actions/go-versions/releases/download/1.27.2-37875086547/go-1.27.2-linux-x64.tar.gz",
+      "sha256": "d5ea5f4ae405daa1d37ab1d54706f25aee826f8ccc9ce06e7d89aeb4ea308051",
       "platform": "linux-x64"
     },
     {
