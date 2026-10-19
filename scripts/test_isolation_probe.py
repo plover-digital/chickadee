@@ -1,6 +1,12 @@
 import importlib.util
 from pathlib import Path
 import socket
+import contextlib
+import io
+import json
+import os
+import tempfile
+from unittest import mock
 import unittest
 
 spec = importlib.util.spec_from_file_location('probe', Path(__file__).with_name('isolation-probe.py'))
@@ -8,6 +14,43 @@ probe = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(probe)
 
 class ProbeTests(unittest.TestCase):
+    def test_ip_queries_work_when_runner_path_lacks_sbin(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'bin').mkdir()
+            (root / 'sbin').mkdir()
+            ip = root / 'sbin/ip'
+            ip.write_text('#!/bin/sh\ncase "$*" in\n'
+                          '"-j -6 route show default"|"-j -6 address show") printf "[]\\n" ;;\n'
+                          '*) exit 23 ;;\nesac\n')
+            ip.chmod(0o755)
+            with mock.patch.dict(os.environ, PATH=str(root / 'bin')), \
+                 mock.patch.object(probe, 'SYSTEM_IP_PATHS', (str(ip),)):
+                for arguments in (['ip', '-j', '-6', 'route', 'show', 'default'],
+                                  ['ip', '-j', '-6', 'address', 'show']):
+                    self.assertEqual(json.loads(probe.command(arguments)), [])
+                ip.chmod(0o644)
+                with self.assertRaises(probe.ProbeCommandError) as failure:
+                    probe.command(['ip', '-j', '-6', 'address', 'show'])
+                self.assertEqual(failure.exception.reason, 'ip_unavailable')
+
+    def test_command_failure_reason_does_not_leak_output(self):
+        with tempfile.TemporaryDirectory() as directory:
+            failing = Path(directory) / 'command'
+            failing.write_text('#!/bin/sh\necho private-diagnostic-sentinel >&2\nexit 23\n')
+            failing.chmod(0o755)
+            output = io.StringIO()
+            with mock.patch('sys.argv', ['isolation-probe.py']), \
+                 mock.patch.object(probe, 'local_evidence',
+                                   side_effect=lambda *args: probe.command([str(failing)])), \
+                 contextlib.redirect_stdout(output):
+                self.assertEqual(probe.main(), 1)
+            self.assertEqual(json.loads(output.getvalue()),
+                             {'schema_version': 1, 'error': 'isolation_probe_failed',
+                              'reason': 'command_failed'})
+            self.assertNotIn('private-diagnostic-sentinel', output.getvalue())
+            self.assertNotIn(directory, output.getvalue())
+
     def test_limits_and_no_public_scans(self):
         for address in ['8.8.8.8', '127.0.0.1', '::', '224.0.0.1']:
             with self.assertRaises(ValueError):
