@@ -32,25 +32,40 @@ Record whether bubblewrap is actually present in each guest, its full vendor
 revision and source patch status. A missing guest package does not assess the
 host QEMU sandbox. Do not weaken host sandboxing or disable SELinux to pass tests.
 
-The Rocky RPM lock has not yet been refreshed by this change. Resolve the full
-base upgrade plus developer dependency closure in a disposable Rocky 10.2
-environment, with GPG verification enabled, before replacing it. Include updates
-to packages inherited from the cloud root, not only new developer packages.
+The Rocky RPM lock was resolved natively on 2026-10-19 from the pinned Rocky
+10.2 cloud base, including inherited package upgrades and developer additions.
+All 514 downloaded RPM signatures were verified. A separate fresh copy of that
+base successfully replayed the lock with networking disabled and local package
+GPG checks enabled: all 514 exact RPM identities and all requested profile
+package names were installed. The resulting inventory contains 829 packages;
+bubblewrap is absent in this package replay. This is not a complete runner image,
+boot, job or deployment acceptance. Kernel 6.12.0-211.66.1.el10_2, glibc
+2.39-142.el10_2 and OpenSSL 3.5.8-2.el10_2 still require vendor advisory review.
+Resolve the full transaction again when refreshing: include updates inherited
+from the cloud root, not only new developer packages.
+Use `guest/resolve-rocky-inputs.py` inside that scratch guest with
+`guest/images/rocky-102-developer-packages.txt` and a fresh output directory. It
+uses native DNF against canonical BaseOS/AppStream/CRB, resolves inherited package
+upgrades together with profile additions, downloads and signature-checks RPMs,
+and emits proposed `rpm-inputs.json` plus removal evidence. It does not install
+the transaction. Preserve the cached repository metadata and review removals.
 Record exact URLs, SHA256, RPM NEVRA/source RPM and repository metadata with the
 resolved transaction, then replay offline with `localpkg_gpgcheck=1`. Consult
 [Rocky errata](https://errata.rockylinux.org/) and vendor source patches;
 [Red Hat's CVE record](https://access.redhat.com/security/cve/cve-2026-87766)
 is supporting evidence, not proof that a particular Rocky RPM includes a fix.
-Do not manufacture a new lock from version guesses or call the existing RPM
-lock current merely because a new guest bootstrap was installed.
+Do not manufacture a new lock from version guesses or call an image patched
+merely because its guest bootstrap or RPM lock was refreshed. Runner component
+findings and remaining kernel/vendor fixes tracked in issue #39 still gate
+security and deployment acceptance.
 
 ## Runner availability and toolchains
 
 [Runner 2.338.0](https://github.com/actions/runner/releases/tag/v2.338.0) was
 published on October 6, but its release notes specify a progressive rollout.
 On October 19 the authenticated repository runner-download endpoint still
-advertised Linux x64 **2.337.0**. Builders retain that deployable version and its
-verified checksum. Version 2.338.0 is a future candidate, with upstream Linux
+advertised Linux x64 **2.337.0**. Builders retain that currently advertised
+version and its verified checksum. Version 2.338.0 is a future candidate, with upstream Linux
 x64 SHA256 `af4b794c1bc41d73d40535e3fe092a39f9679cd8d965954c2aca25a05ca41d32`.
 Recheck the target repository/organization download instructions before updating
 all Linux builder pins together. Never store registration tokens in a lock.
@@ -86,8 +101,8 @@ Use a dedicated checkout and fresh output directories, never a production image
 or runtime directory. Build one OS at a time with enforced CPU/memory limits,
 low CPU/I/O priority, no swap growth, and a monitored workspace budget. Retain
 builder container digest, package inventory, source commit, Go build information,
-input locks and output `SHA256SUMS`. A successful download or source test is not
-a successful image build. Package inventories are provenance, not a clean scan.
+input locks, `package-provenance.json`, `guest-build.txt` and output `SHA256SUMS`.
+A successful download or source test is not a successful image build. Package inventories are provenance, not a clean scan.
 
 For every candidate bundle:
 
