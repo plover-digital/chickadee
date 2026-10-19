@@ -1,0 +1,39 @@
+name: Ubuntu26 developer fresh-runner acceptance
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+# Dispatch only after the existing queue has the accepted developer artifact.
+# No queue mapping or second listener is created by this workflow.
+jobs:
+  first:
+    if: github.repository == 'plover-digital/chickadee' && github.ref == 'refs/heads/main'
+    runs-on: chickadee-medium-ubuntu-2604
+    timeout-minutes: 10
+    outputs:
+      runner: ${{ steps.identity.outputs.runner }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify developer profile and fresh runner
+        id: identity
+        env:
+          CURRENT_RUNNER: ${{ runner.name }}
+        run: bash scripts/developer-replacement-smoke.sh
+  second:
+    needs: first
+    if: github.repository == 'plover-digital/chickadee' && github.ref == 'refs/heads/main'
+    runs-on: chickadee-medium-ubuntu-2604
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify developer profile and fresh runner
+        id: identity
+        env:
+          CURRENT_RUNNER: ${{ runner.name }}
+          EXPECT_REPLACEMENT: '1'
+          PREVIOUS_RUNNER: ${{ needs.first.outputs.runner }}
+        run: bash scripts/developer-replacement-smoke.sh
