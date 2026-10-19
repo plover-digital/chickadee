@@ -143,3 +143,21 @@ cache. It assumes a trusted installed Go executable/toolchain and ordinary local
 build cache; it does not attest a compromised compiler or hostile local operator.
 The vulnerability database remains a separately selected scan input, recorded
 with the findings. No repository or service-wide Go settings are changed.
+
+### External package drivers
+
+The scanner exports `GOPACKAGESDRIVER=off` before installing or invoking
+`govulncheck`, and records that effective value in `environment.txt`. This forces
+its `go/packages` loader to use the Go command against the archived source.
+Merely unsetting the variable is insufficient: the loader can otherwise discover
+`gopackagesdriver` on `PATH`. An explicit driver or an automatically discovered
+driver could substitute package metadata and files outside the recorded commit.
+See the upstream [package driver protocol](https://pkg.go.dev/golang.org/x/tools/go/packages#hdr-The_driver_protocol).
+
+The offline scanner-harness regression exercises both selection paths with a
+sentinel executable, verifies neither runs under the policy, and removes the
+export in a negative control to demonstrate false-success substituted-graph
+evidence. It tests script environment propagation without downloading modules or
+running a full vulnerability scan; actual source/binary scans remain release
+checks. Prior evidence lacking this policy must be reassessed or rerun; this
+change does not alter runtime binaries, protocols, configuration, or state.
