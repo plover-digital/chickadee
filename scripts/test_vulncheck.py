@@ -11,7 +11,7 @@ SCRIPT = Path(__file__).with_name('vulncheck.sh').resolve()
 
 
 class VulnerabilityCheckTests(unittest.TestCase):
-    def run_scan(self, failure='', dirty='', build=False, ambient_config=False):
+    def run_scan(self, failure='', dirty='', build=False, ambient_config=False, early_failure=''):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             repo = root / 'repo'
@@ -52,6 +52,8 @@ if [[ -n "$FAIL_SCAN" && "$*" == *"$FAIL_SCAN"* ]]; then exit 3; fi
             scanner.chmod(0o755)
             go = tools / 'go'
             go.write_text('''#!/usr/bin/env bash
+if [[ "${EARLY_FAILURE:-}" == install && "$1" == install ]]; then exit 23; fi
+if [[ "${EARLY_FAILURE:-}" == metadata && "$1" == version ]]; then exit 24; fi
 if [[ "$1" == install ]]; then
   test "$2" = 'golang.org/x/vuln/cmd/govulncheck@v1.9.0' || exit 9
   cp "$FAKE_SCANNER" "$GOBIN/govulncheck"
@@ -65,6 +67,7 @@ fi
             make = tools / 'make'
             make.write_text('''#!/usr/bin/env bash
 set -eu
+if [[ "${EARLY_FAILURE:-}" == build ]]; then exit 22; fi
 test "$GOENV" = off
 test "$(cat input.go)" = 'package input'
 printf snapshot > "$BUILD_MARKER"
@@ -91,9 +94,25 @@ printf snapshot > "$BUILD_MARKER"
                 env.pop('GOFLAGS', None)
                 before = subprocess.check_output([real_go, 'env', 'GOFLAGS'], env=env, text=True)
                 self.assertEqual(before.strip(), expected)
+            if early_failure:
+                previous = subprocess.run(['bash', str(repo / 'scripts' / 'vulncheck.sh'), '--build', str(binaries)],
+                                          env=env, capture_output=True, text=True)
+                self.assertEqual(previous.returncode, 0, previous.stderr)
+                old_run = output / (output / 'current').read_text().strip()
+                old_reports = {p.name: p.read_bytes() for p in old_run.iterdir()}
+                (output / 'user-notes').write_text('preserve me')
+                env['EARLY_FAILURE'] = early_failure
             result = subprocess.run(['bash', str(repo / 'scripts' / 'vulncheck.sh'), *(['--build'] if build else []), str(binaries)],
                                     env=env, capture_output=True, text=True)
-            reports = {p.name: p.read_text() for p in output.iterdir()} if output.exists() else {}
+            run = output / (output / 'current').read_text().strip() if output.exists() else None
+            reports = {p.name: p.read_text() for p in run.iterdir()} if run else {}
+            if early_failure:
+                self.assertNotEqual(run, old_run)
+                self.assertEqual(old_reports, {p.name: p.read_bytes() for p in old_run.iterdir()})
+                self.assertEqual((output / 'user-notes').read_text(), 'preserve me')
+                self.assertTrue(reports['status.txt'].startswith('failed'))
+                self.assertNotIn('source.txt', reports)
+                self.assertNotIn('chickadee-worker.txt', reports)
             if marker.exists():
                 reports['build-marker'] = marker.read_text()
             return result, reports
@@ -102,11 +121,18 @@ printf snapshot > "$BUILD_MARKER"
         result, reports = self.run_scan(build=True)
         self.assertEqual(reports.get('build-marker'), 'snapshot')
         self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(reports['status.txt'], 'complete\n')
         self.assertIn('CGO=0', reports['source.txt'])
         for name in ('chickadee', 'chickadee-worker', 'chickadee-guest'):
             self.assertIn('-mode=binary', reports[f'{name}.txt'])
             self.assertIn(f'{name}.sha256', reports)
             self.assertIn(f'{name}.build.txt', reports)
+
+    def test_early_failure_identifies_new_attempt_and_preserves_history(self):
+        for stage in ('build', 'install', 'metadata'):
+            with self.subTest(stage=stage):
+                result, reports = self.run_scan(build=True, early_failure=stage)
+                self.assertNotEqual(result.returncode, 0)
 
     def test_persisted_goenv_overlay_is_disabled(self):
         result, reports = self.run_scan(build=True, ambient_config=True)

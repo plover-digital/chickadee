@@ -104,3 +104,10 @@ one real job and credential-free replacement. Roll back only after draining,
 using a binary compatible with the existing ownership/state format; an old
 vulnerable binary is a temporary recovery measure, not completed remediation.
 Source/CI success is not deployment acceptance.
+
+Each scan attempt writes a fresh `run-*` directory under `VULNCHECK_OUTPUT`
+(default `build/vulncheck`). The `current` file names the latest attempt;
+its `status.txt` is `running`, `complete`, or `failed exit=N`. Only `complete`
+means the entire attempt succeeded. Earlier attempts remain identified in their
+own directories, including partial failure evidence; caller files are preserved.
+Do not treat older root-level reports from previous script versions as current.
