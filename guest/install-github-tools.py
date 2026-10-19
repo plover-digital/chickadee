@@ -13,6 +13,7 @@ policy.write_text('#!/bin/sh\nexit 101\n');policy.chmod(0o755)
 os.environ['DEBIAN_FRONTEND']='noninteractive'
 try:
  run('apt-get','-o','Acquire::Retries=3','-o','APT::Update::Error-Mode=any','update')
+ run('apt-get','dist-upgrade','-y')
  packages=[{'netcat':'netcat-openbsd'}.get(p,p) for p in lock['apt_packages']]
  packages+=['libatk-bridge2.0-0t64','libatk1.0-0t64','libatspi2.0-0t64','libcups2t64','libcurl4t64','libgbm1','libnspr4','libnss3','libvulkan1','libxcomposite1','libxdamage1','libxfixes3','libxkbcommon0','libxrandr2','xdg-utils','fonts-liberation','libgtk-3-0t64','libasound2t64','gzip','zstd','python3-venv','python3-pip','pipx','ruby','ruby-dev','cmake','ninja-build','clang-16','clang-17','clang-18','clang-format-16','clang-format-17','clang-format-18','clang-tidy-16','clang-tidy-17','clang-tidy-18','gcc-12','gcc-13','gcc-14','g++-12','g++-13','g++-14','gfortran-12','gfortran-13','gfortran-14','openjdk-17-jdk','openjdk-21-jdk','maven','ant','git-lfs','docker.io','docker-compose-v2','docker-buildx','podman','buildah','skopeo','postgresql-16','mysql-server','apache2','nginx','php8.3-cli','composer']
  run('apt-get','install','-y','--no-install-recommends',*sorted(set(packages)))
@@ -41,7 +42,7 @@ for tool in lock['tools']:
  (target.parent/'x64.complete').touch()
 # Match setup-* expectations: writable cache in each disposable VM.
 run('chown','-R','runner:runner',str(cache))
-for command,src in [('node','node/22.23.3/x64/bin/node'),('npm','node/22.23.3/x64/bin/npm'),('npx','node/22.23.3/x64/bin/npx'),('go','go/1.24.13/x64/bin/go')]:
+for command,src in [('node','node/22.23.3/x64/bin/node'),('npm','node/22.23.3/x64/bin/npm'),('npx','node/22.23.3/x64/bin/npx'),('go',f"go/{lock['default_go']}/x64/bin/go")]:
  dest=pathlib.Path('/usr/local/bin')/command
  if dest.exists() or dest.is_symlink():dest.unlink()
  dest.symlink_to(cache/src)

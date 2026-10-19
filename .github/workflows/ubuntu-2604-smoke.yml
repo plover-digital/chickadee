@@ -19,7 +19,7 @@ jobs:
           test "$RUNNER_TOOL_CACHE" = /opt/hostedtoolcache
           for tool in unzip tar zstd jq sudo node npm go python3 pip3 gcc g++ clang-20 clang-21 clang-22 java mvn ruby php composer docker cargo rustc rustup dotnet firefox google-chrome geckodriver; do command -v "$tool"; done
           node --version | grep -Fx v24.21.0
-          go version | grep 'go1.26.8'
+          go version | grep 'go1.27.2'
           test "$JAVA_HOME" = /usr/lib/jvm/java-17-openjdk-amd64
           "$JAVA_HOME/bin/java" -version
           sudo -n true
@@ -40,7 +40,7 @@ jobs:
           node-version: '24.21.0'
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: '1.26.8'
+          go-version: '1.27.2'
           cache: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:

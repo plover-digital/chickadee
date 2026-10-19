@@ -10,6 +10,8 @@ and [toolset](https://github.com/actions/runner-images/blob/5f7588b285eccc2edbeb
 pinned to commit `5f7588b285eccc2edbeb1cd79d65ee0b577e4b4a`, image
 `20260927.320.1`. The reference is a comparison target, not a claim of complete parity.
 
+See [image security refresh](image-security.md) for vendor status and release gates.
+
 ## Build
 
 First build the minimal Ubuntu image using `scripts/build-image.sh`, then run
@@ -31,7 +33,7 @@ Included:
 - The official toolset's vital/common/command APT package groups, including
   `unzip`, GNU `tar`, `gzip`, `zstd`, `sudo`, Git LFS, and common build libraries.
 - GCC/G++/Fortran 12/13/14; Clang/format/tidy 16/17/18; CMake and Ninja.
-- Go 1.24.13, 1.25.14, 1.26.8; Node 22.23.3 and 24.21.0; Python 3.10.21,
+- Go 1.26.9 and 1.27.2 (default); Node 22.23.3 and 24.21.0; Python 3.10.21,
   3.11.16, 3.12.14, 3.13.15, 3.14.7 in `/opt/hostedtoolcache` with completion
   markers understood by `actions/setup-*`.
 - Java 17/21, Maven, Ant, Ruby, PHP/Composer, and Python pip/venv/pipx.

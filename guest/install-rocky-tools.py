@@ -19,7 +19,7 @@ for tool in lock['tools']:
     run(str(target/'bin'/executable),'version' if executable=='go' else '--version')
     (target.parent/'x64.complete').touch()
 run('chown','-R','runner:runner',str(cache))
-for command,src in [('node','node/22.23.3/x64/bin/node'),('npm','node/22.23.3/x64/bin/npm'),('npx','node/22.23.3/x64/bin/npx'),('go','go/1.24.13/x64/bin/go')]:
+for command,src in [('node','node/22.23.3/x64/bin/node'),('npm','node/22.23.3/x64/bin/npm'),('npx','node/22.23.3/x64/bin/npx'),('go',f"go/{lock['default_go']}/x64/bin/go")]:
     destination=pathlib.Path('/usr/local/bin')/command
     destination.unlink(missing_ok=True);destination.symlink_to(cache/src)
 config=pathlib.Path('/etc/chickadee');config.mkdir(exist_ok=True)

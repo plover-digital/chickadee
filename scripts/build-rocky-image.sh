@@ -21,7 +21,7 @@ printf '%s  %s\n' "$runner_sha" build/rocky-downloads/runner.tar.gz | sha256sum 
 python3 - <<'PY'
 import json,pathlib
 lock=json.load(open('guest/images/github-ubuntu-2404.json'))
-portable={key:lock[key] for key in ['upstream_commit','upstream_image_version']}
+portable={key:lock[key] for key in ['upstream_commit','upstream_image_version','default_go']}
 portable['tools']=[t for t in lock['tools'] if t['name'] in ['go','node']]
 pathlib.Path('build/rocky-downloads/tool-inputs.json').write_text(json.dumps(portable,indent=2)+'\n')
 PY
@@ -56,7 +56,7 @@ for e in entries:
 with tarfile.open('build/rocky-downloads/rpms.tar','w') as tar:
  for e in entries:tar.add(root/e['name'],arcname=e['name'])
 PY
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o build/chickadee-guest ./cmd/chickadee-guest
+GOTOOLCHAIN=go1.27.2 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o build/chickadee-guest ./cmd/chickadee-guest
 export LIBGUESTFS_BACKEND=direct
 if [[ -r /dev/kvm && -w /dev/kvm ]]; then export LIBGUESTFS_BACKEND_SETTINGS=force_kvm; else export LIBGUESTFS_BACKEND_SETTINGS=force_tcg; fi
 qemu-img create -q -f qcow2 build/rocky-base.qcow2 48G
@@ -143,6 +143,7 @@ cp guest/images/rocky-102-rpms.json "$out/rpm-inputs.json"
 cp guest/images/rocky-102-developer-packages.txt "$out/developer-packages.txt"
 cp build/rocky-downloads/tool-inputs.json "$out/tool-inputs.json"
 printf '{"disk_gib":48,"os":"rocky","os_version":"10.2","architecture":"amd64","machine":"q35","minimum_cpu":"x86-64-v3","source_image":"%s","source_sha256":"%s","runner":"%s","kernel":"%s","software_profile":"native-developer-baseline"}\n' "$source_name" "$source_sha" "$runner" "$version" > "$out/manifest.json"
-(cd "$out" && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt rpm-inputs.json tool-inputs.json developer-packages.txt > SHA256SUMS)
+go version -m "build/chickadee-guest" > "$out/guest-build.txt"
+(cd "$out" && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt guest-build.txt rpm-inputs.json tool-inputs.json developer-packages.txt > SHA256SUMS)
 chmod 0444 "$out"/*
 echo 'Rocky 10.2 q35 bundle built; perform READY and real-job validation before deployment.'

@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 [[ $(uname -m) == x86_64 ]]
 for tool in go curl gpgv qemu-img virt-make-fs virt-customize guestfish xz; do command -v "$tool" >/dev/null; done
 release=20260926
-snapshot=20260926T180000Z
+snapshot=20261019T000000Z
 runner=2.337.0
 runner_sha=70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613
 root_tar=ubuntu-24.04-server-cloudimg-amd64-root.tar.xz
@@ -28,7 +28,7 @@ assert digest==checks[0], 'Ubuntu root checksum mismatch'
 PY
 curl --silent --show-error --fail --retry 3 --connect-timeout 15 --max-time 600 --location --proto '=https' --tlsv1.2 "https://github.com/actions/runner/releases/download/v$runner/actions-runner-linux-x64-$runner.tar.gz" -o build/downloads/runner.tar.gz
 printf '%s  %s\n' "$runner_sha" build/downloads/runner.tar.gz | sha256sum --check
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o build/chickadee-guest ./cmd/chickadee-guest
+GOTOOLCHAIN=go1.27.2 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o build/chickadee-guest ./cmd/chickadee-guest
 xz --decompress --stdout "build/downloads/$root_tar" > build/root.tar
 export LIBGUESTFS_BACKEND=direct
 # Use KVM for trusted image editing where available; software emulation is a
@@ -59,6 +59,7 @@ getent ahostsv4 snapshot.ubuntu.com
 rm -f /etc/apt/sources.list /etc/apt/sources.list.d/*
 printf '%s\n' 'deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/$snapshot noble main universe' 'deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/$snapshot noble-updates main universe' 'deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/$snapshot noble-security main universe' > /etc/apt/sources.list
 apt-get -o Acquire::Retries=3 -o APT::Update::Error-Mode=any update
+apt-get dist-upgrade -y
 apt-get install -y --no-install-recommends linux-image-generic initramfs-tools ca-certificates git curl build-essential iproute2 libicu74 libssl3t64 zlib1g libkrb5-3 liblttng-ust1t64
 # The imported root tar has no VM partition table or bootloader requirement.
 e2label /dev/sda chickadee
@@ -113,6 +114,7 @@ ln -s "vmlinuz-$version" images/vmlinuz
 ln -s "initrd-$version" images/initrd
 mv build/base.qcow2 images/base.qcow2
 printf '{"disk_gib":16,"os":"ubuntu","os_version":"24.04","architecture":"amd64","machine":"microvm","ubuntu_release":"%s","snapshot":"%s","runner":"%s","kernel":"%s"}\n' "$release" "$snapshot" "$runner" "$version" > images/manifest.json
-(cd images && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt > SHA256SUMS)
+go version -m "build/chickadee-guest" > "images/guest-build.txt"
+(cd images && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt guest-build.txt > SHA256SUMS)
 chmod 0444 images/*
 echo 'Image built. Keep the manifest and checksums with these immutable artifacts.'
