@@ -18,7 +18,7 @@ with open('/etc/chickadee/image-compatibility.json') as stream:
 assert report['installed_toolcache'], 'missing developer toolcache provenance'
 PY
 for tool in go node npm python3 gcc clang-21 java docker; do command -v "$tool"; done
-go version | grep 'go1.27.2'
+test "$(go env GOVERSION)" = go1.27.2
 node --version | grep -Fx v24.21.0
 sudo -n true
 python3 scripts/isolation-probe.py --cpus 4 --memory-mib 8192

@@ -19,7 +19,7 @@ jobs:
           test "$RUNNER_TOOL_CACHE" = /opt/hostedtoolcache
           for tool in unzip tar zstd jq sudo node npm go python3 pip3 gcc g++ clang-20 clang-21 clang-22 java mvn ruby php composer docker cargo rustc rustup dotnet firefox google-chrome geckodriver; do command -v "$tool"; done
           node --version | grep -Fx v24.21.0
-          go version | grep 'go1.27.2'
+          test "$(go env GOVERSION)" = go1.27.2
           test "$JAVA_HOME" = /usr/lib/jvm/java-17-openjdk-amd64
           "$JAVA_HOME/bin/java" -version
           sudo -n true
