@@ -1,0 +1,75 @@
+# Legacy worker security backport
+
+This maintenance line starts at unchanged source
+`f59d919f5b4b07fd0ca6ce1040b6e83108662a46`. It is separate from current main and
+is intended only for an existing installation whose worker can be reproduced
+from that source. It retains the legacy worker API v1, configuration, identities,
+certificates and journal/state contract. It does not add the later host-ownership
+fence or adopt state initialized by ownership-enforcing releases.
+
+The only runtime source change is the worker API cancellation fix also reviewed
+in the current-main security PR: after reading a bounded response, preserve a
+canceled context even if the peer returned a successful empty HTTP 200/EOF.
+Previously this race returned a malformed-response error and lost
+`errors.Is(err, context.Canceled)`. Cleanup closes the response and idle
+connections; concurrent active requests are retained. A deterministic regression
+covers the successful-EOF race and an ordinary malformed response. No credential
+replay or state mutation is introduced.
+
+## Provenance and build
+
+On Linux amd64, an original-source build with Go1.26.3, CGO disabled and
+`-buildvcs=false -mod=readonly -trimpath` produces worker SHA-256
+`72f733fd816dfc33312d56ecc28425d037f979157657a964649067543a0cc7ef`.
+Require byte equality with the original executable before using this compatibility
+path; a runbook revision without a reproducible binary match is insufficient.
+The original Git source archive SHA-256 is
+`a3474a5efe8657a68fc607c7905e4847a5ef6c8cbfdeb30363e6e99a2adf987b`
+(`git archive --format=tar f59d919f5b4b07fd0ca6ce1040b6e83108662a46`).
+
+Build the reviewed maintenance commit, with Go's module checksum database enabled:
+
+```sh
+export GOTOOLCHAIN=go1.26.9
+export GOMAXPROCS=2 GOFLAGS=-p=1
+make build test
+make vulncheck
+```
+
+The toolchain directive and hosted CI use Go1.26.9. Language minimum1.25.3 is
+retained. The legacy worker links the standard library and this module; it has
+no linked x/sys dependency. `make vulncheck` installs pinned govulncheck v1.9.0,
+scans source and all three exact build outputs, and records database timestamp,
+compiler/scanner metadata and checksums under ignored `build/vulncheck`.
+The live vulnerability database changes; a retained snapshot is required for
+identical historical findings (`GOVULNDB` selects it). Scans are reachability
+evidence, not proof of exploitation or absence of unknown issues.
+
+Only `bin/chickadee-worker` is the release artifact for this maintenance path.
+Building the controller and guest is test coverage, not authorization to replace
+them or an immutable image. Retain the reviewed source commit, pristine source
+archive, worker hash, embedded `go version -m` output and test/scan evidence.
+Use private scratch output (`BIN_DIR`, `TMPDIR`, `VULNCHECK_OUTPUT`) on shared hosts.
+
+## Acceptance and rollback boundaries
+
+Do not copy historical configuration, images, deployment units or credentials
+from this branch. Preserve the existing worker identity, certificates, journal
+and tombstones. Confirm no ownership claim exists; if state is already claimed,
+this maintenance worker is incompatible. Never create/remove ownership markers
+to force a rollout.
+
+Drain one worker using its authenticated API; wait for jobs and actual execution
+exit, then stop the service. Keep the prior compatible binary and configuration
+privately, stage the verified worker atomically, and run offline preflight under
+the existing unit hardening. Verify preflight creates no ownership claim. Start
+the same service and verify the running executable's hash and Go version,
+authenticated READY capacity, one real job, terminal cleanup and credential-free
+replacement before advancing to another worker. Never duplicate GitHub listeners.
+
+Rollback requires the same drain/exit proof and preserved legacy unbound state.
+The original binary is compatible only while that state contract is unchanged;
+it remains vulnerable and is a temporary recovery measure. Never run it or this
+maintenance binary against newly claimed state. A future full ownership upgrade
+requires its separately documented fresh-state/identity migration and coordinated
+broker/certificate changes. This compatibility release does not close that work.

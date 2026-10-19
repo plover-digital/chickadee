@@ -2,6 +2,8 @@ module github.com/plover-digital/chickadee
 
 go 1.25.3
 
+toolchain go1.26.9
+
 require github.com/actions/scaleset v0.4.0
 
 require (
