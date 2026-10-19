@@ -33,12 +33,19 @@ finish() {
   else
     printf 'failed exit=%s\n' "$result" > "$output/status.txt"
   fi
-  if [[ -n "$scratch" ]]; then rm -rf "$scratch"; fi
+  if [[ -n "$scratch" ]]; then
+    # Downloaded module directories are read-only. Touch only our private tree.
+    chmod -R u+w "$scratch"
+    rm -rf "$scratch"
+  fi
 }
 trap finish EXIT
 bin_dir=$(cd "$bin_dir" && pwd)
 scratch=$(mktemp -d)
-mkdir -p "$scratch/source" "$scratch/tools"
+# Both the application and scanner resolve dependencies afresh; extracted
+# modules in the caller's cache may have been edited after checksum verification.
+export GOMODCACHE="$scratch/modules"
+mkdir -p "$scratch/source" "$scratch/tools" "$GOMODCACHE"
 git archive "$source_commit" | tar -x -C "$scratch/source"
 cd "$scratch/source"
 if "$build"; then
@@ -49,9 +56,10 @@ scanner="$scratch/tools/govulncheck"
 {
   date -u '+checked_at=%Y-%m-%dT%H:%M:%SZ'
   printf 'source_commit=%s\nsource_mode=git-archive\nbinaries_built_from_snapshot=%s\n' "$source_commit" "$build"
+  printf 'module_cache_policy=fresh-per-attempt-cleaned-on-exit\n'
   printf 'GOENV=%s\n' "$GOENV"
   go version
-  CGO_ENABLED=0 go env -json GOOS GOARCH CGO_ENABLED GOTOOLCHAIN GOFLAGS GOWORK GOENV
+  CGO_ENABLED=0 go env -json GOOS GOARCH CGO_ENABLED GOTOOLCHAIN GOFLAGS GOWORK GOENV GOMODCACHE
   "$scanner" -version
   printf 'database=%s\n' "$database"
 } > "$output/environment.txt"
