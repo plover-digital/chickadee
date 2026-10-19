@@ -2,6 +2,7 @@
 import os
 from pathlib import Path
 import subprocess
+import shutil
 import tempfile
 import unittest
 
@@ -46,3 +47,30 @@ class DeveloperReplacementChecks(unittest.TestCase):
         for previous, current, accepted in [('one', 'two', True), ('one', 'one', False), ('', 'two', False)]:
             result = self.run_gate(identity, PREVIOUS_RUNNER=previous, CURRENT_RUNNER=current)
             self.assertEqual(result.returncode == 0, accepted)
+
+    def test_path_defaults_match_installed_clang_and_java(self):
+        helper = 'assert_default_executable() {' + SCRIPT.split('assert_default_executable() {', 1)[1].split('\n}', 1)[0] + '\n}\n'
+        readlink = shutil.which('readlink')
+        self.assertIsNotNone(readlink)
+        # Expected installations remain present in every negative case.
+        for clang in ('clang-18', 'clang-21'):
+            for command, expected in [('clang', clang), ('java', 'java-17')]:
+                with tempfile.TemporaryDirectory() as tmp:
+                    root = Path(tmp)
+                    (root / 'readlink').symlink_to(readlink)
+                    for name in (expected, 'wrong-default'):
+                        binary = root / name
+                        binary.write_text('#!/bin/sh\nexit 0\n')
+                        binary.chmod(0o755)
+                    alias = root / command
+                    for target, accepted in [(None, False), ('wrong-default', False), (expected, True)]:
+                        alias.unlink(missing_ok=True)
+                        if target is not None:
+                            alias.symlink_to(target)
+                        with self.subTest(profile=clang, command=command, default=target):
+                            result = subprocess.run(['/bin/bash', '-ec', helper +
+                                                     'assert_default_executable "$COMMAND" "$EXPECTED"'],
+                                                    env=dict(os.environ, PATH=tmp, COMMAND=command,
+                                                             EXPECTED=str(root / expected)),
+                                                    capture_output=True, text=True)
+                            self.assertEqual(result.returncode == 0, accepted, result.stderr)

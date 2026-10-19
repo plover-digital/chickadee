@@ -15,6 +15,13 @@ esac
 if [[ ${REQUIRE_KERNEL:-0} == 1 || -n ${EXPECTED_KERNEL:-} ]]; then
   [[ ${EXPECTED_KERNEL:-} =~ ^[0-9]+\.[0-9]+\.[0-9]+-[0-9]+-generic$ ]]
 fi
+# Compare resolved executables, including the alternatives/symlink chain.
+assert_default_executable() {
+  local selected
+  selected=$(command -v "$1")
+  [[ -x "$selected" && -x "$2" ]]
+  [[ $(readlink -e "$selected") == $(readlink -e "$2") ]]
+}
 . /etc/os-release
 [[ $ID == ubuntu && $VERSION_ID == "$expected_os" ]]
 [[ $(id -u) == 1000 && $(nproc) == "$expected_cpus" ]]
@@ -38,6 +45,10 @@ with open('/etc/chickadee/image-compatibility.json') as stream:
 assert report['installed_toolcache'], 'missing developer toolcache provenance'
 PY
 for tool in git git-lfs unzip tar gzip zstd jq go node npm python3 gcc g++ "$expected_clang" cmake ninja java mvn ruby php composer docker podman buildah skopeo cargo rustc rustup dotnet firefox google-chrome geckodriver; do command -v "$tool"; done
+assert_default_executable clang "/usr/bin/$expected_clang"
+assert_default_executable java "$JAVA_HOME/bin/java"
+clang --version
+java -version
 test "$(go env GOVERSION)" = go1.27.2
 test "$(node --version)" = "$expected_node"
 for version in 1.26.9 1.27.2; do
