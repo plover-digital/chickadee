@@ -1,5 +1,8 @@
 # chickadee
 
+This is the legacy worker security maintenance line. Read the
+[backport scope and release recipe](docs/worker-security-backport.md) before use.
+
 A small, self-hosted GitHub Actions runner pool for one Linux host. Each job gets an
 independently booted QEMU VM with KVM and a fresh
 qcow2 overlay. Warm guests have no GitHub credentials and no runner registration.
@@ -12,7 +15,7 @@ an ephemeral VM. Warm-VM failure and idle controller-crash recovery were checked
 Clean Ubuntu install/reboot/uninstall and fuller adversarial network/restart
 acceptance still remain. See [validation status](docs/validation.md).
 
-Build with Go 1.26.3 on Linux amd64:
+Build with Go 1.26.9 on Linux amd64:
 
 ```sh
 make build test

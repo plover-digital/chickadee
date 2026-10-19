@@ -71,7 +71,9 @@ func (c *Client) call(ctx context.Context, op string, req command) (response, er
 	defer resp.Body.Close()
 	limited := io.LimitReader(resp.Body, MaxResponseBytes+1)
 	data, err := io.ReadAll(limited)
-	if err != nil && ctx.Err() != nil {
+	// Cancellation can race a successful EOF (including an empty HTTP 200).
+	// Preserve the caller context even when the body reader returned no error.
+	if ctx.Err() != nil {
 		c.http.CloseIdleConnections()
 		return response{}, fmt.Errorf("worker response interrupted: %w", ctx.Err())
 	}

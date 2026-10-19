@@ -1,9 +1,11 @@
-.PHONY: build test test-offline image image-ubuntu-2604 image-minimal-ubuntu-2404
+BIN_DIR ?= bin
+
+.PHONY: build test vulncheck test-offline image image-ubuntu-2604 image-minimal-ubuntu-2404
 build:
-	mkdir -p bin
-	CGO_ENABLED=0 go build -buildvcs=false -mod=readonly -trimpath -o bin/chickadee ./cmd/chickadee
-	CGO_ENABLED=0 go build -buildvcs=false -trimpath -o bin/chickadee-guest ./cmd/chickadee-guest
-	CGO_ENABLED=0 go build -buildvcs=false -mod=readonly -trimpath -o bin/chickadee-worker ./cmd/chickadee-worker
+	mkdir -p "$(BIN_DIR)"
+	CGO_ENABLED=0 go build -buildvcs=false -mod=readonly -trimpath -o "$(BIN_DIR)/chickadee" ./cmd/chickadee
+	CGO_ENABLED=0 go build -buildvcs=false -trimpath -o "$(BIN_DIR)/chickadee-guest" ./cmd/chickadee-guest
+	CGO_ENABLED=0 go build -buildvcs=false -mod=readonly -trimpath -o "$(BIN_DIR)/chickadee-worker" ./cmd/chickadee-worker
 
 test:
 	go test -race -mod=readonly ./...
@@ -19,3 +21,6 @@ image-ubuntu-2604:
 
 image-minimal-ubuntu-2404:
 	./scripts/build-image.sh
+
+vulncheck:
+	./scripts/vulncheck.sh --build "$(BIN_DIR)"
