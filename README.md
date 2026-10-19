@@ -12,12 +12,15 @@ an ephemeral VM. Warm-VM failure and idle controller-crash recovery were checked
 Clean Ubuntu install/reboot/uninstall and fuller adversarial network/restart
 acceptance still remain. See [validation status](docs/validation.md).
 
-Build with Go 1.26.3 on Linux amd64:
+Build with Go 1.26.9 on Linux amd64:
 
 ```sh
 make build test
 make image
 ```
+
+For pinned source/binary vulnerability checks and upgrade requirements, see
+[Go security baseline](docs/go-security.md).
 
 Install on a dedicated Ubuntu 24.04 amd64 host by following
 [installation](docs/install.md), including GitHub App setup. Installation only
