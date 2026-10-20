@@ -4,7 +4,7 @@
   "upstream_commit": "5f7588b285eccc2edbeb1cd79d65ee0b577e4b4a",
   "upstream_inventory_sha256": "1d144c7fb063ac2fb905133160d96b18c2ce99a7de120242540e14f6c5ca31cd",
   "upstream_image_version": "20260927.320.1",
-  "ubuntu_snapshot": "20261019T000000Z",
+  "ubuntu_snapshot": "20261020T000000Z",
   "disk_gib": 48,
   "apt_packages": [
     "bzip2",

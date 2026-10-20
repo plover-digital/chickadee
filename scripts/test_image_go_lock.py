@@ -48,8 +48,22 @@ class BaselineConsistency(unittest.TestCase):
             versions = {t['version'] for t in lock['tools'] if t['name'] == 'go'}
             self.assertEqual(versions, {'1.26.9', '1.27.2'})
             self.assertIn(lock['default_go'], versions)
-            self.assertEqual(lock['ubuntu_snapshot'], '20261019T000000Z')
+            self.assertEqual(lock['ubuntu_snapshot'], '20261020T000000Z')
         for name in ['image-compatibility.yml', 'ubuntu-2604-smoke.yml']:
             workflow = (root / '.github/workflows' / name).read_text()
             self.assertIn("go-version: '1.27.2'", workflow)
             self.assertNotIn('1.26.8', workflow)
+
+    def test_minimal_builders_and_active_guides_match_profile_snapshot(self):
+        import json
+        import re
+        root = pathlib.Path(__file__).resolve().parents[1]
+        snapshot = json.loads((root / 'guest/images/github-ubuntu-2404.json').read_text())['ubuntu_snapshot']
+        minimal = json.loads((root / 'guest/images/ubuntu-2604.json').read_text())
+        self.assertEqual(minimal['snapshot'], snapshot)
+        builder = (root / 'scripts/build-image.sh').read_text()
+        self.assertEqual(re.search(r'^snapshot=(\d{8}T\d{6}Z)$', builder, re.M).group(1), snapshot)
+        for name in ['install.md', 'ubuntu-2604.md', 'image-security.md']:
+            with self.subTest(guide=name):
+                dates = set(re.findall(r'20\d{6}T\d{6}Z', (root / 'docs' / name).read_text()))
+                self.assertEqual(dates, {snapshot})

@@ -27,7 +27,7 @@ Inputs are pinned in [ubuntu-2604.json](../guest/images/ubuntu-2604.json),
 [github-extra-ubuntu-2604.json](../guest/images/github-extra-ubuntu-2604.json).
 The Canonical base is the
 [20260927 release](https://cloud-images.ubuntu.com/releases/resolute/release-20260927/),
-with package snapshot `20261019T000000Z`. The comparison target is GitHub's
+with package snapshot `20261020T000000Z`. The comparison target is GitHub's
 [Ubuntu 26.04 image inventory 20260927.149.1](https://github.com/actions/runner-images/blob/5f7588b285eccc2edbeb1cd79d65ee0b577e4b4a/images/ubuntu/Ubuntu2604-Readme.md).
 
 The developer profile provides Go 1.26/1.27 toolcache versions, Node 22/24,
