@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 [[ $(uname -m) == x86_64 ]]
 for tool in go curl gpgv qemu-img virt-make-fs virt-customize guestfish xz; do command -v "$tool" >/dev/null; done
 release=20260926
-snapshot=20261019T000000Z
+snapshot=20261020T000000Z
 runner=2.337.0
 runner_sha=70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613
 root_tar=ubuntu-24.04-server-cloudimg-amd64-root.tar.xz
