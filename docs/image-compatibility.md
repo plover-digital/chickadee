@@ -33,7 +33,7 @@ Included:
 - The official toolset's vital/common/command APT package groups, including
   `unzip`, GNU `tar`, `gzip`, `zstd`, `sudo`, Git LFS, and common build libraries.
 - GCC/G++/Fortran 12/13/14; Clang/format/tidy 16/17/18; CMake and Ninja.
-- Go 1.26.9 and 1.27.2 (default); Node 22.23.3 and 24.21.0; Python 3.10.21,
+- Go 1.26.10 and 1.27.3 (default); Node 22.23.3 and 24.21.0; Python 3.10.21,
   3.11.16, 3.12.14, 3.13.15, 3.14.7 in `/opt/hostedtoolcache` with completion
   markers understood by `actions/setup-*`.
 - Java 17/21, Maven, Ant, Ruby, PHP/Composer, and Python pip/venv/pipx.

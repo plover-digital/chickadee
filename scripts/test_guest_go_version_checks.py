@@ -26,8 +26,8 @@ class GuestGoVersionChecks(unittest.TestCase):
                 checks = [line.strip() for line in (root / filename).read_text().splitlines()
                           if 'go env GOVERSION' in line or 'go version |' in line]
                 self.assertEqual(len(checks), 2 if filename.endswith(("rocky-replacement-smoke.yml", "ubuntu-developer-replacement-smoke.yml")) else 1)
-                for version, accepted in [('go1.27.2', True), ('go1.27.20', False),
-                                          ('go1x27y2', False), ('go1.27.2rc1', False)]:
+                for version, accepted in [('go1.27.3', True), ('go1.27.30', False),
+                                          ('go1x27y3', False), ('go1.27.3rc1', False)]:
                     with self.subTest(file=filename, version=version):
                         env = dict(os.environ, PATH=directory + ':' + os.environ['PATH'],
                                    MOCK_GO_VERSION=version)

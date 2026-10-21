@@ -32,7 +32,7 @@ with package snapshot `20261020T000000Z`. The comparison target is GitHub's
 
 The developer profile provides Go 1.26/1.27 toolcache versions, Node 22/24,
 and Python 3.10–3.14 archives built specifically for Ubuntu 26.04. Ubuntu 24.04
-Python archives are not copied into this image. Defaults are Go 1.27.2,
+Python archives are not copied into this image. Defaults are Go 1.27.3,
 Node 24.21.0 and Java 17; Java 11, 21 and 25 are also available. Native Python
 follows Ubuntu's Python 3.14 package, and setup-python can select the pinned
 toolcache versions. The profile includes compilers, Docker inside the guest,

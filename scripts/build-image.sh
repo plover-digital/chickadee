@@ -28,7 +28,7 @@ assert digest==checks[0], 'Ubuntu root checksum mismatch'
 PY
 curl --silent --show-error --fail --retry 3 --connect-timeout 15 --max-time 600 --location --proto '=https' --tlsv1.2 "https://github.com/actions/runner/releases/download/v$runner/actions-runner-linux-x64-$runner.tar.gz" -o build/downloads/runner.tar.gz
 printf '%s  %s\n' "$runner_sha" build/downloads/runner.tar.gz | sha256sum --check
-GOTOOLCHAIN=go1.27.2 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o build/chickadee-guest ./cmd/chickadee-guest
+GOTOOLCHAIN=go1.27.3 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o build/chickadee-guest ./cmd/chickadee-guest
 xz --decompress --stdout "build/downloads/$root_tar" > build/root.tar
 export LIBGUESTFS_BACKEND=direct
 # Use KVM for trusted image editing where available; software emulation is a
@@ -118,7 +118,7 @@ ln -s "vmlinuz-$version" images/vmlinuz
 ln -s "initrd-$version" images/initrd
 mv build/base.qcow2 images/base.qcow2
 printf '{"disk_gib":16,"os":"ubuntu","os_version":"24.04","architecture":"amd64","machine":"microvm","ubuntu_release":"%s","snapshot":"%s","runner":"%s","kernel":"%s"}\n' "$release" "$snapshot" "$runner" "$version" > images/manifest.json
-GOTOOLCHAIN=go1.27.2 go version -m "build/chickadee-guest" > "images/guest-build.txt"
+GOTOOLCHAIN=go1.27.3 go version -m "build/chickadee-guest" > "images/guest-build.txt"
 (cd images && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt package-provenance.json guest-build.txt > SHA256SUMS)
 chmod 0444 images/*
 echo 'Image built. Keep the manifest and checksums with these immutable artifacts.'

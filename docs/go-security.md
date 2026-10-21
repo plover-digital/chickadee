@@ -1,12 +1,22 @@
 # Go build and vulnerability baseline
 
-Host builds and CI use Go **1.26.9**, the patched supported 1.26 release verified
-on 2026-10-19 against the [official release history](https://go.dev/doc/devel/release).
+Host builds and CI use Go **1.26.10**, the patched supported 1.26 release verified
+on 2026-10-21 against the [official release history](https://go.dev/doc/devel/release).
 The module retains its Go 1.25.3 language minimum for downstream worker API
-consumers, with `toolchain go1.26.9` selecting the build baseline. The language
-minimum is not a security recommendation. Use `GOTOOLCHAIN=go1.26.9` for an exact
+consumers, with `toolchain go1.26.10` selecting the build baseline. The language
+minimum is not a security recommendation. Use `GOTOOLCHAIN=go1.26.10` for an exact
 baseline build; Go's default automatic selection can use a newer installed Go.
 Keep the public module checksum database enabled.
+
+Go 1.26.10 and 1.27.3 fix [GO-2026-6809 / CVE-2026-111943](https://pkg.go.dev/vuln/GO-2026-6809).
+The [upstream change](https://go.dev/cl/851047) rejects chains containing any
+of eight distrusted SHA-256 public-key hashes, including cross-signed certificates,
+in both the Go verifier and the macOS/Windows platform-verifier paths. This does
+not depend on those certificates having been removed from the system trust store.
+Rebuild every Go executable, including standalone controllers, workers, guest
+bootstraps and the optional macOS netproxy module. Update OS trust separately for
+non-Go clients. Guest tool caches use 1.26.10 and 1.27.3; the image bootstrap uses
+1.27.3. No runtime dependency versions or wire/state formats change in this patch.
 
 `golang.org/x/sys` is updated from v0.42.0 to v0.44.0, the first version fixing
 [GO-2026-5024](https://pkg.go.dev/vuln/GO-2026-5024). Its affected API is Windows-only;
@@ -20,7 +30,7 @@ supported controller platform.
 On Linux amd64, with Go, Python 3, Make, Bash and `sha256sum` available:
 
 ```sh
-export GOTOOLCHAIN=go1.26.9
+export GOTOOLCHAIN=go1.26.10
 make build test
 make vulncheck
 ```

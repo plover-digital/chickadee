@@ -49,9 +49,9 @@ assert_default_executable clang "/usr/bin/$expected_clang"
 assert_default_executable java "$JAVA_HOME/bin/java"
 clang --version
 java -version
-test "$(go env GOVERSION)" = go1.27.2
+test "$(go env GOVERSION)" = go1.27.3
 test "$(node --version)" = "$expected_node"
-for version in 1.26.9 1.27.2; do
+for version in 1.26.10 1.27.3; do
   test -f "$RUNNER_TOOL_CACHE/go/$version/x64.complete"
   test "$(GOTOOLCHAIN=local "$RUNNER_TOOL_CACHE/go/$version/x64/bin/go" env GOVERSION)" = "go$version"
 done
