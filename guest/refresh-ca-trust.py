@@ -125,6 +125,72 @@ def verify_rocky_distrust(policy):
     return sorted(expected)
 
 
+def java_store_entries(keytool, store):
+    """Read aliases and DER identities, independent of localized keytool output."""
+    output = run(str(keytool), '-J-Duser.language=en', '-J-Duser.country=US', '-J-Xmx128m',
+                 '-list', '-rfc', '-keystore', str(store), '-storepass', 'changeit',
+                 capture_output=True).stdout
+    entries = {}
+    for section in re.split(rb'(?m)^Alias name: ', output)[1:]:
+        alias = section.splitlines()[0].decode()
+        certificates = PEM.findall(section)
+        if len(certificates) != 1 or b'Entry type: trustedCertEntry' not in section:
+            raise ValueError('cacerts must contain only single-certificate trusted entries')
+        if alias in entries:
+            raise ValueError('duplicate Java trust alias')
+        pem = certificates[0]
+        entries[alias] = {'sha256': hashlib.sha256(ssl.PEM_cert_to_DER_cert(pem.decode())).hexdigest(),
+                          'spki_sha256': spki(pem)}
+    if not entries:
+        raise ValueError('empty or unparseable Java cacerts')
+    return entries
+
+
+def refresh_java_stores(policy, jvm=pathlib.Path('/usr/lib/jvm')):
+    """Remove only authenticated incident root keys; preserve other aliases/DER."""
+    # Validate the public root identities before considering any keystore edit.
+    blocked = set()
+    for root in policy['roots']:
+        pem = root['pem'].encode()
+        if (PEM.fullmatch(pem.strip()) is None or
+                hashlib.sha256(ssl.PEM_cert_to_DER_cert(pem.decode())).hexdigest().upper() != root['sha256'] or
+                spki(pem) != root['spki_sha256']):
+            raise ValueError('primary root certificate/SPKI checksum mismatch')
+        blocked.add(root['spki_sha256'])
+    stores = {}
+    for java in sorted(jvm.glob('*/bin/java')):
+        home = java.resolve().parent.parent
+        store = (home / 'lib/security/cacerts').resolve(strict=True)
+        keytool = home / 'bin/keytool'
+        if not keytool.is_file():
+            raise ValueError('missing JDK keytool: ' + str(home))
+        stores.setdefault(store, {'keytool': keytool, 'homes': set()})['homes'].add(str(home))
+    reports = []
+    for store, info in stores.items():
+        before = java_store_entries(info['keytool'], store)
+        retained = {a: c for a, c in before.items() if c['spki_sha256'] not in blocked}
+        removed = {a: c for a, c in before.items() if c['spki_sha256'] in blocked}
+        if removed:
+            # keytool edits a private same-filesystem copy. Never edit a live
+            # image or leave a partly updated shared JDK store on an error.
+            with tempfile.TemporaryDirectory(dir=store.parent) as directory:
+                temporary = pathlib.Path(directory) / 'cacerts'
+                shutil.copy2(store, temporary)
+                for alias in removed:
+                    run(str(info['keytool']), '-J-Xmx128m', '-delete', '-alias', alias, '-keystore',
+                        str(temporary), '-storepass', 'changeit')
+                if java_store_entries(info['keytool'], temporary) != retained:
+                    raise ValueError('Java refresh changed unaffected trust entries')
+                os.chown(temporary, store.stat().st_uid, store.stat().st_gid)
+                temporary.replace(store)
+        if java_store_entries(info['keytool'], store) != retained:
+            raise ValueError('Java effective cacerts verification failed')
+        reports.append({'path': str(store), 'jdk_homes': sorted(info['homes']),
+                        'removed': removed, 'retained_aliases': len(retained),
+                        'sha256': hashlib.sha256(store.read_bytes()).hexdigest()})
+    return reports
+
+
 def install(policy, inputs):
     if os.geteuid() != 0:
         raise ValueError('run only as root inside the offline image copy')
@@ -137,8 +203,11 @@ def install(policy, inputs):
         run('dpkg', '--install', str(inputs / package['filename']))
         actual = run('dpkg-query', '-W', '-f=${Version}', 'ca-certificates', capture_output=True, text=True).stdout
         run('dpkg', '--compare-versions', actual, 'ge', policy['ubuntu_ca_versions'][version])
-        # Rebuild Java's hook-managed trust store too, including root removals.
+        # Finish the vendor Java trigger rather than assuming the shell hook
+        # synchronously rebuilt cacerts. Inspect every actual JDK store below.
         run('update-ca-certificates', '--fresh')
+        if pathlib.Path('/var/lib/dpkg/info/ca-certificates-java.postinst').is_file():
+            run('dpkg', '--triggers-only', 'ca-certificates-java')
         ca_file, ca_dir = '/etc/ssl/certs/ca-certificates.crt', '/etc/ssl/certs'
     elif distro == 'rocky' and version == '10.2':
         ca_file, ca_dir = '/etc/pki/tls/certs/ca-bundle.crt', '/etc/pki/tls/certs'
@@ -151,6 +220,8 @@ def install(policy, inputs):
         raise ValueError('unsupported image OS')
     if blocked_certificates(pathlib.Path(ca_file).read_bytes(), policy):
         raise ValueError('system CA bundle still trusts an affected root key')
+
+    java_stores = refresh_java_stores(policy)
 
     wheels = {}
     for entry in policy['python_wheels']:
@@ -241,6 +312,7 @@ def install(policy, inputs):
     os.chown(environment, 0, 0)
     report = {'schema': 1, 'incident': policy['incident'], 'system_ca_file': ca_file,
               'system_ca_sha256': hashlib.sha256(pathlib.Path(ca_file).read_bytes()).hexdigest(),
+              'java_stores': java_stores,
               'purpose_independent_rocky_distrusted_keys': rocky_distrusted_keys, 'go_toolcache': go_changes, 'policy': policy, 'ensurepip_wheel_ca_updates': wheel_updates, 'python_interpreters': [str(p) for p in pythons],
               'node_mitigation': '--use-openssl-ca; built-in roots remain unchanged'}
     (config / 'ca-trust.json').write_text(json.dumps(report, indent=2) + '\n')
@@ -253,9 +325,20 @@ def main():
     group.add_argument('--download', type=pathlib.Path)
     group.add_argument('--install', type=pathlib.Path)
     group.add_argument('--verify', type=pathlib.Path)
+    group.add_argument('--refresh-java-report', type=pathlib.Path,
+                       help='offline private copy only: complete Ubuntu triggers and refresh actual JDK stores')
     args = parser.parse_args()
     policy = json.loads(args.policy.read_text())
-    if args.verify:
+    if args.refresh_java_report:
+        if os.geteuid() != 0:
+            raise ValueError('Java refresh requires root inside an offline private image copy')
+        if pathlib.Path('/var/lib/dpkg/info/ca-certificates-java.postinst').is_file():
+            run('dpkg', '--triggers-only', 'ca-certificates-java')
+        report = {'schema': 1, 'incident': policy['incident'], 'java_stores': refresh_java_stores(policy)}
+        if not report['java_stores']:
+            raise ValueError('no JDK found for Java-only refresh')
+        args.refresh_java_report.write_text(json.dumps(report, indent=2) + '\n')
+    elif args.verify:
         download(policy, args.verify, offline=True)
     elif args.download:
         download(policy, args.download)
