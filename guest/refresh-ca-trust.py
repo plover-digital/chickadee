@@ -128,7 +128,13 @@ def install(policy, inputs):
     pythons += sorted(pathlib.Path('/opt/hostedtoolcache/Python').glob('*/x64/bin/python3'))
     for python in pythons:
         env = dict(os.environ, PYTHONPATH=str(wheels['pip']), PIP_CONFIG_FILE='/dev/null', PIP_DISABLE_PIP_VERSION_CHECK='1')
-        args = ['--break-system-packages', '--prefix=/usr/local', '--ignore-installed'] if python == pythons[0] else []
+        args = []
+        if python == pythons[0]:
+            args = ['--break-system-packages', '--ignore-installed']
+            # Ubuntu's default posix_local scheme already targets /usr/local.
+            # Supplying --prefix selects posix_prefix and an unsearched path.
+            if distro == 'rocky':
+                args += ['--prefix=/usr/local']
         run(str(python), '-m', 'pip', 'install', '--no-index', '--no-deps', '--no-compile', '--upgrade',
             *args, *(str(wheels[name]) for name in ('pip', 'certifi')), env=env)
         run(str(python), '-c', 'import pip,certifi; assert pip.__version__ == "26.2.2"; assert certifi.__version__ == "2026.10.19"')
