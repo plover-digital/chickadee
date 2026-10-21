@@ -4,6 +4,8 @@ Review date: 2026-10-20 UTC. This is a source baseline and release procedure,
 not evidence that images have been built or deployed. Follow issue
 [#39](https://github.com/plover-digital/chickadee/issues/39) for artifact acceptance.
 Host updates do not patch a guest kernel or its embedded runtimes.
+See [eMudhra trust remediation](ca-trust-refresh.md) for the separately pinned
+CA/runtime refresh and incremental immutable-bundle procedure.
 
 ## Reviewed inputs and outstanding vendor status
 
