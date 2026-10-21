@@ -36,7 +36,7 @@ extra=json.load(open('guest/images/github-extra-tools.json'))
 with tarfile.open('build/github-compatible/extra-tools.tar','w') as tar:
  for e in extra['tools']:tar.add(pathlib.Path('build/github-compatible/extra-downloads')/e['filename'],arcname=e['filename'])
 PY
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o build/github-compatible/chickadee-guest ./cmd/chickadee-guest
+GOTOOLCHAIN=go1.26.10 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o build/github-compatible/chickadee-guest ./cmd/chickadee-guest
 virt-customize -a "$out/working.qcow2" \
   --upload build/github-compatible/chickadee-guest:/usr/local/bin/chickadee-guest \
   --upload guest/network.sh:/usr/local/bin/chickadee-network \

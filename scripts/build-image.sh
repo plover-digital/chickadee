@@ -28,7 +28,7 @@ assert digest==checks[0], 'Ubuntu root checksum mismatch'
 PY
 curl --silent --show-error --fail --retry 3 --connect-timeout 15 --max-time 600 --location --proto '=https' --tlsv1.2 "https://github.com/actions/runner/releases/download/v$runner/actions-runner-linux-x64-$runner.tar.gz" -o build/downloads/runner.tar.gz
 printf '%s  %s\n' "$runner_sha" build/downloads/runner.tar.gz | sha256sum --check
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o build/chickadee-guest ./cmd/chickadee-guest
+GOTOOLCHAIN=go1.26.10 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o build/chickadee-guest ./cmd/chickadee-guest
 xz --decompress --stdout "build/downloads/$root_tar" > build/root.tar
 export LIBGUESTFS_BACKEND=direct
 # Use KVM for trusted image editing where available; software emulation is a

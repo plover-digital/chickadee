@@ -56,7 +56,7 @@ for e in entries:
 with tarfile.open('build/rocky-downloads/rpms.tar','w') as tar:
  for e in entries:tar.add(root/e['name'],arcname=e['name'])
 PY
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o build/chickadee-guest ./cmd/chickadee-guest
+GOTOOLCHAIN=go1.26.10 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o build/chickadee-guest ./cmd/chickadee-guest
 export LIBGUESTFS_BACKEND=direct
 if [[ -r /dev/kvm && -w /dev/kvm ]]; then export LIBGUESTFS_BACKEND_SETTINGS=force_kvm; else export LIBGUESTFS_BACKEND_SETTINGS=force_tcg; fi
 qemu-img create -q -f qcow2 build/rocky-base.qcow2 48G
