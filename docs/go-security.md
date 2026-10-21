@@ -177,3 +177,12 @@ evidence. It tests script environment propagation without downloading modules or
 running a full vulnerability scan; actual source/binary scans remain release
 checks. Prior evidence lacking this policy must be reassessed or rerun; this
 change does not alter runtime binaries, protocols, configuration, or state.
+
+### Offline local unit checks
+
+`make test-offline` uses only the installed compiler (`GOTOOLCHAIN=local`),
+disables module downloads and validates a stable patched Go 1.26.10+ or 1.27.3+
+within those supported series. It never fetches the exact release compiler.
+This target runs local unit tests only; it produces no release artifacts or
+vulnerability attestation. Build, full test and vulnerability targets retain the
+exact Go 1.26.10 pin, even when requested together with `test-offline`.
