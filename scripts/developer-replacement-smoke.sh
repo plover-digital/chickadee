@@ -45,6 +45,9 @@ with open('/etc/chickadee/image-compatibility.json') as stream:
 assert report['installed_toolcache'], 'missing developer toolcache provenance'
 PY
 for tool in git git-lfs unzip tar gzip zstd jq go node npm python3 gcc g++ "$expected_clang" cmake ninja java mvn ruby php composer docker podman buildah skopeo cargo rustc rustup dotnet firefox google-chrome geckodriver; do command -v "$tool"; done
+# Source package versions and every installed cohort member must be fixed.
+# PHP CLI can also serve untrusted HTTP; command presence is not acceptance.
+python3 scripts/check-php-security.py
 assert_default_executable clang "/usr/bin/$expected_clang"
 assert_default_executable java "$JAVA_HOME/bin/java"
 clang --version

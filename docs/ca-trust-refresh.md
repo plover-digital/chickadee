@@ -159,3 +159,7 @@ actual guest Node environment/identity, Python import/default and vendored store
 and all 12 offline chains; retain exact runtime versions and outputs. These checks
 are pending until candidate image access is authorized. A source PR must not be
 reported as completion of those artifact or deployment gates.
+
+For the independent narrow PHP fix and combined immutable candidate path, see
+[PHP security refresh](php-security-refresh.md). Existing CA-only candidates remain
+unchanged; PHP and CA consumer acceptance must use the final combined candidate.

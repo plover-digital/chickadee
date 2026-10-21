@@ -1,0 +1,678 @@
+{
+  "schema": 1,
+  "notice": "https://ubuntu.com/security/notices/USN-8948-1",
+  "cves": [
+    "CVE-2026-109618",
+    "CVE-2026-109619"
+  ],
+  "releases": {
+    "24.04": {
+      "suite": "noble-security",
+      "source": "php8.3",
+      "minimum_version": "8.3.6-0ubuntu0.24.04.13",
+      "version": "8.3.6-0ubuntu0.24.04.13",
+      "authentication": {
+        "inrelease_url": "https://security.ubuntu.com/ubuntu/dists/noble-security/InRelease",
+        "inrelease_sha256": "30c85111f1ad6efe5f1930cd42c90a041519322ef5dc2c2fcb4c09c06f16ce38",
+        "signing_fingerprint": "F6ECB3762474EDA9D21B7022871920D1991BC93C",
+        "date": "Wed, 21 Oct 2026 14:53:33 UTC",
+        "indexes": [
+          {
+            "path": "main/binary-amd64/Packages.xz",
+            "sha256": "2d2801bebcd0f7606641f12f77679318fcf78b6d378571fe11c5871a6fe20dbc",
+            "size": 1145304,
+            "url": "https://security.ubuntu.com/ubuntu/dists/noble-security/main/binary-amd64/by-hash/SHA256/2d2801bebcd0f7606641f12f77679318fcf78b6d378571fe11c5871a6fe20dbc"
+          },
+          {
+            "path": "universe/binary-amd64/Packages.xz",
+            "sha256": "853f9d0f08460585dcc2ba5aea4d322dbad8eb6ab13b2f58087cf2aca98cdfc0",
+            "size": 1222344,
+            "url": "https://security.ubuntu.com/ubuntu/dists/noble-security/universe/binary-amd64/by-hash/SHA256/853f9d0f08460585dcc2ba5aea4d322dbad8eb6ab13b2f58087cf2aca98cdfc0"
+          }
+        ]
+      },
+      "packages": [
+        {
+          "package": "libapache2-mod-php8.3",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "libapache2-mod-php8.3_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.3/libapache2-mod-php8.3_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "8ee7dffb3ac1640d031f8c3d3e7bb2d48672dfe7bdfcffbae13e72b419a8e3ef",
+          "size": 1862590
+        },
+        {
+          "package": "libphp8.3-embed",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "libphp8.3-embed_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.3/libphp8.3-embed_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "30ff808f56d95b992931f770a57362d653a50ce6f7ad9893f80888b2a17b6995",
+          "size": 1876124
+        },
+        {
+          "package": "php8.3",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "all",
+          "filename": "php8.3_8.3.6-0ubuntu0.24.04.13_all.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.3/php8.3_8.3.6-0ubuntu0.24.04.13_all.deb",
+          "sha256": "7200c268faa0fd8dcca4d3d8b66a40a11927f8085c44734c2e43a9184e28c58e",
+          "size": 9172
+        },
+        {
+          "package": "php8.3-bcmath",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-bcmath_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.3/php8.3-bcmath_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "698f569c6692ece0089eaea6ab8697441b65f5d0821f63028e1a475ce5e7a65b",
+          "size": 16616
+        },
+        {
+          "package": "php8.3-bz2",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-bz2_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.3/php8.3-bz2_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "19d05d24f60482a99768776ab832a243533c2cc8ac450f1a50c50bf441c0af65",
+          "size": 11684
+        },
+        {
+          "package": "php8.3-cgi",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-cgi_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.3/php8.3-cgi_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "ec8967a79abbbd0f05ca7ab2055d3f78b99847a56176223fd689ab4893dd3a40",
+          "size": 1883752
+        },
+        {
+          "package": "php8.3-cli",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-cli_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.3/php8.3-cli_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "6868966e46f777624f8cdfd3c38dfb2a7b6c2654bcacda57dc2049ecc9ca566b",
+          "size": 1931822
+        },
+        {
+          "package": "php8.3-common",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-common_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.3/php8.3-common_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "801cae4e842e1b9e9d60a542bf18ba831bf504b2f3070404892bf3f8fb943ea4",
+          "size": 747814
+        },
+        {
+          "package": "php8.3-curl",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-curl_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.3/php8.3-curl_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "a5a9daaf2cbddb9488bf401a7020fd338d5d1c12327a774855d15e589348134b",
+          "size": 40328
+        },
+        {
+          "package": "php8.3-dba",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-dba_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.3/php8.3-dba_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "900b4aa2c2b1f02ffea5a174adf97213b17e8d47df61c47097f3771f7310b2fb",
+          "size": 26576
+        },
+        {
+          "package": "php8.3-dev",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-dev_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.3/php8.3-dev_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "99c90294533c438f623bf2b56c084f892380fbc7f04ba1bbedb10401150afc96",
+          "size": 528634
+        },
+        {
+          "package": "php8.3-enchant",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-enchant_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.3/php8.3-enchant_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "43b8cde7d609787fc8351aee92d4ed036434b69b5e62e87ad98498fc79df5af0",
+          "size": 10018
+        },
+        {
+          "package": "php8.3-fpm",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-fpm_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.3/php8.3-fpm_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "ae395e2c15c3b96da56da807a204f771a589eb5bf54a3e5e239b1f50ade2815b",
+          "size": 1941240
+        },
+        {
+          "package": "php8.3-gd",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-gd_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.3/php8.3-gd_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "34efd714cf9b2504176b46c0874317103522a52aee7ad0faae3f8cfafb54985b",
+          "size": 31146
+        },
+        {
+          "package": "php8.3-gmp",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-gmp_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.3/php8.3-gmp_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "007374a81b8e349e3f7b5a8bf2d739ceffa7db69470c48f4d458554542d0d6c7",
+          "size": 23366
+        },
+        {
+          "package": "php8.3-imap",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-imap_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.3/php8.3-imap_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "18b79ce05b61e4a788b795c55a611c0d7e7c612f8488e83e5766673ce84f0e3e",
+          "size": 34872
+        },
+        {
+          "package": "php8.3-interbase",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-interbase_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.3/php8.3-interbase_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "6ced4545175072103b166c144d8cdb4c8f3c9a37efe03c7e096b4b25aaaaffd6",
+          "size": 16602
+        },
+        {
+          "package": "php8.3-intl",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-intl_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.3/php8.3-intl_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "b159ed007a9ca557b91e8946ec8b9d29c29cc5a617baaaf80e100696ae4b5daf",
+          "size": 156896
+        },
+        {
+          "package": "php8.3-ldap",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-ldap_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.3/php8.3-ldap_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "2b16fafeb97d4d5a5bb4c12bdd77729e77e06d0f54a083f76f522d24e9efb3f1",
+          "size": 33470
+        },
+        {
+          "package": "php8.3-mbstring",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-mbstring_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.3/php8.3-mbstring_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "e47acff4ca31d3eaaa9fe6203c8faee001b2eb90bf81e24e055b6416a060e2ac",
+          "size": 510922
+        },
+        {
+          "package": "php8.3-mysql",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-mysql_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.3/php8.3-mysql_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "6e53d3593cb3f551f8859048658c9109f9ce175990ec531cda5563b304ae3d61",
+          "size": 127278
+        },
+        {
+          "package": "php8.3-odbc",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-odbc_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.3/php8.3-odbc_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "ace95b9f595159b27a599969067adc20def4bae2d2419f4fc3587ea47ad8922b",
+          "size": 35706
+        },
+        {
+          "package": "php8.3-opcache",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-opcache_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.3/php8.3-opcache_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "bb320f77b1439e33e8867990d7fa666579685f0f1583502f39b45636f855a47c",
+          "size": 372318
+        },
+        {
+          "package": "php8.3-pgsql",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-pgsql_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.3/php8.3-pgsql_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "693415e5871ab85534e90aabb42acbe9b427cdc274bcf6d2cf2cb03a8ab6baf7",
+          "size": 63020
+        },
+        {
+          "package": "php8.3-phpdbg",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-phpdbg_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.3/php8.3-phpdbg_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "a0ef310f009ffd876c84d9995e02369887d8343fbc1179d0319dc8bb3de03088",
+          "size": 1949560
+        },
+        {
+          "package": "php8.3-pspell",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-pspell_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.3/php8.3-pspell_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "e296e56d0f40dab13df53e453bd29b25229e713ee358b880a34e9b892c702a2b",
+          "size": 9330
+        },
+        {
+          "package": "php8.3-readline",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-readline_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.3/php8.3-readline_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "521280a3bc72eeab32e0329c91cb6172f9e2ee24e57d1f8fd31c05f091a62db5",
+          "size": 13614
+        },
+        {
+          "package": "php8.3-snmp",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-snmp_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.3/php8.3-snmp_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "ebca37c04ce33dbbd88debd33fd7cc6c1b07d94778825fc1410fe2def6a7fa14",
+          "size": 23036
+        },
+        {
+          "package": "php8.3-soap",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-soap_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.3/php8.3-soap_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "a2af22ffe6f01002e9ab657925c358a839193666f391ebcc5a4663675289077e",
+          "size": 136940
+        },
+        {
+          "package": "php8.3-sqlite3",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-sqlite3_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.3/php8.3-sqlite3_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "0de5389747a3a84151634aeb3e93e4b1179801920df155d12eeda493c87daf3f",
+          "size": 34202
+        },
+        {
+          "package": "php8.3-sybase",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-sybase_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.3/php8.3-sybase_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "88bd4b87065bac9149383de95fcbe7793948c9cb04685061819e127870eac046",
+          "size": 13028
+        },
+        {
+          "package": "php8.3-tidy",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-tidy_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.3/php8.3-tidy_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "053e22ea73c8766d47dc85f9ee6270045e7ee18fe25df5a7cd85a5aafe0f0568",
+          "size": 20936
+        },
+        {
+          "package": "php8.3-xml",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-xml_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.3/php8.3-xml_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "ed4635e7ca1db6f62826fd915ea2d9ae19252c6b60bca812297d277b780b2fa1",
+          "size": 127020
+        },
+        {
+          "package": "php8.3-xsl",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "all",
+          "filename": "php8.3-xsl_8.3.6-0ubuntu0.24.04.13_all.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.3/php8.3-xsl_8.3.6-0ubuntu0.24.04.13_all.deb",
+          "sha256": "19855408fb04b71c4a067370d55be2feed0417990e4005b65d3307d811f2b794",
+          "size": 8842
+        },
+        {
+          "package": "php8.3-zip",
+          "version": "8.3.6-0ubuntu0.24.04.13",
+          "architecture": "amd64",
+          "filename": "php8.3-zip_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.3/php8.3-zip_8.3.6-0ubuntu0.24.04.13_amd64.deb",
+          "sha256": "445f24aeb9ecc14f318b31f46c672f0ee2eee40dcc5a01d194a9622843a1c685",
+          "size": 29500
+        }
+      ]
+    },
+    "26.04": {
+      "suite": "resolute-security",
+      "source": "php8.5",
+      "minimum_version": "8.5.4-0ubuntu1.5",
+      "version": "8.5.4-0ubuntu1.5",
+      "authentication": {
+        "inrelease_url": "https://security.ubuntu.com/ubuntu/dists/resolute-security/InRelease",
+        "inrelease_sha256": "4308c707ced01bd4ed4a0101f41d2ee8a18821ceaecd615540df0957a475f314",
+        "signing_fingerprint": "F6ECB3762474EDA9D21B7022871920D1991BC93C",
+        "date": "Wed, 21 Oct 2026 15:01:51 UTC",
+        "indexes": [
+          {
+            "path": "main/binary-amd64/Packages.xz",
+            "sha256": "7047d5c2753453e69c08f16b30d28afb2a355942ae40d1e0f75f92aed9236393",
+            "size": 606108,
+            "url": "https://security.ubuntu.com/ubuntu/dists/resolute-security/main/binary-amd64/by-hash/SHA256/7047d5c2753453e69c08f16b30d28afb2a355942ae40d1e0f75f92aed9236393"
+          },
+          {
+            "path": "universe/binary-amd64/Packages.xz",
+            "sha256": "2c48bf1ff8cefe62801087a980f5ea9b9d1cce5abee80c4f902992e4666ddc42",
+            "size": 205060,
+            "url": "https://security.ubuntu.com/ubuntu/dists/resolute-security/universe/binary-amd64/by-hash/SHA256/2c48bf1ff8cefe62801087a980f5ea9b9d1cce5abee80c4f902992e4666ddc42"
+          }
+        ]
+      },
+      "packages": [
+        {
+          "package": "libapache2-mod-php8.5",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "libapache2-mod-php8.5_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.5/libapache2-mod-php8.5_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "8d9de05c51c3475915f12c3eb20bf35b312a2da4da3640df1d93049f45ab7362",
+          "size": 3081156
+        },
+        {
+          "package": "libphp8.5-embed",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "libphp8.5-embed_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.5/libphp8.5-embed_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "681c75b8dc333ac2b40fce4f8fa1207a98d6646098ade29a03c31600e8b3584d",
+          "size": 3083606
+        },
+        {
+          "package": "php8.5",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "all",
+          "filename": "php8.5_8.5.4-0ubuntu1.5_all.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.5/php8.5_8.5.4-0ubuntu1.5_all.deb",
+          "sha256": "53d266f1d71e3752c79f98aae8d24a937df3cb55fed9136545b637ab281f2b7c",
+          "size": 9170
+        },
+        {
+          "package": "php8.5-bcmath",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-bcmath_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.5/php8.5-bcmath_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "49f3f729372d66098a4e3baa5fd83aa33cedd197a5280741468f9ccbab93e0d7",
+          "size": 29622
+        },
+        {
+          "package": "php8.5-bz2",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-bz2_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.5/php8.5-bz2_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "c87221b9a320bc5e76afc96d4460f7167c263b239ac5010343e7aa4792a4154d",
+          "size": 12104
+        },
+        {
+          "package": "php8.5-cgi",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-cgi_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.5/php8.5-cgi_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "1decf02f3a26790daa8e436539b96ef4c5d3cb0cd75bb01912fa6c6e2fa46be4",
+          "size": 6197510
+        },
+        {
+          "package": "php8.5-cli",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-cli_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.5/php8.5-cli_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "a3865b136c6fa6d4f10be482e7131eb25e85976f246a730a0cfddbcb72f9156e",
+          "size": 3153608
+        },
+        {
+          "package": "php8.5-common",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-common_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.5/php8.5-common_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "a4e93169f9351f4db59e7717fc214a33fa7bd4b2f47dee6783c04ebbfad8dd54",
+          "size": 823022
+        },
+        {
+          "package": "php8.5-curl",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-curl_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.5/php8.5-curl_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "7ff70240fc54f70576b18f9583517d128e614f4b50b1c9332ee504a15bdd4883",
+          "size": 46370
+        },
+        {
+          "package": "php8.5-dba",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-dba_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.5/php8.5-dba_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "d06e87cf5d7d3b74613af66f603967707d0bcfcfde4918f1a76b546b7bf4a8e7",
+          "size": 27622
+        },
+        {
+          "package": "php8.5-dev",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-dev_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.5/php8.5-dev_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "d7aad5fd7d27676ba2a3f15c44b1ded6a370e0ed7a2b21bdd53a84ebd5d41b27",
+          "size": 625062
+        },
+        {
+          "package": "php8.5-enchant",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-enchant_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.5/php8.5-enchant_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "30b3297e8b15123849c0ac101a931cb7890f6a2cbacbc59ed72b32e5bbaf42c4",
+          "size": 11238
+        },
+        {
+          "package": "php8.5-fpm",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-fpm_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.5/php8.5-fpm_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "3a5d154e58c814cfa62600710ea23f4699ad7d3aefbe66a6a5154f0f9690d118",
+          "size": 3159694
+        },
+        {
+          "package": "php8.5-gd",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-gd_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.5/php8.5-gd_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "6707452c52985c13e11ac095e54e4a22e69779c013fbeb43dc2fd97d640a70db",
+          "size": 40806
+        },
+        {
+          "package": "php8.5-gmp",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-gmp_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.5/php8.5-gmp_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "7e86f092c572d45ccb83df390c6624fddb2005a06148b1d5db0925c24bb3cffe",
+          "size": 21456
+        },
+        {
+          "package": "php8.5-interbase",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-interbase_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.5/php8.5-interbase_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "998e9aaf86bb54225f72c23db5e249d39843e3da9bc3019978dd7da34688af1e",
+          "size": 23720
+        },
+        {
+          "package": "php8.5-intl",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-intl_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.5/php8.5-intl_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "2d4d4dba1ba5951c30c6927d655759e8d0005b372ef62307172f46985280389f",
+          "size": 173874
+        },
+        {
+          "package": "php8.5-ldap",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-ldap_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.5/php8.5-ldap_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "79c05addb5dbcd63432f3936a5e207875d98317ca4f092a99258ccbf101c118a",
+          "size": 35370
+        },
+        {
+          "package": "php8.5-litespeed",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-litespeed_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.5/php8.5-litespeed_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "f8a2cf7454dcf498734877128f7f4960e17e77c8695f7de29a31189befc51fe3",
+          "size": 3104052
+        },
+        {
+          "package": "php8.5-mbstring",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-mbstring_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.5/php8.5-mbstring_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "783d871f7896176a8819d2ba3c1d34b01f11bd7e0c77e783f004e53808812383",
+          "size": 524812
+        },
+        {
+          "package": "php8.5-mysql",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-mysql_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.5/php8.5-mysql_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "d80c2f98d0acbda065cf98a772ddc147916ce71eec25df6ef54b0b77ef31b907",
+          "size": 130576
+        },
+        {
+          "package": "php8.5-odbc",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-odbc_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.5/php8.5-odbc_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "c8b05f1b4e1591f85e4d08716b387fdbc5f9b95656ea75864e0253c8e16c6495",
+          "size": 40846
+        },
+        {
+          "package": "php8.5-pgsql",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-pgsql_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.5/php8.5-pgsql_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "1ff61f8690d61aadc65d5a4de61927364f601c978725c9575978c2e62209959d",
+          "size": 80930
+        },
+        {
+          "package": "php8.5-phpdbg",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-phpdbg_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.5/php8.5-phpdbg_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "ca7ff399b76c3667b71ba448dec5f61d415f07dda4480c2814070788061695af",
+          "size": 3181698
+        },
+        {
+          "package": "php8.5-readline",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-readline_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.5/php8.5-readline_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "ccaceb94156a4dccc87b978d8bc28ed3602429cdad85d526de162594938543c9",
+          "size": 14066
+        },
+        {
+          "package": "php8.5-snmp",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-snmp_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.5/php8.5-snmp_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "a1be319ccffdc5b91bdc73eebc29f6c004bb09e2155b2e8e2d9b07f3c943ecd5",
+          "size": 23886
+        },
+        {
+          "package": "php8.5-soap",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-soap_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.5/php8.5-soap_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "3a64d2ad6bf17ac30121c9941157b3faa2fd72ab8e1d2cea93e504bc9a958b57",
+          "size": 142754
+        },
+        {
+          "package": "php8.5-sqlite3",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-sqlite3_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.5/php8.5-sqlite3_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "34fade70ec6a11ba694c5ab65e7821967a6e2d976c40932e59bd6ad9d7ba0e65",
+          "size": 40498
+        },
+        {
+          "package": "php8.5-sybase",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-sybase_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.5/php8.5-sybase_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "86cfa67d4303ef918aaa31edddc43e630de167db061324f3c147c6fef2cec5d6",
+          "size": 14740
+        },
+        {
+          "package": "php8.5-tidy",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-tidy_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.5/php8.5-tidy_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "fcf8d909e7408d9e2b837f3bae2c9069e6c215027b4c708da3516de5a020eb9a",
+          "size": 21556
+        },
+        {
+          "package": "php8.5-xml",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-xml_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/p/php8.5/php8.5-xml_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "9f5e15611f0a33b78efd9bac98662d3f33bbf9f7f61a654b6cb35e4ef69ff859",
+          "size": 213324
+        },
+        {
+          "package": "php8.5-xsl",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "all",
+          "filename": "php8.5-xsl_8.5.4-0ubuntu1.5_all.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.5/php8.5-xsl_8.5.4-0ubuntu1.5_all.deb",
+          "sha256": "f59abac040a31928807ef18eb99bbe56fb83754e59331382ca256c9f5c1e4f2b",
+          "size": 8846
+        },
+        {
+          "package": "php8.5-zip",
+          "version": "8.5.4-0ubuntu1.5",
+          "architecture": "amd64",
+          "filename": "php8.5-zip_8.5.4-0ubuntu1.5_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/universe/p/php8.5/php8.5-zip_8.5.4-0ubuntu1.5_amd64.deb",
+          "sha256": "4aa5d4c5683f27b51e5d83ed0233e392d862437142c4fbcb113c4f22b4efba3e",
+          "size": 31730
+        }
+      ]
+    }
+  }
+}
