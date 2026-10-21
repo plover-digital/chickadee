@@ -64,6 +64,8 @@ virt-customize -a "$out/working.qcow2" \
   --delete /etc/resolv.conf --write /etc/resolv.conf:'nameserver 1.1.1.1'
 scripts/refresh-image-trust.sh "$out/working.qcow2" build/github-compatible/ca-trust
 cp "build/github-compatible/ca-trust/ca-trust.json" "$out/ca-trust.json"
+scripts/refresh-image-php.sh "$out/working.qcow2" "build/github-compatible/php-security"
+cp "build/github-compatible/php-security/php-security.json" "$out/php-security.json"
 # Discard deleted temporary archive blocks, then compact qcow2 physical file length.
 virt-sparsify --in-place "$out/working.qcow2"
 # Compact allocated blocks so startup digest checks do not scan a giant sparse file.
