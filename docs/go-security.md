@@ -3,10 +3,16 @@
 Host builds and CI use Go **1.26.10**, the patched supported 1.26 release verified
 on 2026-10-21 against the [official release history](https://go.dev/doc/devel/release).
 The module retains its Go 1.25.3 language minimum for downstream worker API
-consumers, with `toolchain go1.26.10` selecting the build baseline. The language
+consumers, with `toolchain go1.26.10` suggesting the build baseline. The language
 minimum is not a security recommendation. Use `GOTOOLCHAIN=go1.26.10` for an exact
 baseline build; Go's default automatic selection can use a newer installed Go.
-Keep the public module checksum database enabled.
+Make entrypoints override `GOTOOLCHAIN=go1.26.10`, including inherited or
+command-line `auto`; the direct vulnerability script pins the same compiler.
+A module toolchain directive alone is only a suggestion: default `auto` keeps an
+installed Go 1.27.2 because it compares newer than 1.26.10. Direct `go build`
+callers must explicitly select a patched compiler. See [Go toolchain selection](https://go.dev/doc/toolchain).
+The image builders retain explicit Go 1.27.3 for guest bootstraps, independently
+of the host Make pin. Keep the public module checksum database enabled.
 
 Go 1.26.10 and 1.27.3 fix [GO-2026-6809 / CVE-2026-111943](https://pkg.go.dev/vuln/GO-2026-6809).
 The [upstream change](https://go.dev/cl/851047) rejects chains containing any

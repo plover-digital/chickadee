@@ -3,6 +3,8 @@
 set -euo pipefail
 # Ignore persisted go env -w settings, especially source/module overlays.
 export GOENV=off
+# Match Make builds even when a newer vulnerable bundled Go runs this script.
+export GOTOOLCHAIN=go1.26.10
 # go/packages must use the Go command, never an ambient external package graph.
 # Unsetting this variable would still allow PATH discovery of gopackagesdriver.
 export GOPACKAGESDRIVER=off
