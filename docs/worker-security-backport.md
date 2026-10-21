@@ -30,13 +30,13 @@ The original Git source archive SHA-256 is
 Build the reviewed maintenance commit, with Go's module checksum database enabled:
 
 ```sh
-export GOTOOLCHAIN=go1.26.9
+export GOTOOLCHAIN=go1.26.10
 export GOMAXPROCS=2 GOFLAGS=-p=1
 make build test
 make vulncheck
 ```
 
-The toolchain directive and hosted CI use Go1.26.9. Language minimum1.25.3 is
+The toolchain directive and hosted CI use Go1.26.10. Language minimum1.25.3 is
 retained. The legacy worker links the standard library and this module; it has
 no linked x/sys dependency. `make vulncheck` installs pinned govulncheck v1.9.0,
 requires a clean committed checkout, builds/scans a temporary Git source
@@ -144,3 +144,13 @@ evidence. It tests script environment propagation without downloading modules or
 running a full vulnerability scan; actual source/binary scans remain release
 checks. Prior evidence lacking this policy must be reassessed or rerun; this
 change does not alter runtime binaries, protocols, configuration, or state.
+
+## October 2026 certificate-authority distrust update
+
+Build this maintenance lineage with Go 1.26.10 for
+[GO-2026-6809](https://pkg.go.dev/vuln/GO-2026-6809). The standard-library
+certificate verifier blocks the affected public keys even with an older trust
+pool. Rebuild and scan the exact accepted source; this compiler update does not
+permit switching an unclaimed legacy deployment to the main branch. Keep the
+existing journals, certificates and identities, drain before replacement, and
+verify the running executable hash after the operator-controlled restart.
