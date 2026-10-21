@@ -16,6 +16,32 @@ POLICY = json.loads((ROOT / 'guest/images/ca-trust.json').read_text())
 
 
 class IndependentTrust(unittest.TestCase):
+    def test_installed_java_package_without_pending_triggers_is_noop(self):
+        with patch.object(trust, 'run', return_value=subprocess.CompletedProcess([], 0, 'ca-certificates-java\tinstalled\t\n')) as run:
+            self.assertFalse(trust.complete_java_triggers())
+            self.assertEqual(run.call_count, 1)
+            self.assertEqual(run.call_args.args[0], 'dpkg-query')
+
+    def test_pending_java_trigger_is_processed_exactly(self):
+        with patch.object(trust, 'run', side_effect=[subprocess.CompletedProcess([], 0, 'ca-certificates-java\ttriggers-pending\tupdate-ca-certificates-java-fresh\n'), subprocess.CompletedProcess([], 0)]) as run:
+            self.assertTrue(trust.complete_java_triggers())
+            self.assertEqual(run.call_args.args, ('dpkg', '--triggers-only', 'ca-certificates-java'))
+
+    def test_java_trigger_state_errors_are_not_suppressed(self):
+        for output in ['garbage', 'other-package\tinstalled\t\n',
+                       'ca-certificates-java\ttriggers-pending\t\n',
+                       'ca-certificates-java\ttriggers-pending\t   \n',
+                       'ca-certificates-java\tinstalled\tpending\n',
+                       'ca-certificates-java\tunpacked\t\n',
+                       'ca-certificates-java\ttriggers-pending\tinvalid$trigger\n']:
+            with self.subTest(output=output), patch.object(trust, 'run', return_value=subprocess.CompletedProcess([], 0, output)) as run:
+                with self.assertRaises(ValueError):trust.complete_java_triggers()
+                self.assertEqual(run.call_count, 1)
+        with patch.object(trust, 'run', side_effect=subprocess.CalledProcessError(1, 'dpkg-query')):
+            with self.assertRaises(subprocess.CalledProcessError):trust.complete_java_triggers()
+        with patch.object(trust, 'run', side_effect=[subprocess.CompletedProcess([], 0, 'ca-certificates-java\ttriggers-pending\tupdate-ca-certificates-java\n'), subprocess.CalledProcessError(2, 'dpkg')]):
+            with self.assertRaises(subprocess.CalledProcessError):trust.complete_java_triggers()
+
     def test_java_shared_store_exact_key_removal_preserves_alias_der(self):
         with tempfile.TemporaryDirectory() as directory:
             root = pathlib.Path(directory)

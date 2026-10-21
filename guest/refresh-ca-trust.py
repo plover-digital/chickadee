@@ -125,6 +125,26 @@ def verify_rocky_distrust(policy):
     return sorted(expected)
 
 
+def complete_java_triggers():
+    """Process only actual pending Java triggers; an installed package is a no-op."""
+    output = run('dpkg-query', '-W',
+                 '-f=${binary:Package}\t${db:Status-Status}\t${Triggers-Pending}\n',
+                 'ca-certificates-java', capture_output=True, text=True).stdout
+    lines = output.splitlines()
+    if len(lines) != 1 or len(lines[0].split('\t')) != 3:
+        raise ValueError('malformed Java package trigger state')
+    package, state, pending = lines[0].split('\t')
+    if package != 'ca-certificates-java':
+        raise ValueError('unexpected Java trigger package identity')
+    if state == 'installed' and not pending:
+        return False
+    if (state != 'triggers-pending' or not pending.split() or
+            any(re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9+_.:/-]*', name) is None for name in pending.split())):
+        raise ValueError('unexpected Java package trigger state')
+    run('dpkg', '--triggers-only', package)
+    return True
+
+
 def java_store_entries(keytool, store):
     """Read aliases and DER identities, independent of localized keytool output."""
     output = run(str(keytool), '-J-Duser.language=en', '-J-Duser.country=US', '-J-Xmx128m',
@@ -207,7 +227,7 @@ def install(policy, inputs):
         # synchronously rebuilt cacerts. Inspect every actual JDK store below.
         run('update-ca-certificates', '--fresh')
         if pathlib.Path('/var/lib/dpkg/info/ca-certificates-java.postinst').is_file():
-            run('dpkg', '--triggers-only', 'ca-certificates-java')
+            complete_java_triggers()
         ca_file, ca_dir = '/etc/ssl/certs/ca-certificates.crt', '/etc/ssl/certs'
     elif distro == 'rocky' and version == '10.2':
         ca_file, ca_dir = '/etc/pki/tls/certs/ca-bundle.crt', '/etc/pki/tls/certs'
@@ -333,7 +353,7 @@ def main():
         if os.geteuid() != 0:
             raise ValueError('Java refresh requires root inside an offline private image copy')
         if pathlib.Path('/var/lib/dpkg/info/ca-certificates-java.postinst').is_file():
-            run('dpkg', '--triggers-only', 'ca-certificates-java')
+            complete_java_triggers()
         report = {'schema': 1, 'incident': policy['incident'], 'java_stores': refresh_java_stores(policy)}
         if not report['java_stores']:
             raise ValueError('no JDK found for Java-only refresh')

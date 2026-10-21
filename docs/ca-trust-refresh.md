@@ -172,8 +172,12 @@ module still accepting direct incident chains. These are release blockers.
 The immutable candidate must remain unchanged; apply corrections only to a new
 copy and retain the old result as a negative regression control.
 
-Ubuntu refresh now explicitly completes pending package triggers after the
-vendor fresh-store hook. It then discovers every installed JDK's actual cacerts,
+Ubuntu refresh now queries the exact Java package identity, package state and
+pending-trigger field after the vendor fresh-store hook. An installed package
+with no pending triggers is a valid no-op; only a valid triggers-pending target
+is passed to dpkg. Query failures, malformed/unconfigured states and actual dpkg
+processing errors stop the refresh. Normal installation and the Java-only helper
+share this check. It then discovers every installed JDK's actual cacerts,
 deduplicates resolved stores, and inspects aliases with that JDK's keytool.
 While Java's [upstream update remains pending](https://ops.java/security/),
 remove only aliases containing one of the four authenticated incident root
