@@ -28,9 +28,13 @@ block. TLS's 12 chains do not test code signing verification.
   unrelated OS packages or describe the whole image as an October 21 rebuild.
 - Rocky 10.2: the reviewed current BaseOS metadata still contains
   `2025.2.80_v9.0.305-102.el10`. Fedora's `2026.2.92_v9.0.319` fix is not a
-  Rocky package. While a native Rocky fix is pending, block only present roots
-  with the exact reviewed SPKIs in the image's p11-kit blocklist and regenerate
-  its extracted stores. Existing blocklist files are preserved. Replace this
+  Rocky package. While a native Rocky fix is pending, install all four primary public root certificates into the image's p11-kit
+  blocklist after verifying both certificate SHA256 and SPKI SHA256, then
+  regenerate its extracted stores. Extract the native blocklist without any
+  purpose filter and require all four keys to be distrusted, including the
+  code-signing root that a TLS-only bundle can omit. Existing blocklist files
+  are preserved. This verifies native purpose-independent distrust; the supplied
+  TLS chains still do not establish code-signing client acceptance. Replace this
   fallback with an independently resolved, signature-verified native vendor
   package when available; never transplant a Fedora RPM into Rocky.
 - Node: the [upstream fix](https://github.com/nodejs/node/pull/66871) was merged,
@@ -99,7 +103,10 @@ or live bundle switch is performed. Parent coordination owns availability,
 sustained headroom, OOM/time/disk budgets and abort decisions; ordinary paging
 alone is not an abort condition.
 
-The helper verifies the source seal and prefetches/checks every supplemental
+The helper validates the exact sealed file set, every digest and the two
+relative aliases to the manifest's sealed regular kernel/initrd targets before
+copying. It also requires the binary's actual `go version -m` compiler to equal
+the manifest's Go 1.27.3. It prefetches/checks every supplemental
 input before making an independent qcow2 copy. Set `CHICKADEE_TRUST_INPUTS`
 to a prepared read-only input cache to require local files and avoid network
 dependency during staging. It installs
@@ -139,7 +146,9 @@ and the official pip/certifi bundles reject all 12. One older cached bundle
 already omitted AAA and accepted only six; it is not an all-12 positive control.
 The unit/integration suite also verifies exact-key scope against two certificates
 with identical subjects, wheel RECORD consistency, tampered input rejection,
-and actual Node-parent to Node-child TLS trust selection using a generated local
+rejection of unsealed files/wrong kernel aliases and a mismatched actual Go
+compiler, complete purpose-independent Rocky root distrust, and actual
+Node-parent to Node-child TLS trust selection using a generated local
 canary. Set `CHICKADEE_TEST_NODE_BINARIES` to colon-separated actual runner/cache
 Node paths. The canary fails with bundled roots and succeeds with the specified
 OpenSSL file; it does not pretend to perform a complete TLS handshake using the

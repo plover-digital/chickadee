@@ -19,9 +19,10 @@ commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
 assert subprocess.check_output(['git','rev-parse',record['source_commit']],text=True).strip()==commit, 'bootstrap source must match this exact combined source'
 assert hashlib.file_digest(binary.open('rb'),'sha256').hexdigest()==record['binary_sha256'], 'bootstrap manifest checksum mismatch'
 assert record['compiler']=='go1.27.3', 'patched compiler required'
+actual=subprocess.check_output(['go','version','-m',str(binary)],text=True).splitlines()[0]
+assert actual == str(binary)+': '+record['compiler'], 'actual bootstrap compiler must match the manifest go1.27.3'
 PYBOOT
-go version -m "$bootstrap" | grep -Eq 'go1\.(26\.10|27\.3)$'
-(cd "$source_dir" && sha256sum --check SHA256SUMS)
+python3 scripts/check-image-bundle.py "$source_dir"
 mkdir -p "$out/inputs"
 cp "$bootstrap_manifest" "$out/bootstrap-build-provenance.json"
 # Verify every supplemental input before the expensive independent image copy.

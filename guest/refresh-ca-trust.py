@@ -14,6 +14,8 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import tempfile
+import ssl
 import urllib.request
 
 PEM = re.compile(rb'-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----', re.S)
@@ -91,11 +93,44 @@ def refresh_bundled_wheel(wheel, ca_data):
     return True
 
 
+def install_rocky_blocklist(policy, blocklist):
+    # Use all four hash-pinned primary certificates, independently of any
+    # purpose-filtered TLS extraction. This includes the code-signing root.
+    certificates = []
+    for root in policy['roots']:
+        pem = root['pem'].encode()
+        if len(PEM.findall(pem)) != 1 or PEM.fullmatch(pem.strip()) is None:
+            raise ValueError('expected exactly one primary root certificate')
+        der = ssl.PEM_cert_to_DER_cert(pem.decode())
+        if hashlib.sha256(der).hexdigest().upper() != root['sha256'] or spki(pem) != root['spki_sha256']:
+            raise ValueError('primary root certificate/SPKI checksum mismatch')
+        certificates.append((root['spki_sha256'], pem))
+    blocklist.mkdir(parents=True, exist_ok=True)
+    for key, pem in certificates:
+        target = blocklist / ('chickadee-emudhra-' + key.lower() + '.pem')
+        if target.exists() and target.read_bytes() != pem:
+            raise ValueError('existing trust blocklist differs: ' + str(target))
+        target.write_bytes(pem)
+
+
+def verify_rocky_distrust(policy):
+    with tempfile.TemporaryDirectory() as directory:
+        output = pathlib.Path(directory) / 'blocklist.pem'
+        # No --purpose: code signing and other EKUs must remain in scope.
+        run('trust', 'extract', '--overwrite', '--filter=blocklist', '--format=pem-bundle', str(output))
+        actual = {spki(pem) for pem in PEM.findall(output.read_bytes())}
+    expected = {root['spki_sha256'] for root in policy['roots']}
+    if not expected <= actual:
+        raise ValueError('purpose-independent p11-kit distrust missing affected root keys')
+    return sorted(expected)
+
+
 def install(policy, inputs):
     if os.geteuid() != 0:
         raise ValueError('run only as root inside the offline image copy')
     release = dict(line.split('=', 1) for line in pathlib.Path('/etc/os-release').read_text().splitlines() if '=' in line)
     distro, version = (release[k].strip('"') for k in ('ID', 'VERSION_ID'))
+    rocky_distrusted_keys = None
     if distro == 'ubuntu':
         package = policy['ubuntu_packages'][version]
         check_file(inputs / package['filename'], package)
@@ -107,16 +142,11 @@ def install(policy, inputs):
         ca_file, ca_dir = '/etc/ssl/certs/ca-certificates.crt', '/etc/ssl/certs'
     elif distro == 'rocky' and version == '10.2':
         ca_file, ca_dir = '/etc/pki/tls/certs/ca-bundle.crt', '/etc/pki/tls/certs'
-        # Vendor fix pending in the reviewed Rocky repository. Scope fallback
-        # by exact public key, including cross-signed certificates with that key.
-        blocklist = pathlib.Path('/etc/pki/ca-trust/source/blocklist')
-        blocklist.mkdir(parents=True, exist_ok=True)
-        for pem in blocked_certificates(pathlib.Path(ca_file).read_bytes(), policy):
-            target = blocklist / ('chickadee-emudhra-' + spki(pem).lower() + '.pem')
-            if target.exists() and target.read_bytes() != pem + b'\n':
-                raise ValueError('existing trust blocklist differs: ' + str(target))
-            target.write_bytes(pem + b'\n')
+        # Native vendor fix pending: explicitly distrust all four exact
+        # primary root certificates across purposes, including code signing.
+        install_rocky_blocklist(policy, pathlib.Path('/etc/pki/ca-trust/source/blocklist'))
         run('update-ca-trust', 'extract')
+        rocky_distrusted_keys = verify_rocky_distrust(policy)
     else:
         raise ValueError('unsupported image OS')
     if blocked_certificates(pathlib.Path(ca_file).read_bytes(), policy):
@@ -211,7 +241,7 @@ def install(policy, inputs):
     os.chown(environment, 0, 0)
     report = {'schema': 1, 'incident': policy['incident'], 'system_ca_file': ca_file,
               'system_ca_sha256': hashlib.sha256(pathlib.Path(ca_file).read_bytes()).hexdigest(),
-              'go_toolcache': go_changes, 'policy': policy, 'ensurepip_wheel_ca_updates': wheel_updates, 'python_interpreters': [str(p) for p in pythons],
+              'purpose_independent_rocky_distrusted_keys': rocky_distrusted_keys, 'go_toolcache': go_changes, 'policy': policy, 'ensurepip_wheel_ca_updates': wheel_updates, 'python_interpreters': [str(p) for p in pythons],
               'node_mitigation': '--use-openssl-ca; built-in roots remain unchanged'}
     (config / 'ca-trust.json').write_text(json.dumps(report, indent=2) + '\n')
 
