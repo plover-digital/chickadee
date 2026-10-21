@@ -1,3 +1,6 @@
+# A go.mod toolchain suggestion does not exclude vulnerable newer releases.
+override export GOTOOLCHAIN := go1.26.10
+
 BIN_DIR ?= bin
 
 .PHONY: build test vulncheck test-offline image image-ubuntu-2604 image-minimal-ubuntu-2404

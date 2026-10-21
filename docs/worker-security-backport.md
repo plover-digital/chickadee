@@ -154,3 +154,9 @@ pool. Rebuild and scan the exact accepted source; this compiler update does not
 permit switching an unclaimed legacy deployment to the main branch. Keep the
 existing journals, certificates and identities, drain before replacement, and
 verify the running executable hash after the operator-controlled restart.
+
+Make build/test entrypoints override GOTOOLCHAIN with exact Go 1.26.10 even when
+`auto` is inherited or passed on the make command line. The direct vulnerability
+script pins the same compiler. A go.mod toolchain suggestion alone can retain a
+vulnerable installed Go 1.27.2; bare Go callers must explicitly select a patched
+compiler. Guest builder pins remain independent.

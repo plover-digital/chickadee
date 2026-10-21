@@ -12,7 +12,7 @@ SCRIPT = Path(__file__).with_name('vulncheck.sh').resolve()
 
 class VulnerabilityCheckTests(unittest.TestCase):
     def run_scan(self, failure='', dirty='', build=False, ambient_config=False, early_failure='',
-                 package_driver='', disable_driver_policy=False):
+                 package_driver='', disable_driver_policy=False, disable_toolchain_policy=False):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             repo = root / 'repo'
@@ -23,6 +23,9 @@ class VulnerabilityCheckTests(unittest.TestCase):
                 if name == 'vulncheck.sh' and disable_driver_policy:
                     contents = contents.replace('export GOPACKAGESDRIVER=off',
                                                 ': # negative control: driver policy removed')
+                if name == 'vulncheck.sh' and disable_toolchain_policy:
+                    contents = contents.replace('export GOTOOLCHAIN=go1.26.10',
+                                                ': # negative control: compiler policy removed')
                 target.write_text(contents)
                 target.chmod(0o755)
             (repo / '.gitignore').write_text('/bin/\n/build/\n')
@@ -68,6 +71,7 @@ if [[ -n "$FAIL_SCAN" && "$*" == *"$FAIL_SCAN"* ]]; then exit 3; fi
             scanner.chmod(0o755)
             go = tools / 'go'
             go.write_text('''#!/usr/bin/env bash
+if [[ ${GOTOOLCHAIN:-auto} != go1.26.10 ]]; then echo 'unsafe bundled go1.27.2 selected' >&2; exit 42; fi
 if [[ "${EARLY_FAILURE:-}" == install && "$1" == install ]]; then exit 23; fi
 if [[ "${EARLY_FAILURE:-}" == metadata && "$1" == version ]]; then exit 24; fi
 if [[ "$1" == install ]]; then
@@ -93,7 +97,7 @@ printf snapshot > "$BUILD_MARKER"
             output = root / 'reports'
             env = dict(os.environ, PATH=f'{tools}:{os.environ["PATH"]}',
                        FAKE_SCANNER=str(scanner), FAIL_SCAN=failure, BUILD_MARKER=str(marker),
-                       VULNCHECK_OUTPUT=str(output))
+                       VULNCHECK_OUTPUT=str(output), GOTOOLCHAIN='auto')
             driver_marker = root / 'driver-used'
             if package_driver:
                 driver = tools / ('explicit-driver' if package_driver == 'explicit'
@@ -150,6 +154,13 @@ printf snapshot > "$BUILD_MARKER"
             if marker.exists():
                 reports['build-marker'] = marker.read_text()
             return result, reports
+
+    def test_direct_scan_pins_compiler_despite_ambient_auto(self):
+        result, reports = self.run_scan()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        result, reports = self.run_scan(disable_toolchain_policy=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('unsafe bundled go1.27.2 selected', result.stderr)
 
     def test_success_records_all_artifacts_and_release_source_mode(self):
         result, reports = self.run_scan(build=True)
