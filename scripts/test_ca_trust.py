@@ -22,7 +22,37 @@ trust = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(trust)
 
 
+metadata_spec = importlib.util.spec_from_file_location('metadata', ROOT / 'scripts/refresh-trust-metadata.py')
+metadata = importlib.util.module_from_spec(metadata_spec)
+metadata_spec.loader.exec_module(metadata)
+
+
 class TrustRefresh(unittest.TestCase):
+    def test_effective_tool_inventory_matches_refreshed_go_and_keeps_parent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            source, output = root / 'source', root / 'output'
+            source.mkdir(); output.mkdir()
+            node = {'name': 'node', 'version': '24.21.0', 'sha256': 'preserve-exactly'}
+            old = {'upstream_commit': 'unchanged', 'default_go': '1.27.2', 'tools': [
+                {'name': 'go', 'version': '1.26.9'}, node, {'name': 'go', 'version': '1.27.2'}]}
+            go = {'default_go': '1.27.3', 'tools': [{'name': 'go', 'version': v} for v in ('1.26.10', '1.27.3')]}
+            for name in ('tool-inputs.json', 'tool-lock.json'):
+                (source / name).write_text(json.dumps(old) + '\n')
+            (source / 'compatibility.json').write_text(json.dumps({'installed_toolcache': old['tools'], 'status': 'unchanged'}))
+            (output / 'ca-trust.json').write_text(json.dumps({'go_toolcache': {'lock': go}}))
+            metadata.refresh(source, output)
+            for name in ('tool-inputs.json', 'tool-lock.json'):
+                self.assertEqual((output / ('parent-' + name)).read_bytes(), (source / name).read_bytes())
+                current = json.loads((output / name).read_text())
+                self.assertEqual(current['default_go'], '1.27.3')
+                self.assertEqual([t['version'] for t in current['tools'] if t['name'] == 'go'], ['1.26.10', '1.27.3'])
+                self.assertEqual([t for t in current['tools'] if t['name'] != 'go'], [node])
+                self.assertEqual(json.loads((source / name).read_text()), old)
+            current = json.loads((output / 'compatibility.json').read_text())
+            self.assertEqual(current['status'], 'unchanged')
+            self.assertEqual([t for t in current['installed_toolcache'] if t['name'] != 'go'], [node])
+
     def test_tampered_input_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             p = pathlib.Path(directory) / 'input.whl'

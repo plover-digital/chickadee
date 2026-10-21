@@ -102,7 +102,9 @@ alone is not an abort condition.
 The helper verifies the source seal, makes an independent qcow2 copy, installs
 only pinned trust inputs offline, replaces the bootstrap and both authenticated Go caches (default 1.27.3), refreshes package
 inventory/provenance, and seals the candidate. It preserves parent inventories,
-manifest and checksum list, plus the original kernel and initrd. The new manifest
+manifest and checksum list, plus the original kernel and initrd. Old tool locks
+and compatibility inventory remain under `parent-` names; effective inventories
+replace only Go entries/default and preserve every other tool input. The new manifest
 retains its original full OS snapshot and adds a parent-bundle seal digest and
 trust revision. `ca-trust.json` records exact input policy, effective system CA
 hash, Python interpreters and ensurepip wheel modifications.

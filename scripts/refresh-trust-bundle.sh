@@ -30,7 +30,7 @@ qemu-img convert -f qcow2 -O qcow2 "$source_dir/base.qcow2" "$out/working.qcow2"
 python3 - "$source_dir" "$out" <<'PY'
 import pathlib,shutil,sys
 src,out=map(pathlib.Path,sys.argv[1:])
-replaced={'manifest.json','SHA256SUMS','packages.txt','package-provenance.json','guest-build.txt','ca-trust.json'}
+replaced={'manifest.json','SHA256SUMS','packages.txt','package-provenance.json','guest-build.txt','ca-trust.json','tool-inputs.json','tool-lock.json','compatibility.json'}
 for p in src.iterdir():
  if p.name=='base.qcow2':continue
  if p.is_symlink():
@@ -48,6 +48,7 @@ virt-customize --no-network --memsize 1024 --smp 1 -a "$out/working.qcow2" \
  --chmod 0755:/usr/local/bin/chickadee-guest --no-selinux-relabel
 scripts/refresh-image-trust.sh "$out/working.qcow2" "$out/inputs"
 cp "$out/inputs/ca-trust.json" "$out/ca-trust.json"
+python3 scripts/refresh-trust-metadata.py "$source_dir" "$out"
 guestfish --ro -a "$out/working.qcow2" -i download /image-packages.txt "$out/packages.txt"
 guestfish --ro -a "$out/working.qcow2" -i download /image-package-provenance.json "$out/package-provenance.json"
 go version -m "$bootstrap" > "$out/guest-build.txt"
