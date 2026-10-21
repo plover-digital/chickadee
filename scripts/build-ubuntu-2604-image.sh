@@ -56,7 +56,7 @@ with (root/lock['root_filename']).open('rb') as data:assert hashlib.file_digest(
 PY
 [[ -e $downloads/runner.tar.gz ]] || fetch "https://github.com/actions/runner/releases/download/v$runner/actions-runner-linux-x64-$runner.tar.gz" "$downloads/runner.tar.gz"
 printf '%s  %s\n' "$runner_sha" "$downloads/runner.tar.gz" | sha256sum --check
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o "$work/chickadee-guest" ./cmd/chickadee-guest
+GOTOOLCHAIN=go1.26.10 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o "$work/chickadee-guest" ./cmd/chickadee-guest
 xz --decompress --stdout "$downloads/$root_tar" > "$work/root.tar"
 export LIBGUESTFS_BACKEND=direct
 if [[ -r /dev/kvm && -w /dev/kvm ]]; then export LIBGUESTFS_BACKEND_SETTINGS=force_kvm; else export LIBGUESTFS_BACKEND_SETTINGS=force_tcg; fi
