@@ -163,3 +163,63 @@ reported as completion of those artifact or deployment gates.
 For the independent narrow PHP fix and combined immutable candidate path, see
 [PHP security refresh](php-security-refresh.md). Existing CA-only candidates remain
 unchanged; PHP and CA consumer acceptance must use the final combined candidate.
+
+## Independent Java and NSS acceptance
+
+A successful CA package install is insufficient evidence for Java or NSS.
+Offline consumer checks found a stale shared Java store and an NSS builtin
+module still accepting direct incident chains. These are release blockers.
+The immutable candidate must remain unchanged; apply corrections only to a new
+copy and retain the old result as a negative regression control.
+
+Ubuntu refresh now explicitly completes pending package triggers after the
+vendor fresh-store hook. It then discovers every installed JDK's actual cacerts,
+deduplicates resolved stores, and inspects aliases with that JDK's keytool.
+While Java's [upstream update remains pending](https://ops.java/security/),
+remove only aliases containing one of the four authenticated incident root
+SPKIs. Before editing, validate the primary certificate DER and SPKI hashes.
+Edit a temporary copy, require every unaffected alias and DER to remain identical,
+and atomically replace the store. Record removals, participating JDK homes and
+final store hashes. Unexpected entries, invalid policy or failed edits stop the
+refresh. Custom application keystores are outside this discovery contract.
+
+`python3 scripts/check-independent-trust.py` now runs in developer acceptance.
+It inspects every actual JDK store and explicitly loads each distro NSS builtin
+module into a fresh disposable NSS database. It exports native trusted anchors
+and rejects any authenticated incident root key. Missing modules, failed loads,
+empty enumerations and invalid certificate exports fail acceptance. This guard
+is an anchor inventory, not a substitute for all twelve chain checks, browser
+policy validation or credentialed runner acceptance.
+
+Mozilla identifies [NSS 3.131.1 as its upstream fix](https://blog.mozilla.org/security/2026/10/20/protecting-firefox-users-following-the-compromise-of-emudhra-intermediate-certificates/).
+Use an authenticated native Ubuntu backport when available. The signed indexes
+reviewed on October 21 still list Noble `2:3.98-1ubuntu0.2` and Resolute
+`2:3.120-1ubuntu2.1`; these versions must not be cleared merely because the
+system bundle is patched. This change detects the NSS blocker and does not
+replace its module or assert that all guest trust remediation is complete.
+
+The [upstream-supported p11-kit module interface](https://p11-glue.github.io/p11-glue/p11-kit/manual/trust-nss.html)
+is a possible fallback requiring separate review. Ubuntu's module reads the
+system CA bundle; replacing the builtin module can therefore change unrelated
+anchors and purposes. Before considering a replacement, enumerate both modules'
+certificate DER, SPKI, native trust objects and purpose-specific trust bits.
+Require exact preservation for every unrelated object; report any difference as
+a blocker rather than silently adopting a different provider's root policy.
+Verify exact incident-key distrust, fresh NSS database module loading, all twelve
+incident chains against a still-trusting positive control, and unrelated positive
+chains. No module substitution or browser/profile policy change is implemented
+here. Firefox's bundled NSS, OneCRL and Chrome's independent root/revocation
+components remain separate acceptance work.
+
+For an already patched Ubuntu private working image, the bounded Java-only
+appliance helper avoids reinstalling Python, Go, PHP or the full OS:
+
+```sh
+scripts/refresh-image-java-trust.sh /path/to/private-working.qcow2 /path/to/new-java-trust.json
+```
+
+This helper completes pending Ubuntu triggers and applies the same audited
+store correction. It does not copy/seal/promote an immutable bundle or fix NSS;
+the coordinator must provide the independently validated copy, resource limits,
+new supplemental provenance/seal and full client acceptance. It requires no new
+package downloads or bootstrap rebuild.

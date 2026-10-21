@@ -48,6 +48,7 @@ for tool in git git-lfs unzip tar gzip zstd jq go node npm python3 gcc g++ "$exp
 # Source package versions and every installed cohort member must be fixed.
 # PHP CLI can also serve untrusted HTTP; command presence is not acceptance.
 python3 scripts/check-php-security.py
+python3 scripts/check-independent-trust.py
 assert_default_executable clang "/usr/bin/$expected_clang"
 assert_default_executable java "$JAVA_HOME/bin/java"
 clang --version
