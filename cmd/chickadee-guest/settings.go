@@ -34,6 +34,10 @@ func parseRunnerEnvironment(reader io.Reader) ([]string, error) {
 		if !ok || strings.ContainsRune(value, '\x00') {
 			return nil, errors.New("invalid image environment")
 		}
+		if key == "NODE_OPTIONS" || key == "SSL_CERT_FILE" || key == "SSL_CERT_DIR" {
+			values[key] = value
+			continue
+		}
 		if !allowed[key] {
 			if !strings.HasPrefix(key, "JAVA_HOME_") || !strings.HasSuffix(key, "_X64") {
 				return nil, errors.New("image environment key not allowed")
@@ -43,6 +47,18 @@ func parseRunnerEnvironment(reader io.Reader) ([]string, error) {
 	}
 	if scanner.Err() != nil {
 		return nil, errors.New("invalid image environment")
+	}
+	// These trust controls are a fixed image policy, not arbitrary Node options
+	// (which can load code). Require one complete vendor-store tuple.
+	_, nodeTrust := values["NODE_OPTIONS"]
+	_, caFile := values["SSL_CERT_FILE"]
+	_, caDir := values["SSL_CERT_DIR"]
+	if nodeTrust || caFile || caDir {
+		ubuntu := values["SSL_CERT_FILE"] == "/etc/ssl/certs/ca-certificates.crt" && values["SSL_CERT_DIR"] == "/etc/ssl/certs"
+		rocky := values["SSL_CERT_FILE"] == "/etc/pki/tls/certs/ca-bundle.crt" && values["SSL_CERT_DIR"] == "/etc/pki/tls/certs"
+		if values["NODE_OPTIONS"] != "--use-openssl-ca" || (!ubuntu && !rocky) {
+			return nil, errors.New("invalid image trust environment")
+		}
 	}
 	result := make([]string, 0, len(values))
 	for k, v := range values {

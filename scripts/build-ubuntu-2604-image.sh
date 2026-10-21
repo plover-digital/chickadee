@@ -140,6 +140,8 @@ virt-customize --memsize 2048 -a "$work/base.qcow2" \
  --delete /tmp/chickadee-package-provenance.py \
  --delete /tmp/chickadee-provision.sh --delete /etc/resolv.conf \
  --write /etc/resolv.conf:"nameserver 1.1.1.1"
+scripts/refresh-image-trust.sh "$work/base.qcow2" "$work/ca-trust"
+cp "$work/ca-trust/ca-trust.json" "$out/ca-trust.json"
 guestfish --ro -a "$work/base.qcow2" -m /dev/sda download /image-packages.txt "$out/packages.txt"
 guestfish --ro -a "$work/base.qcow2" -m /dev/sda download /image-package-provenance.json "$out/package-provenance.json"
 kernel=$(guestfish --ro -a "$work/base.qcow2" -m /dev/sda glob-expand '/boot/vmlinuz-*')
@@ -164,6 +166,6 @@ if [[ $profile == developer ]]; then
 fi
 printf '{"disk_gib":%s,"os":"ubuntu","os_version":"26.04","architecture":"amd64","machine":"q35","ubuntu_release":"%s","snapshot":"%s","runner":"%s","kernel":"%s","software_profile":"%s"}\n' "$disk_gib" "$release" "$snapshot" "$runner" "$version" "$profile" > "$out/manifest.json"
 GOTOOLCHAIN=go1.27.3 go version -m "$work/chickadee-guest" > "$out/guest-build.txt"
-(cd "$out" && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt package-provenance.json guest-build.txt build-inputs.json "${extras[@]}" > SHA256SUMS)
+(cd "$out" && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt package-provenance.json ca-trust.json guest-build.txt build-inputs.json "${extras[@]}" > SHA256SUMS)
 chmod 0444 "$out"/*
 echo 'Ubuntu 26.04 q35 bundle built; require READY and real-job validation before changing a default.'

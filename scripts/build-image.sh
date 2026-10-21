@@ -106,6 +106,8 @@ virt-customize -a build/base.qcow2 \
   --delete /tmp/chickadee-provision.sh \
   --delete /etc/resolv.conf \
   --write /etc/resolv.conf:"nameserver 1.1.1.1"
+scripts/refresh-image-trust.sh build/base.qcow2 build/ca-trust
+cp "build/ca-trust/ca-trust.json" "images/ca-trust.json"
 # Inspect the sole installed kernel, then retain versioned artifacts plus fixed names for QEMU.
 guestfish --ro -a build/base.qcow2 -m /dev/sda download /image-packages.txt images/packages.txt
 guestfish --ro -a build/base.qcow2 -m /dev/sda download /image-package-provenance.json images/package-provenance.json
@@ -119,6 +121,6 @@ ln -s "initrd-$version" images/initrd
 mv build/base.qcow2 images/base.qcow2
 printf '{"disk_gib":16,"os":"ubuntu","os_version":"24.04","architecture":"amd64","machine":"microvm","ubuntu_release":"%s","snapshot":"%s","runner":"%s","kernel":"%s"}\n' "$release" "$snapshot" "$runner" "$version" > images/manifest.json
 GOTOOLCHAIN=go1.27.3 go version -m "build/chickadee-guest" > "images/guest-build.txt"
-(cd images && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt package-provenance.json guest-build.txt > SHA256SUMS)
+(cd images && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt package-provenance.json ca-trust.json guest-build.txt > SHA256SUMS)
 chmod 0444 images/*
 echo 'Image built. Keep the manifest and checksums with these immutable artifacts.'
