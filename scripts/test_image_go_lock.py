@@ -9,17 +9,17 @@ spec.loader.exec_module(refresh)
 
 class GoLock(unittest.TestCase):
     def setUp(self):
-        self.supported = [{'version': 'go1.27.2', 'stable': True}]
-        self.release = {'tag_name': '1.27.2-123', 'assets': [{
-            'name': 'go-1.27.2-linux-x64.tar.gz', 'digest': 'sha256:' + 'a' * 64,
-            'browser_download_url': 'https://github.com/actions/go-versions/releases/download/1.27.2-123/go-1.27.2-linux-x64.tar.gz'}]}
+        self.supported = [{'version': 'go1.27.3', 'stable': True}]
+        self.release = {'tag_name': '1.27.3-123', 'assets': [{
+            'name': 'go-1.27.3-linux-x64.tar.gz', 'digest': 'sha256:' + 'a' * 64,
+            'browser_download_url': 'https://github.com/actions/go-versions/releases/download/1.27.3-123/go-1.27.3-linux-x64.tar.gz'}]}
         self.lock = {'tools': [{'name': 'node', 'version': '24'}, {'name': 'go', 'version': '1.24.13'}]}
 
     def test_replaces_unsupported_go_preserves_other_tools_and_input(self):
         original = copy.deepcopy(self.lock)
         result = refresh.refresh(self.lock, self.supported, [self.release])
         self.assertEqual(self.lock, original)
-        self.assertEqual(result['default_go'], '1.27.2')
+        self.assertEqual(result['default_go'], '1.27.3')
         self.assertEqual(result['tools'][-1], self.lock['tools'][0])
         self.assertEqual(len(result['tools']), 2)
 
@@ -46,12 +46,12 @@ class BaselineConsistency(unittest.TestCase):
         for name in ['github-ubuntu-2404.json', 'github-ubuntu-2604.json']:
             lock = json.loads((root / 'guest/images' / name).read_text())
             versions = {t['version'] for t in lock['tools'] if t['name'] == 'go'}
-            self.assertEqual(versions, {'1.26.9', '1.27.2'})
+            self.assertEqual(versions, {'1.26.10', '1.27.3'})
             self.assertIn(lock['default_go'], versions)
             self.assertEqual(lock['ubuntu_snapshot'], '20261020T000000Z')
         for name in ['image-compatibility.yml', 'ubuntu-2604-smoke.yml']:
             workflow = (root / '.github/workflows' / name).read_text()
-            self.assertIn("go-version: '1.27.2'", workflow)
+            self.assertIn("go-version: '1.27.3'", workflow)
             self.assertNotIn('1.26.8', workflow)
 
     def test_minimal_builders_and_active_guides_match_profile_snapshot(self):

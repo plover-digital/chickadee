@@ -1,12 +1,28 @@
 # Go build and vulnerability baseline
 
-Host builds and CI use Go **1.26.9**, the patched supported 1.26 release verified
-on 2026-10-19 against the [official release history](https://go.dev/doc/devel/release).
+Host builds and CI use Go **1.26.10**, the patched supported 1.26 release verified
+on 2026-10-21 against the [official release history](https://go.dev/doc/devel/release).
 The module retains its Go 1.25.3 language minimum for downstream worker API
-consumers, with `toolchain go1.26.9` selecting the build baseline. The language
-minimum is not a security recommendation. Use `GOTOOLCHAIN=go1.26.9` for an exact
+consumers, with `toolchain go1.26.10` suggesting the build baseline. The language
+minimum is not a security recommendation. Use `GOTOOLCHAIN=go1.26.10` for an exact
 baseline build; Go's default automatic selection can use a newer installed Go.
-Keep the public module checksum database enabled.
+Make entrypoints override `GOTOOLCHAIN=go1.26.10`, including inherited or
+command-line `auto`; the direct vulnerability script pins the same compiler.
+A module toolchain directive alone is only a suggestion: default `auto` keeps an
+installed Go 1.27.2 because it compares newer than 1.26.10. Direct `go build`
+callers must explicitly select a patched compiler. See [Go toolchain selection](https://go.dev/doc/toolchain).
+The image builders retain explicit Go 1.27.3 for guest bootstraps, independently
+of the host Make pin. Keep the public module checksum database enabled.
+
+Go 1.26.10 and 1.27.3 fix [GO-2026-6809 / CVE-2026-111943](https://pkg.go.dev/vuln/GO-2026-6809).
+The [upstream change](https://go.dev/cl/851047) rejects chains containing any
+of eight distrusted SHA-256 public-key hashes, including cross-signed certificates,
+in both the Go verifier and the macOS/Windows platform-verifier paths. This does
+not depend on those certificates having been removed from the system trust store.
+Rebuild every Go executable, including standalone controllers, workers, guest
+bootstraps and the optional macOS netproxy module. Update OS trust separately for
+non-Go clients. Guest tool caches use 1.26.10 and 1.27.3; the image bootstrap uses
+1.27.3. No runtime dependency versions or wire/state formats change in this patch.
 
 `golang.org/x/sys` is updated from v0.42.0 to v0.44.0, the first version fixing
 [GO-2026-5024](https://pkg.go.dev/vuln/GO-2026-5024). Its affected API is Windows-only;
@@ -20,7 +36,7 @@ supported controller platform.
 On Linux amd64, with Go, Python 3, Make, Bash and `sha256sum` available:
 
 ```sh
-export GOTOOLCHAIN=go1.26.9
+export GOTOOLCHAIN=go1.26.10
 make build test
 make vulncheck
 ```
@@ -161,3 +177,12 @@ evidence. It tests script environment propagation without downloading modules or
 running a full vulnerability scan; actual source/binary scans remain release
 checks. Prior evidence lacking this policy must be reassessed or rerun; this
 change does not alter runtime binaries, protocols, configuration, or state.
+
+### Offline local unit checks
+
+`make test-offline` uses only the installed compiler (`GOTOOLCHAIN=local`),
+disables module downloads and validates a stable patched Go 1.26.10+ or 1.27.3+
+within those supported series. It never fetches the exact release compiler.
+This target runs local unit tests only; it produces no release artifacts or
+vulnerability attestation. Build, full test and vulnerability targets retain the
+exact Go 1.26.10 pin, even when requested together with `test-offline`.

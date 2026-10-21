@@ -18,7 +18,11 @@ for file in scripts/*.sh guest/*.sh; do bash -n "$file"; done
 ```
 
 On a restricted environment use `make test-offline` and explicitly report what
-could not be verified. A serial simulator is not a real VM boot. Image/network
+could not be verified. This unit-only target uses the installed stable patched
+compiler (Go 1.26.10 or later 1.26 patch, or Go 1.27.3 or later 1.27 patch), with
+compiler and module downloads disabled. It produces no release attestation;
+build, full test and scan targets keep their exact release compiler pin.
+A serial simulator is not a real VM boot. Image/network
 changes need the relevant real-host acceptance checks in
 [validation](docs/validation.md). Never claim job execution or isolation tests that
 were not performed. Keep verified dependency checksums and updated provenance with

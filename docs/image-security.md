@@ -87,20 +87,20 @@ availability and the resulting deadline separately from the release publication
 date. No deadline is inferred here. Validate Node 24 internal runner operations
 and `hashFiles()` when accepting 2.338.0.
 
-Guest Go caches now contain supported **1.26.9 and 1.27.2**, defaulting to 1.27.2,
+Guest Go caches now contain supported **1.26.10 and 1.27.3**, defaulting to 1.27.3,
 from exact Actions release assets and published SHA256 metadata, cross-checked
 against [Go's supported downloads](https://go.dev/dl/?mode=json).
 Unsupported Go 1.24/1.25 caches are removed; jobs requiring those versions must
 explicitly install them and own that risk. This is a guest compatibility change.
 Other language/SDK archives retain their existing pins and still require artifact
 scanning; refreshing Go does not certify the complete developer image.
-Guest bootstrap compilation explicitly selects `GOTOOLCHAIN=go1.27.2`.
+Guest bootstrap compilation explicitly selects `GOTOOLCHAIN=go1.27.3`.
 
 To generate a proposed Go lock without overwriting the reviewed input:
 
 ```sh
 python3 scripts/refresh-image-go-lock.py guest/images/github-ubuntu-2404.json /tmp/proposed-go.json \
-  --release 1.26.9-37875104533 --release 1.27.2-37875086547
+  --release 1.26.10-39437851726 --release 1.27.3-39437817176
 # Repeat for github-ubuntu-2604.json, review the diff, then verify actual downloads.
 python3 scripts/fetch-image-tools.py /tmp/proposed-go.json /tmp/image-tool-downloads
 ```
@@ -167,7 +167,7 @@ runs two sequential jobs on the existing native Rocky label, verifies the actual
 CPU/memory shape, enforcing SELinux, guest-reported kernel, native tools and
 Go/Node caches, and requires different runner identities. It does not require a
 Docker daemon or claim Ubuntu developer parity. The toolcache default is Go
-1.27.2; callers needing older unsupported releases must explicitly install them.
+1.27.3; callers needing older unsupported releases must explicitly install them.
 
 Correlate both runner identities with worker records and the exact immutable
 bundle; routing to another host's old image is not candidate acceptance. Verify

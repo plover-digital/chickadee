@@ -85,18 +85,18 @@
   "tools": [
     {
       "name": "go",
-      "version": "1.26.9",
-      "filename": "go-1.26.9-linux-x64.tar.gz",
-      "url": "https://github.com/actions/go-versions/releases/download/1.26.9-37875104533/go-1.26.9-linux-x64.tar.gz",
-      "sha256": "3d4726070211e7870ab65cb863067888dd643e8f9ae18be4d9edcce902ffbee8",
+      "version": "1.26.10",
+      "filename": "go-1.26.10-linux-x64.tar.gz",
+      "url": "https://github.com/actions/go-versions/releases/download/1.26.10-39437851726/go-1.26.10-linux-x64.tar.gz",
+      "sha256": "e671dcb75494e54486d2d0f25923432f74eaa5f6cbe6d916d4a7a3b6c4f6bfd9",
       "platform": "linux-x64"
     },
     {
       "name": "go",
-      "version": "1.27.2",
-      "filename": "go-1.27.2-linux-x64.tar.gz",
-      "url": "https://github.com/actions/go-versions/releases/download/1.27.2-37875086547/go-1.27.2-linux-x64.tar.gz",
-      "sha256": "d5ea5f4ae405daa1d37ab1d54706f25aee826f8ccc9ce06e7d89aeb4ea308051",
+      "version": "1.27.3",
+      "filename": "go-1.27.3-linux-x64.tar.gz",
+      "url": "https://github.com/actions/go-versions/releases/download/1.27.3-39437817176/go-1.27.3-linux-x64.tar.gz",
+      "sha256": "d0fbe16a6a03fe5fbf5577ab36f95f0725af587820dca8a78e6edd4eb4e19fd6",
       "platform": "linux-x64"
     },
     {
@@ -156,5 +156,5 @@
       "platform": "ubuntu-24.04-x64"
     }
   ],
-  "default_go": "1.27.2"
+  "default_go": "1.27.3"
 }

@@ -107,7 +107,7 @@ protocol and worker API; Linux workers and the v1 worker contract are unchanged.
 It supports only `PROVISIONING` and `PROVISIONED_OFFLINE`, not READY or credentials.
 
 ```sh
-CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -trimpath \
+GOTOOLCHAIN=go1.26.10 CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -trimpath \
   -o /private/staging/chickadee-build-report scripts/macos/guest/build-report.go
 codesign --force --sign - /private/staging/chickadee-build-report
 python3 scripts/macos/control-device.py create /private/new-vm-state

@@ -15,9 +15,9 @@ class ToolchainSelection(unittest.TestCase):
             root = pathlib.Path(directory)
             launcher = root / 'go'
             launcher.write_text('#!/bin/sh\n'
-                'test "$GOTOOLCHAIN" = go1.27.2 || { echo "would select older module toolchain" >&2; exit 42; }\n'
+                'test "$GOTOOLCHAIN" = go1.27.3 || { echo "would select older module toolchain" >&2; exit 42; }\n'
                 'test "$1 $2" = "version -m" || exit 43\n'
-                'echo "recorded go1.27.2"\n')
+                'echo "recorded go1.27.3"\n')
             launcher.chmod(0o755)
             for child in ['images', 'build/github-compatible', 'output']:
                 (root / child).mkdir(parents=True)

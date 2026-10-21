@@ -56,7 +56,7 @@ with (root/lock['root_filename']).open('rb') as data:assert hashlib.file_digest(
 PY
 [[ -e $downloads/runner.tar.gz ]] || fetch "https://github.com/actions/runner/releases/download/v$runner/actions-runner-linux-x64-$runner.tar.gz" "$downloads/runner.tar.gz"
 printf '%s  %s\n' "$runner_sha" "$downloads/runner.tar.gz" | sha256sum --check
-GOTOOLCHAIN=go1.27.2 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o "$work/chickadee-guest" ./cmd/chickadee-guest
+GOTOOLCHAIN=go1.27.3 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -ldflags='-s -w' -o "$work/chickadee-guest" ./cmd/chickadee-guest
 xz --decompress --stdout "$downloads/$root_tar" > "$work/root.tar"
 export LIBGUESTFS_BACKEND=direct
 if [[ -r /dev/kvm && -w /dev/kvm ]]; then export LIBGUESTFS_BACKEND_SETTINGS=force_kvm; else export LIBGUESTFS_BACKEND_SETTINGS=force_tcg; fi
@@ -163,7 +163,7 @@ if [[ $profile == developer ]]; then
  extras=(tool-inputs.json extra-inputs.json compatibility.json)
 fi
 printf '{"disk_gib":%s,"os":"ubuntu","os_version":"26.04","architecture":"amd64","machine":"q35","ubuntu_release":"%s","snapshot":"%s","runner":"%s","kernel":"%s","software_profile":"%s"}\n' "$disk_gib" "$release" "$snapshot" "$runner" "$version" "$profile" > "$out/manifest.json"
-GOTOOLCHAIN=go1.27.2 go version -m "$work/chickadee-guest" > "$out/guest-build.txt"
+GOTOOLCHAIN=go1.27.3 go version -m "$work/chickadee-guest" > "$out/guest-build.txt"
 (cd "$out" && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt package-provenance.json guest-build.txt build-inputs.json "${extras[@]}" > SHA256SUMS)
 chmod 0444 "$out"/*
 echo 'Ubuntu 26.04 q35 bundle built; require READY and real-job validation before changing a default.'

@@ -20,9 +20,9 @@ for tool in git git-lfs unzip zip tar gzip zstd jq sudo node npm npx python3 pip
 done
 test "${RUNNER_TOOL_CACHE:?}" = /opt/hostedtoolcache
 test "${AGENT_TOOLSDIRECTORY:?}" = /opt/hostedtoolcache
-for version in 1.26.9 1.27.2; do test -f "$RUNNER_TOOL_CACHE/go/$version/x64.complete"; done
+for version in 1.26.10 1.27.3; do test -f "$RUNNER_TOOL_CACHE/go/$version/x64.complete"; done
 for version in 22.23.3 24.21.0; do test -f "$RUNNER_TOOL_CACHE/node/$version/x64.complete"; done
-test "$(GOTOOLCHAIN=local go env GOVERSION)" = go1.27.2
+test "$(GOTOOLCHAIN=local go env GOVERSION)" = go1.27.3
 sudo -n true
 java -version
 "${JAVA_HOME:?}/bin/java" -version
