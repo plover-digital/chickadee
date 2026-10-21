@@ -160,3 +160,8 @@ Make build/test entrypoints override GOTOOLCHAIN with exact Go 1.26.10 even when
 script pins the same compiler. A go.mod toolchain suggestion alone can retain a
 vulnerable installed Go 1.27.2; bare Go callers must explicitly select a patched
 compiler. Guest builder pins remain independent.
+
+`make test-offline` is a local unit-only exception: it selects the installed
+compiler without downloads and requires stable patched Go 1.26.10+ or 1.27.3+
+in those supported series. Module downloads are disabled. It does not produce
+release evidence; build, full test and scan entrypoints keep exact Go 1.26.10.
