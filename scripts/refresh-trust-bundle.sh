@@ -24,6 +24,8 @@ go version -m "$bootstrap" | grep -Eq 'go1\.(26\.10|27\.3)$'
 (cd "$source_dir" && sha256sum --check SHA256SUMS)
 mkdir -p "$out/inputs"
 cp "$bootstrap_manifest" "$out/bootstrap-build-provenance.json"
+# Verify every supplemental input before the expensive independent image copy.
+scripts/refresh-image-trust.sh --prepare "$out/inputs"
 # A full independent qcow2 copy: no backing reference to a live bundle.
 qemu-img convert -f qcow2 -O qcow2 "$source_dir/base.qcow2" "$out/working.qcow2"
 # Keep kernel/initrd and other parent provenance. Replaced files are saved too.

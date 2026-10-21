@@ -99,7 +99,10 @@ or live bundle switch is performed. Parent coordination owns availability,
 sustained headroom, OOM/time/disk budgets and abort decisions; ordinary paging
 alone is not an abort condition.
 
-The helper verifies the source seal, makes an independent qcow2 copy, installs
+The helper verifies the source seal and prefetches/checks every supplemental
+input before making an independent qcow2 copy. Set `CHICKADEE_TRUST_INPUTS`
+to a prepared read-only input cache to require local files and avoid network
+dependency during staging. It installs
 only pinned trust inputs offline, replaces the bootstrap and both authenticated Go caches (default 1.27.3), refreshes package
 inventory/provenance, and seals the candidate. It preserves parent inventories,
 manifest and checksum list, plus the original kernel and initrd. Old tool locks

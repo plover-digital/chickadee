@@ -40,8 +40,9 @@ def check_file(path, entry):
             raise ValueError('trust input checksum mismatch: ' + path.name)
 
 
-def download(policy, destination):
-    destination.mkdir(parents=True, exist_ok=True)
+def download(policy, destination, offline=False):
+    if not offline:
+        destination.mkdir(parents=True, exist_ok=True)
     for entry in [*policy['python_wheels'], *policy['ubuntu_packages'].values()]:
         name = entry['filename']
         if pathlib.Path(name).name != name or not entry['url'].startswith((
@@ -49,6 +50,8 @@ def download(policy, destination):
                 'https://snapshot.ubuntu.com/ubuntu/20261021T000000Z/pool/')):
             raise ValueError('invalid trust input')
         target = destination / name
+        if not target.exists() and offline:
+            raise ValueError('missing prefetched trust input: ' + name)
         if not target.exists():
             partial = target.with_suffix('.part')
             try:
@@ -219,9 +222,12 @@ def main():
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--download', type=pathlib.Path)
     group.add_argument('--install', type=pathlib.Path)
+    group.add_argument('--verify', type=pathlib.Path)
     args = parser.parse_args()
     policy = json.loads(args.policy.read_text())
-    if args.download:
+    if args.verify:
+        download(policy, args.verify, offline=True)
+    elif args.download:
         download(policy, args.download)
     else:
         install(policy, args.install)
