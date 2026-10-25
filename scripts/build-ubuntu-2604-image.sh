@@ -145,7 +145,7 @@ cp "$work/ca-trust/ca-trust.json" "$out/ca-trust.json"
 scripts/refresh-image-php.sh "$work/base.qcow2" "$work/php-security"
 cp "$work/php-security/php-security.json" "$out/php-security.json"
 if [[ $profile == developer ]]; then
- scripts/refresh-image-runtimes.sh "$work/base.qcow2" "$work/runtime-security" 26.04
+ scripts/refresh-image-runtimes.sh "$work/base.qcow2" "$work/runtime-security" 26.04 full-builder
  cp "$work/runtime-security/runtime-security.json" "$out/runtime-security.json"
  cp "$work/runtime-security/runtime-trust.json" "$out/runtime-trust.json"
 fi

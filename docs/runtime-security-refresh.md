@@ -45,7 +45,10 @@ valid runtime-refresh parents:** first produce a trusted CA/PHP baseline with
 the reviewed combined bootstrap and vendor Node tuple, or use the coherent full
 builder. A runtime refresh preserves its parent bootstrap; native CA installation
 does not add the parser or environment inheritance. Parent provenance and the
-actual bootstrap ELF/trust tuple are checked before any runtime edit. Only after
+actual bootstrap ELF/trust tuple are checked before any runtime edit. The
+parent digest assignment is checked before export; incremental mode requires a
+nonempty SHA256 even during preparation. Coherent full builders select the
+separate explicit `full-builder` mode. Only after
 that baseline exists may `rocky` be used. No raw-Rocky incremental command is
 accepted by this path. The helper verifies
 the complete parent seal, exact flat entry set and expected kernel aliases before

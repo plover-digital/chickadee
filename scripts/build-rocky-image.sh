@@ -135,7 +135,7 @@ scripts/refresh-image-trust.sh build/rocky-base.qcow2 build/rocky-ca-trust
 cp "build/rocky-ca-trust/ca-trust.json" "$out/ca-trust.json"
 scripts/refresh-image-php.sh "build/rocky-base.qcow2" "build/rocky-php-security"
 cp "build/rocky-php-security/php-security.json" "$out/php-security.json"
-scripts/refresh-image-runtimes.sh "build/rocky-base.qcow2" "build/rocky-runtime-security" rocky
+scripts/refresh-image-runtimes.sh "build/rocky-base.qcow2" "build/rocky-runtime-security" rocky full-builder
 cp "build/rocky-runtime-security/runtime-security.json" "$out/runtime-security.json"
 cp "build/rocky-runtime-security/runtime-trust.json" "$out/runtime-trust.json"
 # /boot is still a separate filesystem in the source GPT layout; inspect mounts

@@ -7,6 +7,7 @@ import json
 import os
 import pathlib
 import pwd
+import re
 import shutil
 import subprocess
 import tarfile
@@ -168,9 +169,15 @@ def main():
     parser.add_argument('--nss-policy', type=pathlib.Path)
     parser.add_argument('--rocky-policy', type=pathlib.Path)
     parser.add_argument('--extra-lock', type=pathlib.Path)
-    parser.add_argument('--expected-bootstrap-sha256')
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('--expected-bootstrap-sha256')
+    mode.add_argument('--full-builder', action='store_true', help='fresh coherent builder, not an incremental parent')
     parser.add_argument('directory', type=pathlib.Path)
     args = parser.parse_args()
+    if args.expected_bootstrap_sha256 is not None and not re.fullmatch('[0-9a-f]{64}', args.expected_bootstrap_sha256):
+        parser.error('expected bootstrap digest must be exactly 64 lowercase hex characters')
+    if args.install and args.expected_bootstrap_sha256 is None and not args.full_builder:
+        parser.error('install requires an accepted bootstrap digest or explicit --full-builder')
     runner, lock = [json.loads(p.read_text()) for p in [args.runner, args.lock]]
     verify(args.directory, [runner, *[t for t in lock['tools'] if t['name'] in {'node', 'python'}]])
     policies = [args.trust_policy, args.nss_policy, args.rocky_policy]

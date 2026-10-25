@@ -5,6 +5,16 @@ cd "$(dirname "$0")/.."
 image=${1:?private working image or --prepare required}
 work=${2:?private input workspace required}
 family=${3:?24.04, 26.04 or rocky required}
+mode=${4:?incremental or full-builder required}
+bootstrap_option=
+case $mode in
+ incremental)
+  [[ ${CHICKADEE_RUNTIME_BOOTSTRAP_SHA256:?accepted bootstrap digest required for incremental refresh} =~ ^[0-9a-f]{64}$ ]]
+  bootstrap_option="--expected-bootstrap-sha256 $CHICKADEE_RUNTIME_BOOTSTRAP_SHA256"
+  ;;
+ full-builder) bootstrap_option=--full-builder ;;
+ *) exit 2 ;;
+esac
 case $family in
  24.04) lock=guest/images/github-ubuntu-2404.json; extra=guest/images/github-extra-tools.json ;;
  26.04) lock=guest/images/github-ubuntu-2604.json; extra=guest/images/github-extra-ubuntu-2604.json ;;
@@ -24,11 +34,6 @@ PY
 [[ $image != --prepare ]] || exit 0
 extra_args=(); [[ -z $extra ]] || extra_args=(--upload "$extra:/tmp/chickadee-runtime/extra-lock.json")
 extra_option=; [[ -z $extra ]] || extra_option='--extra-lock /tmp/chickadee-runtime/extra-lock.json'
-bootstrap_option=
-if [[ -n ${CHICKADEE_RUNTIME_BOOTSTRAP_SHA256:-} ]]; then
- [[ $CHICKADEE_RUNTIME_BOOTSTRAP_SHA256 =~ ^[0-9a-f]{64}$ ]]
- bootstrap_option="--expected-bootstrap-sha256 $CHICKADEE_RUNTIME_BOOTSTRAP_SHA256"
-fi
 virt-customize --no-network --memsize 1024 --smp 1 -a "$image" \
  --mkdir /tmp/chickadee-runtime \
  --upload guest/refresh-runtime-security.py:/tmp/chickadee-runtime/refresh-runtime-security.py \

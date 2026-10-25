@@ -11,10 +11,12 @@ family=${4:?24.04, 26.04 or rocky required}
 [[ -z $(git status --porcelain --untracked-files=normal) ]]
 printf '%s  %s\n' "$seal" "$source_dir/SHA256SUMS" | sha256sum --check
 python3 scripts/check-image-bundle.py "$source_dir"
-export CHICKADEE_RUNTIME_BOOTSTRAP_SHA256=$(python3 scripts/check-runtime-parent.py "$source_dir")
+CHICKADEE_RUNTIME_BOOTSTRAP_SHA256=$(python3 scripts/check-runtime-parent.py "$source_dir")
+[[ $CHICKADEE_RUNTIME_BOOTSTRAP_SHA256 =~ ^[0-9a-f]{64}$ ]]
+export CHICKADEE_RUNTIME_BOOTSTRAP_SHA256
 [[ -z $(find "$source_dir" -maxdepth 1 -name 'pre-runtime-*' -print -quit) ]]
 # Fail fast on every supplemental hash before copying a large parent image.
-scripts/refresh-image-runtimes.sh --prepare "$out.inputs" "$family"
+scripts/refresh-image-runtimes.sh --prepare "$out.inputs" "$family" incremental
 mkdir "$out"
 qemu-img convert -f qcow2 -O qcow2 "$source_dir/base.qcow2" "$out/working.qcow2"
 python3 - "$source_dir" "$out" <<'PY'
@@ -27,7 +29,7 @@ for p in src.iterdir():
  else:shutil.copyfile(p,out/(('pre-runtime-' if p.name in replace else '')+p.name))
 PY
 export LIBGUESTFS_BACKEND=direct LIBGUESTFS_BACKEND_SETTINGS=force_kvm
-scripts/refresh-image-runtimes.sh "$out/working.qcow2" "$out.inputs" "$family"
+scripts/refresh-image-runtimes.sh "$out/working.qcow2" "$out.inputs" "$family" incremental
 for report in runtime-security runtime-trust; do cp "$out.inputs/$report.json" "$out/$report.json"; done
 guestfish --ro -a "$out/working.qcow2" -i download /image-packages.txt "$out/packages.txt"
 guestfish --ro -a "$out/working.qcow2" -i download /image-package-provenance.json "$out/package-provenance.json"

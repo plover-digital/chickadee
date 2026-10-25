@@ -66,7 +66,7 @@ scripts/refresh-image-trust.sh "$out/working.qcow2" build/github-compatible/ca-t
 cp "build/github-compatible/ca-trust/ca-trust.json" "$out/ca-trust.json"
 scripts/refresh-image-php.sh "$out/working.qcow2" "build/github-compatible/php-security"
 cp "build/github-compatible/php-security/php-security.json" "$out/php-security.json"
-scripts/refresh-image-runtimes.sh "$out/working.qcow2" "build/github-compatible/runtime-security" 24.04
+scripts/refresh-image-runtimes.sh "$out/working.qcow2" "build/github-compatible/runtime-security" 24.04 full-builder
 cp "build/github-compatible/runtime-security/runtime-security.json" "$out/runtime-security.json"
 cp "build/github-compatible/runtime-security/runtime-trust.json" "$out/runtime-trust.json"
 # Discard deleted temporary archive blocks, then compact qcow2 physical file length.
