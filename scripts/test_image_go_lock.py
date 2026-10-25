@@ -48,7 +48,7 @@ class BaselineConsistency(unittest.TestCase):
             versions = {t['version'] for t in lock['tools'] if t['name'] == 'go'}
             self.assertEqual(versions, {'1.26.10', '1.27.3'})
             self.assertIn(lock['default_go'], versions)
-            self.assertEqual(lock['ubuntu_snapshot'], '20261020T000000Z')
+            self.assertEqual(lock['ubuntu_snapshot'], '20261025T000000Z')
         for name in ['image-compatibility.yml', 'ubuntu-2604-smoke.yml']:
             workflow = (root / '.github/workflows' / name).read_text()
             self.assertIn("go-version: '1.27.3'", workflow)

@@ -17,12 +17,12 @@ installing only selected packages can leave vulnerable inherited packages behind
 The dated cloud roots remain pinned separately. Keep their original provenance:
 a newer package snapshot does not mean a newer cloud root was downloaded.
 
-The October 20 refresh verified the signed `InRelease` files and their SHA256
-entries for `main` and `universe` amd64 indexes in both distributions' security
-and updates pockets. Compared with the October 19 snapshot, available updates
-include Noble Git `1:2.43.0-1ubuntu7.4` and PHP `8.3.6-0ubuntu0.24.04.12`,
-and Resolute Git `1:2.53.0-1ubuntu1.1`, PHP `8.5.4-0ubuntu1.4` and systemd
-`259.9-0ubuntu0.1`. See the [dated archive](https://snapshot.ubuntu.com/ubuntu/20261020T000000Z/).
+The October 25 refresh authenticates the signed base, security and updates
+InRelease files and their SHA256 entries for all four amd64 components. Available
+updates include Noble Git `1:2.43.0-1ubuntu7.4` and PHP
+`8.3.6-0ubuntu0.24.04.13`, and Resolute Git `1:2.53.0-1ubuntu1.1`, PHP
+`8.5.4-0ubuntu1.5` and systemd `259.9-0ubuntu0.1`. See the
+[dated archive](https://snapshot.ubuntu.com/ubuntu/20261025T000000Z/).
 This is repository availability evidence, not a claim that every package is
 installed or every vulnerability is fixed. Verify the final installed inventory;
 APT updates do not update independently downloaded tools or runner components.
