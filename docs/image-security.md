@@ -1,6 +1,6 @@
 # Immutable guest security refresh
 
-Review date: 2026-10-20 UTC. This is a source baseline and release procedure,
+Review date: 2026-10-25 UTC. This is a source baseline and release procedure,
 not evidence that images have been built or deployed. Follow issue
 [#39](https://github.com/plover-digital/chickadee/issues/39) for artifact acceptance.
 Host updates do not patch a guest kernel or its embedded runtimes.
@@ -9,7 +9,9 @@ CA/runtime refresh and incremental immutable-bundle procedure.
 
 ## Reviewed inputs and outstanding vendor status
 
-Ubuntu 24.04 and 26.04 use signed archive snapshot `20261020T000000Z`.
+Ubuntu 24.04 and 26.04 full builders use signed archive snapshot `20261025T000000Z`.
+See [native Ubuntu OS refresh](ubuntu-native-os-refresh.md) for the separate
+complete native package/kernel transaction and incremental immutable-bundle path.
 The builders upgrade the entire imported root before installing the profile;
 installing only selected packages can leave vulnerable inherited packages behind.
 The dated cloud roots remain pinned separately. Keep their original provenance:

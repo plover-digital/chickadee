@@ -1,7 +1,7 @@
 {
   "os_version": "26.04",
   "release": "20260927",
-  "snapshot": "20261020T000000Z",
+  "snapshot": "20261025T000000Z",
   "root_filename": "ubuntu-26.04-server-cloudimg-amd64-root.tar.xz",
   "root_sha256": "ccd08a7a76cdc69034dd2682b4913bdd051cb71ad87d0b66689015aa068e61c8",
   "signing_fingerprint": "D2EB44626FDDC30B513D5BB71A5D6C4C7DB87C81",
