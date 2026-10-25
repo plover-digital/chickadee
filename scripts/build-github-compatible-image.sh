@@ -16,7 +16,7 @@ m=json.load(open(pathlib.Path(sys.argv[1])/'manifest.json'))
 assert m.get('os')=='ubuntu' and m.get('os_version')=='24.04', 'Ubuntu 24.04 source required'
 lock=json.load(open('guest/images/github-ubuntu-2404.json'))
 assert m.get('snapshot')==lock['ubuntu_snapshot'], 'Rebuild the minimal image with the same security snapshot first'
-assert m.get('runner')=='2.337.0', 'Rebuild the minimal image with the reviewed available runner first'
+assert m.get('runner')=='2.338.1', 'Rebuild the minimal image with the reviewed available runner first'
 PY
 # Inputs are exact official release assets; verify even already-cached downloads.
 python3 scripts/fetch-image-tools.py guest/images/github-ubuntu-2404.json build/github-compatible/downloads
@@ -66,6 +66,9 @@ scripts/refresh-image-trust.sh "$out/working.qcow2" build/github-compatible/ca-t
 cp "build/github-compatible/ca-trust/ca-trust.json" "$out/ca-trust.json"
 scripts/refresh-image-php.sh "$out/working.qcow2" "build/github-compatible/php-security"
 cp "build/github-compatible/php-security/php-security.json" "$out/php-security.json"
+scripts/refresh-image-runtimes.sh "$out/working.qcow2" "build/github-compatible/runtime-security" 24.04 full-builder
+cp "build/github-compatible/runtime-security/runtime-security.json" "$out/runtime-security.json"
+cp "build/github-compatible/runtime-security/runtime-trust.json" "$out/runtime-trust.json"
 # Discard deleted temporary archive blocks, then compact qcow2 physical file length.
 virt-sparsify --in-place "$out/working.qcow2"
 # Compact allocated blocks so startup digest checks do not scan a giant sparse file.

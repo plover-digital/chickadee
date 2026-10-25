@@ -211,6 +211,49 @@ def refresh_java_stores(policy, jvm=pathlib.Path('/usr/lib/jvm')):
     return reports
 
 
+def refresh_python_stores(policy, inputs, distro):
+    wheels = {}
+    for entry in policy['python_wheels']:
+        path = inputs / entry['filename']
+        check_file(path, entry)
+        wheels[entry['filename'].split('-')[0]] = path
+    pythons = [pathlib.Path('/usr/bin/python3')]
+    pythons += sorted(pathlib.Path('/opt/hostedtoolcache/Python').glob('*/x64/bin/python3'))
+    for python in pythons:
+        env = dict(os.environ, PYTHONPATH=str(wheels['pip']), PIP_CONFIG_FILE='/dev/null', PIP_DISABLE_PIP_VERSION_CHECK='1')
+        args = []
+        if python == pythons[0]:
+            args = ['--break-system-packages', '--ignore-installed']
+            # Ubuntu's default posix_local scheme already targets /usr/local.
+            # Supplying --prefix selects posix_prefix and an unsearched path.
+            if distro == 'rocky':
+                args += ['--prefix=/usr/local']
+        run(str(python), '-m', 'pip', 'install', '--no-index', '--no-deps', '--no-compile', '--upgrade',
+            *args, *(str(wheels[name]) for name in ('pip', 'certifi')), env=env)
+        expected = {name: path.name.split('-')[1] for name, path in wheels.items()}
+        run(str(python), '-c', 'import pip,certifi; assert pip.__version__ == ' + repr(expected['pip']) + '; assert certifi.__version__ == ' + repr(expected['certifi']))
+        if python != pythons[0]:
+            run('chown', '-R', 'runner:runner', str(python.parent.parent))
+        # ensurepip's filename/version constants must stay coherent. Refresh
+        # only its vendored CA data using the exact official certifi bundle;
+        # RECORD is regenerated, and input/output hashes are recorded below.
+    with zipfile.ZipFile(wheels['certifi']) as archive:
+        ca_data = archive.read('certifi/cacert.pem')
+    wheel_updates = []
+    directories = [pathlib.Path('/usr/share/python-wheels')]
+    directories += list(pathlib.Path('/usr/lib').glob('python*/ensurepip/_bundled'))
+    directories += list(pathlib.Path('/usr/lib64').glob('python*/ensurepip/_bundled'))
+    directories += list(pathlib.Path('/opt/hostedtoolcache/Python').glob('*/x64/lib/python*/ensurepip/_bundled'))
+    for directory in directories:
+        for wheel in directory.glob('pip-*.whl'):
+            before = hashlib.sha256(wheel.read_bytes()).hexdigest()
+            if refresh_bundled_wheel(wheel, ca_data):
+                wheel_updates.append({'path': str(wheel), 'before_sha256': before,
+                                      'after_sha256': hashlib.sha256(wheel.read_bytes()).hexdigest()})
+
+    return pythons, wheel_updates
+
+
 def install(policy, inputs):
     if os.geteuid() != 0:
         raise ValueError('run only as root inside the offline image copy')
@@ -243,43 +286,7 @@ def install(policy, inputs):
 
     java_stores = refresh_java_stores(policy)
 
-    wheels = {}
-    for entry in policy['python_wheels']:
-        path = inputs / entry['filename']
-        check_file(path, entry)
-        wheels[entry['filename'].split('-')[0]] = path
-    pythons = [pathlib.Path('/usr/bin/python3')]
-    pythons += sorted(pathlib.Path('/opt/hostedtoolcache/Python').glob('*/x64/bin/python3'))
-    for python in pythons:
-        env = dict(os.environ, PYTHONPATH=str(wheels['pip']), PIP_CONFIG_FILE='/dev/null', PIP_DISABLE_PIP_VERSION_CHECK='1')
-        args = []
-        if python == pythons[0]:
-            args = ['--break-system-packages', '--ignore-installed']
-            # Ubuntu's default posix_local scheme already targets /usr/local.
-            # Supplying --prefix selects posix_prefix and an unsearched path.
-            if distro == 'rocky':
-                args += ['--prefix=/usr/local']
-        run(str(python), '-m', 'pip', 'install', '--no-index', '--no-deps', '--no-compile', '--upgrade',
-            *args, *(str(wheels[name]) for name in ('pip', 'certifi')), env=env)
-        run(str(python), '-c', 'import pip,certifi; assert pip.__version__ == "26.2.2"; assert certifi.__version__ == "2026.10.19"')
-        if python != pythons[0]:
-            run('chown', '-R', 'runner:runner', str(python.parent.parent))
-        # ensurepip's filename/version constants must stay coherent. Refresh
-        # only its vendored CA data using the exact official certifi bundle;
-        # RECORD is regenerated, and input/output hashes are recorded below.
-    with zipfile.ZipFile(wheels['certifi']) as archive:
-        ca_data = archive.read('certifi/cacert.pem')
-    wheel_updates = []
-    directories = [pathlib.Path('/usr/share/python-wheels')]
-    directories += list(pathlib.Path('/usr/lib').glob('python*/ensurepip/_bundled'))
-    directories += list(pathlib.Path('/usr/lib64').glob('python*/ensurepip/_bundled'))
-    directories += list(pathlib.Path('/opt/hostedtoolcache/Python').glob('*/x64/lib/python*/ensurepip/_bundled'))
-    for directory in directories:
-        for wheel in directory.glob('pip-*.whl'):
-            before = hashlib.sha256(wheel.read_bytes()).hexdigest()
-            if refresh_bundled_wheel(wheel, ca_data):
-                wheel_updates.append({'path': str(wheel), 'before_sha256': before,
-                                      'after_sha256': hashlib.sha256(wheel.read_bytes()).hexdigest()})
+    pythons, wheel_updates = refresh_python_stores(policy, inputs, distro)
 
     go_lock = json.loads((inputs / 'go-inputs.json').read_text())
     if go_lock['default_go'] != '1.27.3' or [(t['name'], t['version']) for t in go_lock['tools']] != [('go', '1.26.10'), ('go', '1.27.3')]:

@@ -21,7 +21,7 @@ done
 test "${RUNNER_TOOL_CACHE:?}" = /opt/hostedtoolcache
 test "${AGENT_TOOLSDIRECTORY:?}" = /opt/hostedtoolcache
 for version in 1.26.10 1.27.3; do test -f "$RUNNER_TOOL_CACHE/go/$version/x64.complete"; done
-for version in 22.23.3 24.21.0; do test -f "$RUNNER_TOOL_CACHE/node/$version/x64.complete"; done
+for version in 22.23.4 24.22.1; do test -f "$RUNNER_TOOL_CACHE/node/$version/x64.complete"; done
 test "$(GOTOOLCHAIN=local go env GOVERSION)" = go1.27.3
 sudo -n true
 java -version
@@ -47,3 +47,6 @@ if [ "${EXPECT_REPLACEMENT:-0}" = 1 ]; then
 fi
 printf 'runner=%s\n' "$CURRENT_RUNNER" >> "${GITHUB_OUTPUT:?}"
 printf 'Rocky native profile verified: kernel=%s cpus=%s memory_mib=%s runner=%s\n' "$(uname -r)" "$cpus" "$actual_mib" "$CURRENT_RUNNER"
+
+# Exact actual runtime identities; chain acceptance remains separate.
+python3 scripts/check-runtime-security.py

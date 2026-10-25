@@ -8,8 +8,8 @@ out=${1:-images}
 for tool in go curl qemu-img virt-resize virt-customize guestfish python3; do command -v "$tool" >/dev/null; done
 source_name=Rocky-10-GenericCloud-Base-10.2-20260525.0.x86_64.qcow2
 source_sha=9fc9e9ff16888bb68ac39b0392e25c9c92684d50c85f1cce6ab549363bbc4b48
-runner=2.337.0
-runner_sha=70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613
+runner=2.338.1
+runner_sha=08e9ccb3604d2462c24b5e33604dc30810296ca15cc65f23cffd4317eb144c37
 mkdir -p build/rocky-downloads "$out"
 fetch() { curl -fsSL --retry 3 --connect-timeout 15 --max-time 600 --proto '=https' --tlsv1.2 "$1" -o "$2"; }
 [[ -e build/rocky-downloads/source.qcow2 ]] || fetch "https://download.rockylinux.org/pub/rocky/10.2/images/x86_64/$source_name" build/rocky-downloads/source.qcow2
@@ -135,6 +135,9 @@ scripts/refresh-image-trust.sh build/rocky-base.qcow2 build/rocky-ca-trust
 cp "build/rocky-ca-trust/ca-trust.json" "$out/ca-trust.json"
 scripts/refresh-image-php.sh "build/rocky-base.qcow2" "build/rocky-php-security"
 cp "build/rocky-php-security/php-security.json" "$out/php-security.json"
+scripts/refresh-image-runtimes.sh "build/rocky-base.qcow2" "build/rocky-runtime-security" rocky full-builder
+cp "build/rocky-runtime-security/runtime-security.json" "$out/runtime-security.json"
+cp "build/rocky-runtime-security/runtime-trust.json" "$out/runtime-trust.json"
 # /boot is still a separate filesystem in the source GPT layout; inspect mounts
 # it for extraction even though guests only need the root partition at runtime.
 kernel=$(guestfish --ro -a build/rocky-base.qcow2 -m /dev/sda4 -m /dev/sda3:/boot glob-expand '/boot/vmlinuz-*' | grep -v '/boot/vmlinuz-0-rescue-')
@@ -152,6 +155,6 @@ cp guest/images/rocky-102-developer-packages.txt "$out/developer-packages.txt"
 cp build/rocky-downloads/tool-inputs.json "$out/tool-inputs.json"
 printf '{"disk_gib":48,"os":"rocky","os_version":"10.2","architecture":"amd64","machine":"q35","minimum_cpu":"x86-64-v3","source_image":"%s","source_sha256":"%s","runner":"%s","kernel":"%s","software_profile":"native-developer-baseline"}\n' "$source_name" "$source_sha" "$runner" "$version" > "$out/manifest.json"
 GOTOOLCHAIN=go1.27.3 go version -m "build/chickadee-guest" > "$out/guest-build.txt"
-(cd "$out" && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt package-provenance.json ca-trust.json php-security.json guest-build.txt rpm-inputs.json tool-inputs.json developer-packages.txt > SHA256SUMS)
+(cd "$out" && sha256sum base.qcow2 "vmlinuz-$version" "initrd-$version" manifest.json packages.txt package-provenance.json ca-trust.json php-security.json runtime-security.json runtime-trust.json guest-build.txt rpm-inputs.json tool-inputs.json developer-packages.txt > SHA256SUMS)
 chmod 0444 "$out"/*
 echo 'Rocky 10.2 q35 bundle built; perform READY and real-job validation before deployment.'

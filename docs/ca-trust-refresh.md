@@ -50,7 +50,7 @@ block. TLS's 12 chains do not test code signing verification.
   outside this default-store mitigation. Require official Node/runner updates
   when available.
 - Python: install checksum-pinned official pip `26.2.2` and certifi
-  `2026.10.19` without dependency resolution or network access into every
+  `2026.10.23` without dependency resolution or network access into every
   installed toolcache interpreter. For the distribution interpreter, place
   those two packages in `/usr/local`, preserving distribution-owned package
   files. Refresh ensurepip's embedded pip wheel CA data from the exact official

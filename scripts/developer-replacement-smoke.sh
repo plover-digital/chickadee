@@ -3,8 +3,8 @@
 # Defaults preserve the existing Ubuntu26 medium workflow and direct invocation.
 set -euo pipefail
 case ${UBUNTU_VERSION:-26.04} in
-  24.04) expected_os=24.04; expected_node=v22.23.3; expected_clang=clang-18 ;;
-  26.04) expected_os=26.04; expected_node=v24.21.0; expected_clang=clang-21 ;;
+  24.04) expected_os=24.04; expected_node=v22.23.4; expected_clang=clang-18 ;;
+  26.04) expected_os=26.04; expected_node=v24.22.1; expected_clang=clang-21 ;;
   *) echo 'Unsupported Ubuntu developer profile' >&2; exit 1 ;;
 esac
 case ${PROFILE_SIZE:-medium} in
@@ -59,11 +59,11 @@ for version in 1.26.10 1.27.3; do
   test -f "$RUNNER_TOOL_CACHE/go/$version/x64.complete"
   test "$(GOTOOLCHAIN=local "$RUNNER_TOOL_CACHE/go/$version/x64/bin/go" env GOVERSION)" = "go$version"
 done
-for version in 22.23.3 24.21.0; do
+for version in 22.23.4 24.22.1; do
   test -f "$RUNNER_TOOL_CACHE/node/$version/x64.complete"
   test "$("$RUNNER_TOOL_CACHE/node/$version/x64/bin/node" --version)" = "v$version"
 done
-for version in 3.10.21 3.11.16 3.12.14 3.13.15 3.14.7; do
+for version in 3.10.22 3.11.17 3.12.15 3.13.17 3.14.9; do
   test -f "$RUNNER_TOOL_CACHE/Python/$version/x64.complete"
   "$RUNNER_TOOL_CACHE/Python/$version/x64/bin/python3" -c 'import ssl,sqlite3,ctypes,zlib,pip'
 done
@@ -89,3 +89,6 @@ uname -r
 sha256sum /usr/local/bin/chickadee-guest
 printf 'runner=%s\n' "$CURRENT_RUNNER" >> "$GITHUB_OUTPUT"
 printf 'developer runner accepted: %s\n' "$CURRENT_RUNNER"
+
+# Exact actual runtime identities; chain acceptance remains separate.
+python3 scripts/check-runtime-security.py

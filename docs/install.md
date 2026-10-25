@@ -65,7 +65,7 @@ libguestfs with KVM where available and a software-emulation fallback for
 mounting the image on the host. Job VMs always require KVM. The default build is
 Ubuntu 26.04 with its stock generic kernel on q35, developer tools, and guest-local
 Docker. Inputs are Ubuntu's signed dated rootfs release `20260927`, authenticated
-archive snapshot `20261020T000000Z`, and GitHub runner `2.337.0` with a fixed SHA-256.
+archive snapshot `20261020T000000Z`, and GitHub runner `2.338.1` with a fixed SHA-256.
 SDK and toolcache archives have individually verified hashes; see
 [Ubuntu 26.04 inputs](ubuntu-2604.md). The installed
 kernel version, package list, initrd, manifest and image checksums are retained.

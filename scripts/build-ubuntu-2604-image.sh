@@ -144,6 +144,11 @@ scripts/refresh-image-trust.sh "$work/base.qcow2" "$work/ca-trust"
 cp "$work/ca-trust/ca-trust.json" "$out/ca-trust.json"
 scripts/refresh-image-php.sh "$work/base.qcow2" "$work/php-security"
 cp "$work/php-security/php-security.json" "$out/php-security.json"
+if [[ $profile == developer ]]; then
+ scripts/refresh-image-runtimes.sh "$work/base.qcow2" "$work/runtime-security" 26.04 full-builder
+ cp "$work/runtime-security/runtime-security.json" "$out/runtime-security.json"
+ cp "$work/runtime-security/runtime-trust.json" "$out/runtime-trust.json"
+fi
 guestfish --ro -a "$work/base.qcow2" -m /dev/sda download /image-packages.txt "$out/packages.txt"
 guestfish --ro -a "$work/base.qcow2" -m /dev/sda download /image-package-provenance.json "$out/package-provenance.json"
 kernel=$(guestfish --ro -a "$work/base.qcow2" -m /dev/sda glob-expand '/boot/vmlinuz-*')
@@ -164,7 +169,7 @@ if [[ $profile == developer ]]; then
  cp guest/images/github-ubuntu-2604.json "$out/tool-inputs.json"
  cp guest/images/github-extra-ubuntu-2604.json "$out/extra-inputs.json"
  guestfish --ro -a "$out/base.qcow2" -m /dev/sda download /etc/chickadee/image-compatibility.json "$out/compatibility.json"
- extras=(tool-inputs.json extra-inputs.json compatibility.json)
+ extras=(tool-inputs.json extra-inputs.json compatibility.json runtime-security.json runtime-trust.json)
 fi
 printf '{"disk_gib":%s,"os":"ubuntu","os_version":"26.04","architecture":"amd64","machine":"q35","ubuntu_release":"%s","snapshot":"%s","runner":"%s","kernel":"%s","software_profile":"%s"}\n' "$disk_gib" "$release" "$snapshot" "$runner" "$version" "$profile" > "$out/manifest.json"
 GOTOOLCHAIN=go1.27.3 go version -m "$work/chickadee-guest" > "$out/guest-build.txt"

@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "version": "2.338.1",
+  "filename": "actions-runner-linux-x64-2.338.1.tar.gz",
+  "url": "https://github.com/actions/runner/releases/download/v2.338.1/actions-runner-linux-x64-2.338.1.tar.gz",
+  "sha256": "08e9ccb3604d2462c24b5e33604dc30810296ca15cc65f23cffd4317eb144c37",
+  "size": 227944224,
+  "source_commit": "e78522a9a7b01c3bcd7ac0da6e3a9bb6cd513a76",
+  "provenance": "GitHub release asset SHA256 and release-body checksum; mutable release, no attached detached signature",
+  "bundled_node24": "24.22.1",
+  "bundled_node20": "20.20.2",
+  "bundled_node20_status": "EOL; unchanged official payload, not a patched runtime",
+  "private_dotnet_runtime": "8.0.32",
+  "pkcs_package": "10.0.13",
+  "files_sha256": {
+    "externals/node24_alpine/bin/node": "570430eb952b879e9af4d1403a76639c3dd4e36bf6bc0d775001191e9960774d",
+    "externals/node24/bin/node": "e32e2d16081cf644f88392934288086e7662529d0d43277c34f7aad2207cfafb",
+    "externals/node20_alpine/bin/node": "9d1bf97678655401b9b9192e98e5f769214b47f56d51ca8c9bbc30eb95c83efe",
+    "externals/node20/bin/node": "6295488653f0d93b0a157841746fef7e72cc4328cfb60c4bbe0ca2668a836ffd",
+    "bin/libSystem.Security.Cryptography.Native.OpenSsl.so": "ca2cd410d69a6a1e09087d1ed543035947926e41c50ecb701c6f1837b61ef8d5",
+    "bin/Runner.Worker": "69a4dc9edab955bce3231e65b14f497832d159d549eb90a15bede09ed1cd695c",
+    "bin/libcoreclr.so": "a8a81fc0cbed0c3c3cc94b4daa3a4435c8e37eb579df64bd5afc333e626dfa46",
+    "bin/libhostpolicy.so": "02d75f5b1a8c5b1b5bc3392ca3f3875766d7bdb33799fba4ca647a330eff128d",
+    "bin/Runner.Listener": "91af14c889c07b7090365e28fa977781e76e311720f05914fe6a4ea88b8bf2ea"
+  }
+}

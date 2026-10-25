@@ -280,6 +280,14 @@
     "repository": "baseos"
   },
   {
+    "name": "ca-certificates-2026.2.92_v9.0.319-100.3.el10_2.noarch.rpm",
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/c/ca-certificates-2026.2.92_v9.0.319-100.3.el10_2.noarch.rpm",
+    "sha256": "92645747b01d378de8db932103b444c80e16afb39852b628e345a4d9515b4ce6",
+    "nevra": "ca-certificates-2026.2.92_v9.0.319-100.3.el10_2.noarch",
+    "source_rpm": "ca-certificates-2026.2.92_v9.0.319-100.3.el10_2.src.rpm",
+    "repository": "baseos"
+  },
+  {
     "name": "cairo-1.18.2-2.el10_2.1.x86_64.rpm",
     "url": "https://download.rockylinux.org/pub/rocky/10.2/AppStream/x86_64/os/Packages/c/cairo-1.18.2-2.el10_2.1.x86_64.rpm",
     "sha256": "9105279200717dbc065d01210049c58744876c487900a79588837866b980dd20",

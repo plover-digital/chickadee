@@ -21,8 +21,8 @@ class DeveloperReplacementChecks(unittest.TestCase):
     def test_profile_selection_and_legacy_defaults(self):
         gate = SCRIPT.split('. /etc/os-release')[0]
         gate += '\nprintf "%s %s %s %s %s" "$expected_os" "$expected_cpus" "$expected_memory" "$expected_node" "$expected_clang"\n'
-        self.assertEqual(self.run_gate(gate).stdout, '26.04 4 8192 v24.21.0 clang-21')
-        for distro, node, clang in [('24.04', 'v22.23.3', 'clang-18'), ('26.04', 'v24.21.0', 'clang-21')]:
+        self.assertEqual(self.run_gate(gate).stdout, '26.04 4 8192 v24.22.1 clang-21')
+        for distro, node, clang in [('24.04', 'v22.23.4', 'clang-18'), ('26.04', 'v24.22.1', 'clang-21')]:
             for size, cpus, memory in [('small', 2, 4096), ('medium', 4, 8192)]:
                 result = self.run_gate(gate, UBUNTU_VERSION=distro, PROFILE_SIZE=size)
                 self.assertEqual(result.returncode, 0, result.stderr)

@@ -33,19 +33,18 @@ Included:
 - The official toolset's vital/common/command APT package groups, including
   `unzip`, GNU `tar`, `gzip`, `zstd`, `sudo`, Git LFS, and common build libraries.
 - GCC/G++/Fortran 12/13/14; Clang/format/tidy 16/17/18; CMake and Ninja.
-- Go 1.26.10 and 1.27.3 (default); Node 22.23.3 and 24.21.0; Python 3.10.21,
-  3.11.16, 3.12.14, 3.13.15, 3.14.7 in `/opt/hostedtoolcache` with completion
+- Go 1.26.10 and 1.27.3 (default); Node 22.23.4 and 24.22.1; Python 3.10.22,
+  3.11.17, 3.12.15, 3.13.17, 3.14.9 in `/opt/hostedtoolcache` with completion
   markers understood by `actions/setup-*`.
 - Java 17/21, Maven, Ant, Ruby, PHP/Composer, and Python pip/venv/pipx.
 - Guest-local Docker, Compose, Buildx, Podman, Buildah, and Skopeo. The guest
   runner can use Docker and passwordless sudo. No host Docker socket is shared.
 - PostgreSQL, MySQL, Apache, and Nginx, disabled until a workflow starts them.
-- Rust 1.98.1 and Rustup 1.29.1; all eleven .NET SDK versions in the pinned
-  hosted inventory; Firefox 156.0 and Geckodriver 0.37.1.
-- Chrome 155.0.8059.39 from a pinned official Google APT package. Its version
-  differs from the reference Chrome 154.0.8037.57 because that older package
-  checksum is no longer published in the current vendor repository. The lock
-  records this difference.
+- Rust 1.99.1 and Rustup 1.29.2; six .NET SDKs republished in the current
+  security releases: 8.0.132/426, 9.0.122/319 and 10.0.113/402. Superseded
+  feature bands are removed, including their older shared runtimes.
+- Firefox 158.0.1, Geckodriver 0.37.1 and Chrome 156.0.8078.47 from pinned
+  official inputs. Browser profile trust/revocation requires separate acceptance.
 
 Tool archives use fixed official release URLs and SHA256 or SHA512 digests from
 GitHub release metadata and Microsoft/Rust/Mozilla/Google published checksums;

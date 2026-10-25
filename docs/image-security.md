@@ -73,29 +73,31 @@ security and deployment acceptance.
 
 ## Runner availability and toolchains
 
-[Runner 2.338.0](https://github.com/actions/runner/releases/tag/v2.338.0) was
-published on October 6, but its release notes specify a progressive rollout.
-On October 19 the authenticated repository runner-download endpoint still
-advertised Linux x64 **2.337.0**. Builders retain that currently advertised
-version and its verified checksum. Version 2.338.0 is a future candidate, with upstream Linux
-x64 SHA256 `af4b794c1bc41d73d40535e3fe092a39f9679cd8d965954c2aca25a05ca41d32`.
-Recheck the target repository/organization download instructions before updating
-all Linux builder pins together. Never store registration tokens in a lock.
+Linux image builders pin the complete official [Runner 2.338.1](https://github.com/actions/runner/releases/tag/v2.338.1)
+archive, published October 22. Its release-body checksum and GitHub asset digest
+agree. The release is mutable and has no attached detached signature; the lock
+records the exact bytes and source commit rather than claiming a signed release.
+The payload contains Node 24.22.1, private .NET 8.0.32 and PKCS/ASN.1 10.0.13.
+It also retains EOL Node 20.20.2. Internal helpers default to Node 24, but action
+selection depends on server migration flags and workflow overrides. Updating the
+bundle does not establish that every Node 20 action path is disabled. Do not
+replace individual vendor runtime directories or describe Node 20 as patched.
 
 GitHub's [update policy](https://docs.github.com/en/actions/reference/runners/self-hosted-runners)
 requires updating within 30 days of availability when automatic updates are
 disabled; critical security updates can block jobs sooner. Record observed
 availability and the resulting deadline separately from the release publication
 date. No deadline is inferred here. Validate Node 24 internal runner operations
-and `hashFiles()` when accepting 2.338.0.
+and `hashFiles()` when accepting a new runner.
 
 Guest Go caches now contain supported **1.26.10 and 1.27.3**, defaulting to 1.27.3,
 from exact Actions release assets and published SHA256 metadata, cross-checked
 against [Go's supported downloads](https://go.dev/dl/?mode=json).
 Unsupported Go 1.24/1.25 caches are removed; jobs requiring those versions must
 explicitly install them and own that risk. This is a guest compatibility change.
-Other language/SDK archives retain their existing pins and still require artifact
-scanning; refreshing Go does not certify the complete developer image.
+See [the incremental runtime update](runtime-security-refresh.md) for current
+Node, .NET, browser and native trust inputs. Inventory and package fixes do not
+certify every HTTPS client or a complete developer image.
 Guest bootstrap compilation explicitly selects `GOTOOLCHAIN=go1.27.3`.
 
 To generate a proposed Go lock without overwriting the reviewed input:

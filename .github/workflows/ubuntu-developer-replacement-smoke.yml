@@ -42,7 +42,7 @@ jobs:
         run: bash scripts/developer-replacement-smoke.sh
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.0.0
         with:
-          node-version: '24.21.0'
+          node-version: '24.22.1'
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: '1.27.3'
@@ -50,7 +50,7 @@ jobs:
       - name: Verify selected cached runtimes
         run: |
           set -eu
-          test "$(node --version)" = v24.21.0
+          test "$(node --version)" = v24.22.1
           test "$(GOTOOLCHAIN=local go env GOVERSION)" = go1.27.3
   second:
     needs: first
@@ -74,7 +74,7 @@ jobs:
         run: bash scripts/developer-replacement-smoke.sh
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.0.0
         with:
-          node-version: '24.21.0'
+          node-version: '24.22.1'
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: '1.27.3'
@@ -82,5 +82,5 @@ jobs:
       - name: Verify selected cached runtimes
         run: |
           set -eu
-          test "$(node --version)" = v24.21.0
+          test "$(node --version)" = v24.22.1
           test "$(GOTOOLCHAIN=local go env GOVERSION)" = go1.27.3
