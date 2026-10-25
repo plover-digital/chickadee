@@ -27,9 +27,28 @@ def safe_root(path):
         raise ValueError('managed runtime root must not be a symlink: ' + str(path))
 
 
-def install(directory, runner, lock):
+def require_tuple(text, rocky):
+    entries = [line.split('=', 1) for line in text.splitlines() if line and not line.startswith('#')]
+    if any(len(e) != 2 for e in entries) or len({e[0] for e in entries}) != len(entries):
+        raise ValueError('invalid or duplicate runner environment entry')
+    values = dict(entries)
+    expected = {'NODE_OPTIONS': '--use-openssl-ca',
+                'SSL_CERT_FILE': '/etc/pki/tls/certs/ca-bundle.crt' if rocky else '/etc/ssl/certs/ca-certificates.crt',
+                'SSL_CERT_DIR': '/etc/pki/tls/certs' if rocky else '/etc/ssl/certs'}
+    if any(values.get(key) != value for key, value in expected.items()):
+        raise ValueError('runtime update requires the accepted vendor CA tuple first')
+
+
+def install(directory, runner, lock, expected_bootstrap=None):
     if os.geteuid() != 0:
         raise ValueError('root in offline disposable image required')
+    rocky = pathlib.Path('/etc/rocky-release').exists()
+    require_tuple(pathlib.Path('/etc/chickadee/runner.env').read_text(), rocky)
+    bootstrap = pathlib.Path('/usr/local/bin/chickadee-guest')
+    with bootstrap.open('rb') as stream:
+        bootstrap_sha256 = hashlib.file_digest(stream, 'sha256').hexdigest()
+    if expected_bootstrap is not None and bootstrap_sha256 != expected_bootstrap:
+        raise ValueError('actual retained bootstrap differs from accepted parent provenance')
     target = pathlib.Path('/opt/actions-runner')
     safe_root(target)
     # Accepted immutable input must be unconfigured, never a copy of a registered runner.
@@ -87,6 +106,7 @@ def install(directory, runner, lock):
     owner = pwd.getpwnam('runner')
     subprocess.run(['chown', '-R', f'{owner.pw_uid}:{owner.pw_gid}', str(target), str(cache), *([] if rocky else ['/opt/hostedtoolcache/Python'])], check=True)
     report = {'schema': 1, 'runner': runner, 'node_toolcache': [t for t in lock['tools'] if t['name'] == 'node'], 'default_node': default, 'python_toolcache': [] if rocky else [t for t in lock['tools'] if t['name'] == 'python'],
+              'bootstrap_sha256': bootstrap_sha256,
               'scope': 'official full runner and Node caches; vendor EOL Node20 retained, no runtime/Listener acceptance implied'}
     pathlib.Path('/etc/chickadee/runtime-security.json').write_text(json.dumps(report, indent=2) + '\n')
     inventory = pathlib.Path('/etc/chickadee/image-compatibility.json')
@@ -148,6 +168,7 @@ def main():
     parser.add_argument('--nss-policy', type=pathlib.Path)
     parser.add_argument('--rocky-policy', type=pathlib.Path)
     parser.add_argument('--extra-lock', type=pathlib.Path)
+    parser.add_argument('--expected-bootstrap-sha256')
     parser.add_argument('directory', type=pathlib.Path)
     args = parser.parse_args()
     runner, lock = [json.loads(p.read_text()) for p in [args.runner, args.lock]]
@@ -159,7 +180,7 @@ def main():
     if all(policies):
         supplemental(args.directory, *[json.loads(p.read_text()) for p in policies], extra)
     if args.install:
-        install(args.directory, runner, lock)
+        install(args.directory, runner, lock, args.expected_bootstrap_sha256)
         if all(policies):
             supplemental(args.directory, *[json.loads(p.read_text()) for p in policies], extra, install_now=True)
         if args.extra_lock:

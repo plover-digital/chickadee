@@ -24,6 +24,11 @@ PY
 [[ $image != --prepare ]] || exit 0
 extra_args=(); [[ -z $extra ]] || extra_args=(--upload "$extra:/tmp/chickadee-runtime/extra-lock.json")
 extra_option=; [[ -z $extra ]] || extra_option='--extra-lock /tmp/chickadee-runtime/extra-lock.json'
+bootstrap_option=
+if [[ -n ${CHICKADEE_RUNTIME_BOOTSTRAP_SHA256:-} ]]; then
+ [[ $CHICKADEE_RUNTIME_BOOTSTRAP_SHA256 =~ ^[0-9a-f]{64}$ ]]
+ bootstrap_option="--expected-bootstrap-sha256 $CHICKADEE_RUNTIME_BOOTSTRAP_SHA256"
+fi
 virt-customize --no-network --memsize 1024 --smp 1 -a "$image" \
  --mkdir /tmp/chickadee-runtime \
  --upload guest/refresh-runtime-security.py:/tmp/chickadee-runtime/refresh-runtime-security.py \
@@ -37,7 +42,7 @@ virt-customize --no-network --memsize 1024 --smp 1 -a "$image" \
  --upload "$lock:/tmp/chickadee-runtime/lock.json" "${extra_args[@]}" \
  --upload "$work/runtime-inputs.tar":/tmp/chickadee-runtime/inputs.tar \
  --run-command 'mkdir /tmp/chickadee-runtime/inputs; tar -xf /tmp/chickadee-runtime/inputs.tar -C /tmp/chickadee-runtime/inputs' \
- --run-command "python3 /tmp/chickadee-runtime/refresh-runtime-security.py --runner /tmp/chickadee-runtime/runner.json --lock /tmp/chickadee-runtime/lock.json --trust-policy /tmp/chickadee-runtime/trust.json --nss-policy /tmp/chickadee-runtime/nss.json --rocky-policy /tmp/chickadee-runtime/rocky.json $extra_option --install /tmp/chickadee-runtime/inputs" \
+ --run-command "python3 /tmp/chickadee-runtime/refresh-runtime-security.py --runner /tmp/chickadee-runtime/runner.json --lock /tmp/chickadee-runtime/lock.json --trust-policy /tmp/chickadee-runtime/trust.json --nss-policy /tmp/chickadee-runtime/nss.json --rocky-policy /tmp/chickadee-runtime/rocky.json $extra_option $bootstrap_option --install /tmp/chickadee-runtime/inputs" \
  --upload guest/package-provenance.py:/tmp/chickadee-runtime/package-provenance.py \
  --run-command 'python3 /tmp/chickadee-runtime/package-provenance.py > /image-package-provenance.json; if test -e /etc/rocky-release; then rpm -qa | sort > /image-packages.txt; else dpkg-query -W > /image-packages.txt; fi' \
  --delete /tmp/chickadee-runtime --no-selinux-relabel

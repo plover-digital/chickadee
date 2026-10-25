@@ -11,6 +11,7 @@ family=${4:?24.04, 26.04 or rocky required}
 [[ -z $(git status --porcelain --untracked-files=normal) ]]
 printf '%s  %s\n' "$seal" "$source_dir/SHA256SUMS" | sha256sum --check
 python3 scripts/check-image-bundle.py "$source_dir"
+export CHICKADEE_RUNTIME_BOOTSTRAP_SHA256=$(python3 scripts/check-runtime-parent.py "$source_dir")
 [[ -z $(find "$source_dir" -maxdepth 1 -name 'pre-runtime-*' -print -quit) ]]
 # Fail fast on every supplemental hash before copying a large parent image.
 scripts/refresh-image-runtimes.sh --prepare "$out.inputs" "$family"

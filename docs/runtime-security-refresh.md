@@ -40,7 +40,14 @@ CHICKADEE_RUNTIME_INPUTS=/inputs scripts/refresh-runtime-bundle.sh \
   /accepted/parent /fresh/private-output EXACT_PARENT_SEAL 26.04
 ```
 
-Use `24.04` or `rocky` for the other supported Linux families. The helper verifies
+Use `24.04` for the other Ubuntu family. **Raw older Rocky bundles are not
+valid runtime-refresh parents:** first produce a trusted CA/PHP baseline with
+the reviewed combined bootstrap and vendor Node tuple, or use the coherent full
+builder. A runtime refresh preserves its parent bootstrap; native CA installation
+does not add the parser or environment inheritance. Parent provenance and the
+actual bootstrap ELF/trust tuple are checked before any runtime edit. Only after
+that baseline exists may `rocky` be used. No raw-Rocky incremental command is
+accepted by this path. The helper verifies
 the complete parent seal, exact flat entry set and expected kernel aliases before
 copying. It verifies supplemental hashes before the large copy, retains replaced
 metadata as `pre-runtime-*`, derives effective tool inventories and seals a new

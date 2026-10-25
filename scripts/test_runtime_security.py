@@ -83,6 +83,32 @@ class RuntimeSecurity(unittest.TestCase):
         for root in ['/usr/share/dotnet', '/opt/firefox', '/opt/rustup']:
             self.assertIn(root, source)
 
+    def test_raw_parent_rejected_matching_baseline_accepted(self):
+        parent = load('parent', 'scripts/check-runtime-parent.py')
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            write = lambda name, value: (root / name).write_text(json.dumps(value))
+            write('manifest.json', {'os': 'rocky'})
+            with self.assertRaises(ValueError):
+                parent.validate(root)
+            write('manifest.json', {'os': 'ubuntu', 'trust_refresh': 'emudhra-20261021-v1', 'php_security_refresh': 'USN-8948-1'})
+            write('bootstrap-build-provenance.json', {'compiler': 'go1.27.3', 'binary_sha256': 'a' * 64})
+            write('trust-build-provenance.json', {'bootstrap_sha256': 'a' * 64})
+            write('php-security.json', {'scope': 'synthetic test report'})
+            self.assertEqual(parent.validate(root), 'a' * 64)
+            write('trust-build-provenance.json', {'bootstrap_sha256': 'b' * 64})
+            with self.assertRaises(ValueError):
+                parent.validate(root)
+
+    def test_old_missing_or_append_only_node_tuple_rejected(self):
+        valid = 'NODE_OPTIONS=--use-openssl-ca\nSSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt\nSSL_CERT_DIR=/etc/ssl/certs\n'
+        runtime.require_tuple(valid, False)
+        for text in ['', valid.replace('--use-openssl-ca', '--use-bundled-ca'), valid + 'NODE_OPTIONS=--use-openssl-ca\n']:
+            with self.assertRaises(ValueError):
+                runtime.require_tuple(text, False)
+        with self.assertRaises(ValueError):
+            runtime.require_tuple(valid, True)
+
     def test_runner_pins_coherent_and_eol_explicit(self):
         lock = json.loads((ROOT / 'guest/images/runner-linux-x64.json').read_text())
         self.assertEqual(lock['version'], '2.338.1')
