@@ -109,6 +109,24 @@ class RuntimeSecurity(unittest.TestCase):
         with self.assertRaises(ValueError):
             runtime.require_tuple(valid, True)
 
+    def test_identical_sdk_metadata_duplicates_preserve_unique_trust_tuple(self):
+        for rocky in [False, True]:
+            cert = '/etc/pki/tls/certs/ca-bundle.crt' if rocky else '/etc/ssl/certs/ca-certificates.crt'
+            directory = '/etc/pki/tls/certs' if rocky else '/etc/ssl/certs'
+            controls = [f'NODE_OPTIONS=--use-openssl-ca', f'SSL_CERT_FILE={cert}', f'SSL_CERT_DIR={directory}']
+            metadata = ['DOTNET_ROOT=/usr/share/dotnet', 'DOTNET_MULTILEVEL_LOOKUP=0',
+                        'DOTNET_NOLOGO=1', 'DOTNET_CLI_TELEMETRY_OPTOUT=1',
+                        'CARGO_HOME=/opt/cargo', 'RUSTUP_HOME=/opt/rustup',
+                        'GECKOWEBDRIVER=/usr/local/bin/geckodriver']
+            valid = '\n'.join(controls + metadata + metadata) + '\n'
+            runtime.require_tuple(valid, rocky)
+            for line in controls:
+                with self.subTest(rocky=rocky, duplicate=line), self.assertRaises(ValueError):
+                    runtime.require_tuple(valid + line + '\n', rocky)
+            for invalid in ['DOTNET_ROOT=/different', 'BROKEN', '=empty', 'BAD KEY=value']:
+                with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                    runtime.require_tuple(valid + invalid + '\n', rocky)
+
     def test_runner_pins_coherent_and_eol_explicit(self):
         lock = json.loads((ROOT / 'guest/images/runner-linux-x64.json').read_text())
         self.assertEqual(lock['version'], '2.338.1')

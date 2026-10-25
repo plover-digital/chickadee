@@ -29,13 +29,23 @@ def safe_root(path):
 
 
 def require_tuple(text, rocky):
-    entries = [line.split('=', 1) for line in text.splitlines() if line and not line.startswith('#')]
-    if any(len(e) != 2 for e in entries) or len({e[0] for e in entries}) != len(entries):
-        raise ValueError('invalid or duplicate runner environment entry')
-    values = dict(entries)
     expected = {'NODE_OPTIONS': '--use-openssl-ca',
                 'SSL_CERT_FILE': '/etc/pki/tls/certs/ca-bundle.crt' if rocky else '/etc/ssl/certs/ca-certificates.crt',
                 'SSL_CERT_DIR': '/etc/pki/tls/certs' if rocky else '/etc/ssl/certs'}
+    values = {}
+    for line in text.splitlines():
+        if not line or line.startswith('#'):
+            continue
+        if '=' not in line:
+            raise ValueError('invalid runner environment entry')
+        key, value = line.split('=', 1)
+        if not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', key):
+            raise ValueError('invalid runner environment key')
+        # Existing SDK installers can append identical metadata. Trust controls
+        # must remain unique even when their repeated values are identical.
+        if key in values and (key in expected or values[key] != value):
+            raise ValueError('conflicting or duplicate trust runner environment entry')
+        values[key] = value
     if any(values.get(key) != value for key, value in expected.items()):
         raise ValueError('runtime update requires the accepted vendor CA tuple first')
 
