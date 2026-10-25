@@ -7,21 +7,66 @@ import os
 import pathlib
 import re
 import subprocess
+import sys
 
 
-def inventory():
-    text = subprocess.check_output(['dpkg-query', '-W', '-f=${db:Status-Abbrev}\t${binary:Package}\t${Version}\t${Architecture}\n'], text=True)
+DPKG_QUERY = ['dpkg-query', '-W', '-f=${db:Status-Abbrev}\t${binary:Package}\t${Version}\t${Architecture}\n']
+
+
+def parse_inventory(text):
+    if not text.strip():
+        raise ValueError('empty dpkg query output')
     result = {}
     for line in text.splitlines():
         status, name, version, arch = line.split('\t')
-        if status[1:2] == 'i':
-            if status != 'ii ':
-                raise ValueError('incomplete installed dpkg state: ' + name)
-            name = name.split(':')[0]
-            if name in result:
-                raise ValueError('multiarch inventory unsupported')
-            result[name] = (version, arch)
+        if not name or status == 'rc ' and (not version or not arch):
+            raise ValueError('malformed dpkg identity')
+        # Explicitly clean non-installed records. rc retains configuration only;
+        # none can require APT/dpkg configuration outside the finite install set.
+        if status in ('rc ', 'un ', 'rn ', 'pn '):
+            continue
+        if status != 'ii ':
+            raise ValueError('incomplete, error, held or unsupported dpkg state: ' + name + ' ' + repr(status))
+        if not name or not version or not arch:
+            raise ValueError('malformed installed dpkg identity')
+        name = name.split(':')[0]
+        if name in result:
+            raise ValueError('multiarch inventory unsupported')
+        result[name] = (version, arch)
     return result
+
+
+def inventory():
+    return parse_inventory(subprocess.check_output(DPKG_QUERY, text=True))
+
+
+def pretransaction_inventory(report):
+    evidence = {'accepted': False, 'commands': []}
+    try:
+        outputs = []
+        for argv in [DPKG_QUERY, ['dpkg', '--audit']]:
+            result = subprocess.run(argv, capture_output=True, text=True,
+                                    env=dict(os.environ, LC_ALL='C'))
+            evidence['commands'].append({'argv': argv, 'exit': result.returncode,
+                                         'stdout': result.stdout, 'stderr': result.stderr})
+            if result.returncode:
+                raise subprocess.CalledProcessError(result.returncode, argv,
+                                                    output=result.stdout, stderr=result.stderr)
+            outputs.append(result.stdout)
+            if result.stderr.strip():
+                raise ValueError('pretransaction dpkg query/audit diagnostic')
+        if outputs[1].strip():
+            raise ValueError('pretransaction dpkg audit reported an incomplete state')
+        actual = parse_inventory(outputs[0])
+        evidence['accepted'] = True
+        return actual
+    except Exception as error:
+        evidence['error'] = str(error)
+        raise
+    finally:
+        if not evidence['accepted']:
+            print(json.dumps(evidence), file=sys.stderr)
+        report.write_text(json.dumps(evidence, indent=2) + '\n')
 
 
 def expected_before(plan):
@@ -33,23 +78,25 @@ def expected_before(plan):
 
 
 def validate_plan_output(output, plan):
-    actual = {}
+    actions = {'Inst': {}, 'Conf': {}}
     for line in output.splitlines():
-        if line.startswith('Remv '):
-            raise ValueError('native APT proposed removal')
-        if line.startswith('Inst '):
-            match = re.fullmatch(r'Inst ([^ ]+)(?: \[[^]]+\])? \(([^ ]+) .+\)', line)
+        if line.startswith(('Remv ', 'Purg ')):
+            raise ValueError('native APT proposed removal/purge')
+        for action, actual in actions.items():
+            if not line.startswith(action + ' '):
+                continue
+            match = re.fullmatch(action + r' ([^ ]+)(?: \[[^]]+\])? \(([^ ]+) .+\)', line)
             if not match:
                 raise ValueError('unrecognized native APT transaction row')
             name, version = match.groups()
             name = name.split(':')[0]
             if name in actual:
-                raise ValueError('duplicate native APT install row')
+                raise ValueError('duplicate native APT action row')
             actual[name] = version
     expected = {r['name']: r['version'] for r in plan['packages']}
-    if actual != expected:
-        raise ValueError('native APT transaction differs from finite prepared lock')
-    return actual
+    if any(actual != expected for actual in actions.values()):
+        raise ValueError('native APT install/configure transaction differs from finite prepared lock')
+    return actions['Inst']
 
 
 def verify_after(before, after, plan):
@@ -78,7 +125,7 @@ def install(plan, cache, report, expected_bootstrap):
     release = dict(line.split('=', 1) for line in pathlib.Path('/etc/os-release').read_text().splitlines() if '=' in line)
     if release.get('ID', '').strip('"') != 'ubuntu' or release.get('VERSION_ID', '').strip('"') != plan['family']:
         raise ValueError('wrong Ubuntu working copy')
-    before = inventory()
+    before = pretransaction_inventory(report.with_suffix('.dpkg-preflight.json'))
     if before != expected_before(plan):
         raise ValueError('working copy package inventory differs from accepted parent')
     bootstrap = pathlib.Path('/usr/local/bin/chickadee-guest')

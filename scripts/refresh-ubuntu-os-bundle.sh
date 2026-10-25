@@ -52,6 +52,7 @@ virt-customize --no-network --memsize 1024 --smp 1 -a "$out/working.qcow2" \
  --delete /tmp/chickadee-os --no-selinux-relabel
 for report in os-security os-java-trust; do guestfish --ro -a "$out/working.qcow2" -i download "/etc/chickadee/$report.json" "$out/$report.json"; done
 guestfish --ro -a "$out/working.qcow2" -i download /etc/chickadee/os-security.apt-plan.txt "$out/os-security.apt-plan.txt"
+guestfish --ro -a "$out/working.qcow2" -i download /etc/chickadee/os-security.dpkg-preflight.json "$out/os-security.dpkg-preflight.json"
 guestfish --ro -a "$out/working.qcow2" -i download /image-packages.txt "$out/packages.txt"
 guestfish --ro -a "$out/working.qcow2" -i download /image-package-provenance.json "$out/package-provenance.json"
 kernel=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["kernel"])' "$plan")

@@ -47,8 +47,15 @@ Static dependency closure is not native APT solver acceptance. Inside the later
 offline copy, APT must simulate exactly the locked package/version set. Ambient
 repositories/lists, recommendations and downloads are disabled. Removals, extra
 installs, downgrades, a different parent inventory or an unconfigured/held package
-state stop the transaction before installation. Actual APT/dpkg execution is
-pending the coordinator's separate resource GO.
+state stop the transaction before installation. Before simulation or service-policy
+changes, query every dpkg state and require a clean `dpkg --audit`. Only `ii `
+installed rows and explicitly non-installed `rc ` (residual configuration), `un `,
+`rn ` and `pn ` rows are accepted; half-installed/unpacked/half-configured,
+trigger-pending/awaiting, held, error and malformed states fail closed. Retain
+query/audit stdout, stderr and exit status, including on failure. APT's `Inst` and
+`Conf` sets must both equal the exact planned package/version set; configuration
+of an unpacked package outside the plan cannot be hidden by installed inventory.
+Actual APT/dpkg execution is pending the coordinator's separate resource GO.
 
 ## Kernel and protected image state
 

@@ -1,6 +1,7 @@
 import importlib.util
 import hashlib
 import json
+import io
 import pathlib
 import subprocess
 import tempfile
@@ -66,9 +67,9 @@ class NativeRefresh(unittest.TestCase):
 
     def test_native_exact_plan_old_new_extra_removal_and_malformed(self):
         plan = {'packages': [{'name': 'openssl', 'version': '2'}, {'name': 'kernel', 'version': '3'}]}
-        good = 'Inst openssl [1] (2 local-deb [amd64])\nInst kernel (3 local-deb [amd64])\nConf kernel (3 local-deb [amd64])\n'
+        good = 'Inst openssl [1] (2 local-deb [amd64])\nInst kernel (3 local-deb [amd64])\nConf openssl (2 local-deb [amd64])\nConf kernel (3 local-deb [amd64])\n'
         self.assertEqual(install.validate_plan_output(good, plan), {'openssl': '2', 'kernel': '3'})
-        for bad in [good.replace('(2 ', '(1 '), good + 'Remv old-kernel [1]\n', good + 'Inst extra (4 local-deb [amd64])\n', good.replace('Inst kernel (3 local-deb [amd64])\n', ''), good + 'Inst broken\n']:
+        for bad in [good.replace('(2 ', '(1 '), good + 'Remv old-kernel [1]\n', good + 'Inst extra (4 local-deb [amd64])\n', good.replace('Inst kernel (3 local-deb [amd64])\n', ''), good + 'Inst broken\n', good + 'Conf outside (1 local-deb [amd64])\n', good.replace('Conf openssl (2 ', 'Conf openssl (1 '), good.replace('Conf kernel (3 local-deb [amd64])\n', ''), good + 'Conf broken\n', good + 'Purg residue [1]\n']:
             with self.assertRaises(ValueError):
                 install.validate_plan_output(bad, plan)
 
@@ -128,6 +129,69 @@ class NativeRefresh(unittest.TestCase):
         for name,key in [('ubuntu-2604.json','snapshot'),('github-ubuntu-2604.json','ubuntu_snapshot'),('github-ubuntu-2404.json','ubuntu_snapshot')]:
             self.assertEqual(json.loads((ROOT/'guest/images'/name).read_text())[key],policy['snapshot'])
         self.assertIn('snapshot='+policy['snapshot'],(ROOT/'scripts/build-image.sh').read_text())
+
+    def exercise_install_preflight(self, text, *, clean=False, query_exit=0,
+                                   audit_exit=0, audit_stdout='', audit_stderr=''):
+        class CleanStateReached(Exception):
+            pass
+        with tempfile.TemporaryDirectory() as directory:
+            directory=pathlib.Path(directory);report=directory/'report.json';calls=[]
+            original_read_text=pathlib.Path.read_text
+            original_write_text=pathlib.Path.write_text
+            def write_text(path,*args,**kwargs):
+                if str(path).startswith('/usr/sbin/policy-rc.d'):
+                    self.fail('Service policy write must not run')
+                return original_write_text(path,*args,**kwargs)
+            def read_text(path,*args,**kwargs):
+                if str(path)=='/etc/os-release':return 'ID=ubuntu\nVERSION_ID="26.04"\n'
+                return original_read_text(path,*args,**kwargs)
+            def run(argv,**kwargs):
+                calls.append(argv)
+                if argv==install.DPKG_QUERY:
+                    return subprocess.CompletedProcess(argv,query_exit,text,'query failed' if query_exit else '')
+                if argv==['dpkg','--audit']:
+                    return subprocess.CompletedProcess(argv,audit_exit,audit_stdout,audit_stderr)
+                self.fail('No simulation/install command may run in this test: '+str(argv))
+            plan={'family':'26.04','parent_packages':[{'name':'base','version':'1','architecture':'amd64'}]}
+            with mock.patch.object(install.os,'geteuid',return_value=0), \
+                 mock.patch.object(pathlib.Path,'read_text',read_text), \
+                 mock.patch.object(pathlib.Path,'write_text',write_text), \
+                 mock.patch.object(install.subprocess,'run',side_effect=run), \
+                 mock.patch.object(install.subprocess,'check_output',side_effect=AssertionError('APT simulation must not run')), \
+                 mock.patch.object(install,'digest',side_effect=CleanStateReached) as digest, \
+                 mock.patch.object(pathlib.Path,'rename',side_effect=AssertionError('Service policy must not mutate')) as rename, \
+                 mock.patch.object(pathlib.Path,'chmod',side_effect=AssertionError('Service policy chmod must not run')), \
+                 mock.patch.object(pathlib.Path,'unlink',side_effect=AssertionError('Service policy unlink must not run')), \
+                 mock.patch.object(install.sys,'stderr',io.StringIO()):
+                expected=CleanStateReached if clean else (ValueError,subprocess.CalledProcessError)
+                with self.assertRaises(expected):install.install(plan,directory,report,'0'*64)
+                self.assertEqual(digest.call_count,1 if clean else 0)
+                rename.assert_not_called()
+            evidence=json.loads(report.with_suffix('.dpkg-preflight.json').read_text())
+            self.assertEqual(evidence['accepted'],clean)
+            self.assertTrue(all(command[0] in ['dpkg-query','dpkg'] for command in calls))
+            return evidence
+
+    def test_install_entrypoint_rejects_every_incomplete_error_state_before_apt(self):
+        for state in ['iU ','iF ','iH ','iW ','it ','rU ','pc ','iiR','rcR','hi ','i','bogus']:
+            with self.subTest(state=state):
+                self.exercise_install_preflight('ii \tbase\t1\tamd64\n'+state+'\tpending\t2\tamd64\n')
+
+    def test_install_entrypoint_clean_and_residual_configuration_pass_preflight(self):
+        for extra in ['', 'rc \tresidue\told\tamd64\n', 'un \tuninstalled\t\t\nrn \tremoved\t\t\npn \tpurged\t\t\n']:
+            with self.subTest(extra=extra):
+                evidence=self.exercise_install_preflight('ii \tbase\t1\tamd64\n'+extra,clean=True)
+                self.assertEqual(len(evidence['commands']),2)
+                self.assertEqual(evidence['commands'][1]['argv'],['dpkg','--audit'])
+
+    def test_install_entrypoint_query_and_audit_errors_retained_before_apt(self):
+        for kwargs in [{'query_exit':2},{'audit_exit':2,'audit_stderr':'audit failed'}, {'audit_stdout':'pending configuration'}, {'audit_stderr':'unexpected diagnostic'}]:
+            with self.subTest(kwargs=kwargs):
+                evidence=self.exercise_install_preflight('ii \tbase\t1\tamd64\n',**kwargs)
+                self.assertIn('error',evidence)
+                self.assertEqual(evidence['commands'][-1]['exit'],kwargs.get('audit_exit',kwargs.get('query_exit',0)))
+        for malformed in ['', 'ii \tbase\t1\n', 'rc \t\t1\tamd64\n', 'rc \tresidue\t\tamd64\n']:
+            with self.subTest(malformed=malformed):self.exercise_install_preflight(malformed)
 
     def test_real_bash_wrapper_parent_failure_precedes_prepare_copy_and_edit(self):
         with tempfile.TemporaryDirectory() as directory:
