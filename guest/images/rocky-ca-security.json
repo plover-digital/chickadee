@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "package": {
+    "package": "ca-certificates",
+    "arch": "noarch",
+    "version": {
+      "epoch": "0",
+      "ver": "2026.2.92_v9.0.319",
+      "rel": "100.3.el10_2"
+    },
+    "url": "https://download.rockylinux.org/pub/rocky/10.2/BaseOS/x86_64/os/Packages/c/ca-certificates-2026.2.92_v9.0.319-100.3.el10_2.noarch.rpm",
+    "sha256": "92645747b01d378de8db932103b444c80e16afb39852b628e345a4d9515b4ce6",
+    "filename": "ca-certificates-2026.2.92_v9.0.319-100.3.el10_2.noarch.rpm",
+    "size": 1003474,
+    "repository": "BaseOS"
+  },
+  "provenance": "Official Rocky10 RPM signature verified using vendor Rocky10 key; repomd primary SHA256; no signed-repomd claim"
+}

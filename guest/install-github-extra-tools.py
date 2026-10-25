@@ -8,6 +8,7 @@ import argparse
 import hashlib
 import json
 import pathlib
+import shutil
 import subprocess
 import tarfile
 import urllib.request
@@ -26,6 +27,7 @@ def main():
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--download', type=pathlib.Path)
     mode.add_argument('--install', type=pathlib.Path)
+    parser.add_argument('--replace-installed', action='store_true', help='replace tool roots only in a private offline image')
     args = parser.parse_args()
     lock = json.loads(args.lock.read_text())
     if lock['schema'] != 1:
@@ -58,6 +60,15 @@ def main():
     # Check every input before changing the image, including archives already cached.
     for tool in lock['tools']:
         verify(args.install / tool['filename'], tool)
+    if args.replace_installed:
+        # Removing superseded runtimes is essential; overlay extraction retains them.
+        for directory in ['/usr/share/dotnet', '/opt/firefox', '/opt/rust', '/opt/rustup', '/opt/cargo']:
+            path = pathlib.Path(directory)
+            if path.is_symlink():
+                raise ValueError('unexpected symlink at managed tool root: ' + directory)
+            if path.exists():
+                shutil.rmtree(path)
+    rust_version = next(t['version'] for t in lock['tools'] if t['name'] == 'rust')
     dotnet = pathlib.Path('/usr/share/dotnet')
     for tool in sorted(lock['tools'], key=lambda t: (t['name'], tuple(int(v) for v in t['version'].split('.')))):
         archive = args.install / tool['filename']
@@ -90,7 +101,6 @@ def main():
             for binary in ('cargo', 'rustc', 'rustdoc', 'rustfmt', 'cargo-fmt', 'clippy-driver', 'cargo-clippy'):
                 if (pathlib.Path('/opt/rust/bin') / binary).exists():
                     symlink('/usr/local/bin/' + binary, '/opt/rust/bin/' + binary)
-            import shutil
             shutil.rmtree(staging)
         elif tool['name'] == 'rustup':
             archive.chmod(0o755)
@@ -100,15 +110,15 @@ def main():
             subprocess.run(['/opt/cargo/bin/rustup', 'default', 'chickadee'], env=environment, check=True)
             subprocess.run(['/opt/cargo/bin/rustup', 'set', 'auto-self-update', 'disable'], env=environment, check=True)
             toolchains = pathlib.Path('/opt/rustup/toolchains')
-            for alias in ('stable-x86_64-unknown-linux-gnu', '1.98.1-x86_64-unknown-linux-gnu'):
+            for alias in ('stable-x86_64-unknown-linux-gnu', rust_version + '-x86_64-unknown-linux-gnu'):
                 target = toolchains / alias
                 if target.exists() or target.is_symlink():
                     raise ValueError('unexpected preexisting Rust toolchain alias')
                 target.symlink_to('/opt/rust')
             offline = dict(environment, RUSTUP_DIST_SERVER='http://127.0.0.1:9', RUSTUP_UPDATE_ROOT='http://127.0.0.1:9')
-            for alias in ('stable', '1.98.1'):
+            for alias in ('stable', rust_version):
                 result = subprocess.run(['/opt/cargo/bin/rustup', 'run', alias, 'rustc', '--version'], env=offline, check=True, capture_output=True, text=True)
-                if not result.stdout.startswith('rustc 1.98.1 '):
+                if not result.stdout.startswith('rustc ' + rust_version + ' '):
                     raise ValueError('unexpected offline Rust alias version')
             subprocess.run(['chown', '-R', 'runner:runner', '/opt/cargo', '/opt/rustup'], check=True)
             for binary in ('rustup', 'cargo', 'rustc', 'rustdoc', 'rustfmt', 'cargo-fmt', 'clippy-driver', 'cargo-clippy'):
@@ -124,8 +134,9 @@ def main():
         environment = dict(__import__('os').environ, HOME='/root', CARGO_HOME='/opt/cargo', RUSTUP_HOME='/opt/rustup')
         subprocess.run(command, env=environment, check=True)
     env = pathlib.Path('/etc/chickadee/runner.env')
-    with env.open('a') as f:
-        f.write('DOTNET_ROOT=/usr/share/dotnet\nDOTNET_MULTILEVEL_LOOKUP=0\nDOTNET_NOLOGO=1\nDOTNET_CLI_TELEMETRY_OPTOUT=1\nCARGO_HOME=/opt/cargo\nRUSTUP_HOME=/opt/rustup\nGECKOWEBDRIVER=/usr/local/share/gecko_driver\n')
+    values = dict(DOTNET_ROOT='/usr/share/dotnet', DOTNET_MULTILEVEL_LOOKUP='0', DOTNET_NOLOGO='1', DOTNET_CLI_TELEMETRY_OPTOUT='1', CARGO_HOME='/opt/cargo', RUSTUP_HOME='/opt/rustup', GECKOWEBDRIVER='/usr/local/share/gecko_driver')
+    retained = [line for line in env.read_text().splitlines() if line.split('=', 1)[0] not in values] if env.exists() else []
+    env.write_text('\n'.join(retained + [key + '=' + value for key, value in values.items()]) + '\n')
     report = pathlib.Path('/etc/chickadee/image-compatibility.json')
     data = json.loads(report.read_text()) if report.exists() else {}
     data['extra_tools'] = lock['tools']

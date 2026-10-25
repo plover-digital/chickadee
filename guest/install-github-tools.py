@@ -42,7 +42,7 @@ for tool in lock['tools']:
  (target.parent/'x64.complete').touch()
 # Match setup-* expectations: writable cache in each disposable VM.
 run('chown','-R','runner:runner',str(cache))
-for command,src in [('node','node/22.23.3/x64/bin/node'),('npm','node/22.23.3/x64/bin/npm'),('npx','node/22.23.3/x64/bin/npx'),('go',f"go/{lock['default_go']}/x64/bin/go")]:
+for command,src in [('node','node/22.23.4/x64/bin/node'),('npm','node/22.23.4/x64/bin/npm'),('npx','node/22.23.4/x64/bin/npx'),('go',f"go/{lock['default_go']}/x64/bin/go")]:
  dest=pathlib.Path('/usr/local/bin')/command
  if dest.exists() or dest.is_symlink():dest.unlink()
  dest.symlink_to(cache/src)

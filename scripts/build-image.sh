@@ -7,8 +7,8 @@ cd "$(dirname "$0")/.."
 for tool in go curl gpgv qemu-img virt-make-fs virt-customize guestfish xz; do command -v "$tool" >/dev/null; done
 release=20260926
 snapshot=20261020T000000Z
-runner=2.337.0
-runner_sha=70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613
+runner=2.338.1
+runner_sha=08e9ccb3604d2462c24b5e33604dc30810296ca15cc65f23cffd4317eb144c37
 root_tar=ubuntu-24.04-server-cloudimg-amd64-root.tar.xz
 url="https://cloud-images.ubuntu.com/releases/noble/release-$release"
 mkdir -p build/downloads images

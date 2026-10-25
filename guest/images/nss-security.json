@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "purpose": "Official NSS compromised certificate removal; no module provider substitution",
+  "releases": {
+    "24.04": {
+      "minimum_version": "2:3.98-1ubuntu0.3",
+      "signed_release_url": "https://security.ubuntu.com/ubuntu/dists/noble-security/InRelease",
+      "signed_release_sha256": "d53de120a213d4e17ede2854718ed8eedfc04f3ea2e263994d7f21317f7b851b",
+      "signer_fingerprint": "F6ECB3762474EDA9D21B7022871920D1991BC93C",
+      "packages": [
+        {
+          "package": "libnss3",
+          "version": "2:3.98-1ubuntu0.3",
+          "filename": "libnss3_3.98-1ubuntu0.3_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/n/nss/libnss3_3.98-1ubuntu0.3_amd64.deb",
+          "sha256": "e11fdf8c09a068d0f0c3fd90ed971253dfed7227cc20d3d487fd615d4771f1bb",
+          "size": 1444912,
+          "index_sha256": "c53b5309c8002317a835d695237d46b10d9da10c33420aa4d819ba7bfadb8afd"
+        },
+        {
+          "package": "libnss3-dev",
+          "version": "2:3.98-1ubuntu0.3",
+          "filename": "libnss3-dev_3.98-1ubuntu0.3_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/n/nss/libnss3-dev_3.98-1ubuntu0.3_amd64.deb",
+          "sha256": "489de8afd88d160cca2673b0c2e3fef9e94656a2e8785a97c0fb152b19c52c46",
+          "size": 253022,
+          "index_sha256": "c53b5309c8002317a835d695237d46b10d9da10c33420aa4d819ba7bfadb8afd"
+        },
+        {
+          "package": "libnss3-tools",
+          "version": "2:3.98-1ubuntu0.3",
+          "filename": "libnss3-tools_3.98-1ubuntu0.3_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/n/nss/libnss3-tools_3.98-1ubuntu0.3_amd64.deb",
+          "sha256": "0bb7919188cb21d3bfba5d45b5aa45848aa61b92ced34ff3f8ecda7b92d788c0",
+          "size": 615126,
+          "index_sha256": "c53b5309c8002317a835d695237d46b10d9da10c33420aa4d819ba7bfadb8afd"
+        }
+      ]
+    },
+    "26.04": {
+      "minimum_version": "2:3.120-1ubuntu2.2",
+      "signed_release_url": "https://security.ubuntu.com/ubuntu/dists/resolute-security/InRelease",
+      "signed_release_sha256": "66bf17a6b779051e7fb05ef23d886aa7e0274f642e2a7f0cfd8cfc9aa2361515",
+      "signer_fingerprint": "F6ECB3762474EDA9D21B7022871920D1991BC93C",
+      "packages": [
+        {
+          "package": "libnss3",
+          "version": "2:3.120-1ubuntu2.2",
+          "filename": "libnss3_3.120-1ubuntu2.2_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/n/nss/libnss3_3.120-1ubuntu2.2_amd64.deb",
+          "sha256": "7c5843f5e49c10c267893ae7f13af6032ed1b96e7c1ae586a5f44435f804dd85",
+          "size": 1513938,
+          "index_sha256": "c9f4f90adfc5fcb1228e0aea6369c868ffa227b005782a1738ecdbb47fc46d56"
+        },
+        {
+          "package": "libnss3-dev",
+          "version": "2:3.120-1ubuntu2.2",
+          "filename": "libnss3-dev_3.120-1ubuntu2.2_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/n/nss/libnss3-dev_3.120-1ubuntu2.2_amd64.deb",
+          "sha256": "c5af84c25d1b380b12cc5b0a8d57654c8e2fb7ee840745c75a1e2944b3c492c0",
+          "size": 260168,
+          "index_sha256": "c9f4f90adfc5fcb1228e0aea6369c868ffa227b005782a1738ecdbb47fc46d56"
+        },
+        {
+          "package": "libnss3-tools",
+          "version": "2:3.120-1ubuntu2.2",
+          "filename": "libnss3-tools_3.120-1ubuntu2.2_amd64.deb",
+          "url": "https://security.ubuntu.com/ubuntu/pool/main/n/nss/libnss3-tools_3.120-1ubuntu2.2_amd64.deb",
+          "sha256": "842bcd726c5f32837f56f356095fe7d67129148da233eebea6e9b59c6c802ea2",
+          "size": 626832,
+          "index_sha256": "c9f4f90adfc5fcb1228e0aea6369c868ffa227b005782a1738ecdbb47fc46d56"
+        }
+      ]
+    }
+  }
+}

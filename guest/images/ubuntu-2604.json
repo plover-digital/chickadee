@@ -5,8 +5,8 @@
   "root_filename": "ubuntu-26.04-server-cloudimg-amd64-root.tar.xz",
   "root_sha256": "ccd08a7a76cdc69034dd2682b4913bdd051cb71ad87d0b66689015aa068e61c8",
   "signing_fingerprint": "D2EB44626FDDC30B513D5BB71A5D6C4C7DB87C81",
-  "runner_version": "2.337.0",
-  "runner_sha256": "70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613",
+  "runner_version": "2.338.1",
+  "runner_sha256": "08e9ccb3604d2462c24b5e33604dc30810296ca15cc65f23cffd4317eb144c37",
   "upstream_commit": "5f7588b285eccc2edbeb1cd79d65ee0b577e4b4a",
   "upstream_image_version": "20260927.149.1",
   "minimal_packages": [
