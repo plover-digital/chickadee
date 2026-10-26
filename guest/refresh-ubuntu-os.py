@@ -6,6 +6,7 @@ import json
 import os
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 
@@ -124,6 +125,69 @@ def simulate_and_validate(argv, plan, report, env):
         report.with_suffix('.apt-simulation.json').write_text(json.dumps(evidence, indent=2) + '\n')
 
 
+def install_and_record(argv, report, env):
+    result = subprocess.run(argv, capture_output=True, text=True, env=env)
+    evidence = {'argv': argv, 'exit': result.returncode, 'stdout': result.stdout,
+                'stderr': result.stderr}
+    report.with_suffix('.apt-install.json').write_text(json.dumps(evidence, indent=2) + '\n')
+    if result.returncode:
+        # Full streams remain in the guest report; bounded chunks survive in
+        # the journal without relying on another appliance to inspect a failure.
+        encoded = json.dumps(evidence)
+        print(json.dumps({'native_apt_install_failure_bytes': len(encoded),
+                          'journal_limit': 262144, 'truncated': len(encoded) > 262144}), file=sys.stderr)
+        for offset in range(0, min(len(encoded), 262144), 16384):
+            print(json.dumps({'native_apt_install_failure_chunk': offset // 16384,
+                              'data': encoded[offset:offset + 16384]}), file=sys.stderr)
+        raise subprocess.CalledProcessError(result.returncode, argv,
+                                            output=result.stdout, stderr=result.stderr)
+
+
+def canonical_archive_name(row):
+    # APT 3.2.0 pkgAcqArchive uses QuoteString(..., "_:") (arch: "_:.").
+    def quote(value, bad):
+        return ''.join('%%%02x' % ord(c) if c in bad or c == '%' or
+                       not 0x20 < ord(c) < 0x7f else c for c in value)
+    return '_'.join(quote(row[key], bad) for key, bad in
+                    [('name', '_:'), ('version', '_:'), ('architecture', '_:.')]) + '.deb'
+
+
+def offline_apt_arguments(cache, plan):
+    if not cache.is_absolute() or cache.is_symlink() or not cache.is_dir():
+        raise ValueError('absolute regular offline cache directory required')
+    archives = cache.parent / 'verified-apt-archives'
+    archives.mkdir(mode=0o700)  # Fresh transaction only; never reuse ambient cache.
+    (archives / 'partial').mkdir(mode=0o700)
+    names = set()
+    for row in plan['packages']:
+        if not re.fullmatch(r'[a-z0-9][a-z0-9+.-]*', row['name']) or not re.fullmatch(r'[A-Za-z0-9.+:~%-]+', row['version']) or not re.fullmatch(r'[a-z0-9-]+', row['architecture']) or not re.fullmatch(r'[A-Za-z0-9.+_~%:-]+\.deb', row['filename']):
+            raise ValueError('invalid offline archive identity')
+        name = canonical_archive_name(row)
+        if '/' in name or name in names:
+            raise ValueError('invalid or duplicate canonical archive name')
+        names.add(name)
+        source = cache / row['filename']
+        if source.is_symlink() or not source.is_file() or source.stat().st_size != row['size'] or digest(source) != row['sha256']:
+            raise ValueError('offline archive changed before staging')
+        target = archives / name
+        shutil.copyfile(source, target)
+        if target.stat().st_size != row['size'] or digest(target) != row['sha256']:
+            raise ValueError('staged archive hash/size mismatch')
+    lists = cache.parent / 'empty-apt-lists'
+    lists.mkdir()
+    sources = cache.parent / 'empty-apt-sources'
+    sources.mkdir()
+    source_list = cache.parent / 'empty-apt-sources.list'
+    source_list.write_text('')
+    return ['apt-get', '-o', 'Dir::Etc::sourcelist=' + str(source_list),
+            '-o', 'Dir::Etc::sourceparts=' + str(sources),
+            '-o', 'Dir::State::Lists=' + str(lists),
+            '-o', 'Dir::Cache::archives=' + str(archives),
+            '-o', 'Dir::Cache::pkgcache=', '-o', 'Dir::Cache::srcpkgcache=',
+            '-o', 'Dpkg::Use-Pty=0', '--no-remove',
+            '--no-install-recommends', '--no-download']
+
+
 def verify_after(before, after, plan):
     expected = dict(before)
     for row in plan['packages']:
@@ -180,9 +244,7 @@ def install(plan, cache, report, expected_bootstrap):
         raise ValueError('empty or duplicate transaction')
     # APT reads the actual installed dpkg state plus only the provided local debs.
     # No ambient repositories/lists, recommendations, downloads or removals.
-    lists = cache.parent / 'empty-apt-lists'
-    lists.mkdir()
-    common = ['apt-get', '-o', 'Dir::Etc::sourcelist=/dev/null', '-o', 'Dir::Etc::sourceparts=-', '-o', 'Dir::State::Lists=' + str(lists), '-o', 'Dpkg::Use-Pty=0', '--no-remove', '--no-install-recommends', '--no-download']
+    common = offline_apt_arguments(cache, plan)
     env = dict(os.environ, LC_ALL='C', DEBIAN_FRONTEND='noninteractive', NEEDRESTART_MODE='l')
     simulate_and_validate(common + ['--simulate', 'install', *debs], plan, report, env)
     # Preserve any existing image-owned service-start policy byte-for-byte.
@@ -196,7 +258,7 @@ def install(plan, cache, report, expected_bootstrap):
     try:
         policy.write_text('#!/bin/sh\nexit 101\n')
         policy.chmod(0o755)
-        subprocess.run(common + ['-y', '-o', 'Dpkg::Options::=--force-confold', 'install', *debs], check=True, env=env)
+        install_and_record(common + ['-y', '-o', 'Dpkg::Options::=--force-confold', 'install', *debs], report, env)
         audit = subprocess.run(['dpkg', '--audit'], check=True, env=env, capture_output=True, text=True)
         if audit.stdout.strip() or audit.stderr.strip():
             raise ValueError('dpkg audit reported an incomplete transaction')
