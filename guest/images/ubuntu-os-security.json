@@ -1,0 +1,84 @@
+{
+  "schema": 1,
+  "snapshot": "20261025T000000Z",
+  "archive_url": "https://snapshot.ubuntu.com/ubuntu/20261025T000000Z/",
+  "signing_fingerprint": "F6ECB3762474EDA9D21B7022871920D1991BC93C",
+  "releases": {
+    "24.04": {
+      "suite": "noble",
+      "kernel": "6.8.0-147-generic",
+      "indexes": [
+        {
+          "suite": "noble",
+          "inrelease_sha256": "cdb2f31d809f589719a53c6ad15f255b27569c4059542ada282aaa21b8e164b0",
+          "components": [
+            "main",
+            "restricted",
+            "universe",
+            "multiverse"
+          ]
+        },
+        {
+          "suite": "noble-security",
+          "inrelease_sha256": "d53de120a213d4e17ede2854718ed8eedfc04f3ea2e263994d7f21317f7b851b",
+          "components": [
+            "main",
+            "restricted",
+            "universe",
+            "multiverse"
+          ]
+        },
+        {
+          "suite": "noble-updates",
+          "inrelease_sha256": "66fa4fab32148276f20973f03cef809f3f8c79b8fe3af41565d091628fc5b937",
+          "components": [
+            "main",
+            "restricted",
+            "universe",
+            "multiverse"
+          ]
+        }
+      ],
+      "bubblewrap_unfixed_version": "0.9.0-1ubuntu0.3",
+      "bubblewrap_scope": "CVE-2026-87766 backport reverted; no patched claim at this available vendor version."
+    },
+    "26.04": {
+      "suite": "resolute",
+      "kernel": "7.0.0-38-generic",
+      "indexes": [
+        {
+          "suite": "resolute",
+          "inrelease_sha256": "45f95ce276cdba3e41870516a130e03c58b8b7a79e9546b0efe9e526d255740c",
+          "components": [
+            "main",
+            "restricted",
+            "universe",
+            "multiverse"
+          ]
+        },
+        {
+          "suite": "resolute-security",
+          "inrelease_sha256": "66bf17a6b779051e7fb05ef23d886aa7e0274f642e2a7f0cfd8cfc9aa2361515",
+          "components": [
+            "main",
+            "restricted",
+            "universe",
+            "multiverse"
+          ]
+        },
+        {
+          "suite": "resolute-updates",
+          "inrelease_sha256": "aee81345dd6906d8474a25a6a24e11e8a4e77284e59c5acf83d568778f57590f",
+          "components": [
+            "main",
+            "restricted",
+            "universe",
+            "multiverse"
+          ]
+        }
+      ],
+      "bubblewrap_unfixed_version": "0.11.1-1ubuntu0.3",
+      "bubblewrap_scope": "CVE-2026-87766 backport reverted; no patched claim at this available vendor version."
+    }
+  }
+}

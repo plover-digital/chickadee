@@ -4,7 +4,7 @@
   "upstream_commit": "5f7588b285eccc2edbeb1cd79d65ee0b577e4b4a",
   "upstream_image_version": "20260927.149.1",
   "upstream_inventory_sha256": "399e83b527896bb2b3a2bbbc33ef80c460004b1c33fe955b8cbd67598607d25a",
-  "ubuntu_snapshot": "20261020T000000Z",
+  "ubuntu_snapshot": "20261025T000000Z",
   "disk_gib": 48,
   "default_go": "1.27.3",
   "default_node": "24.22.1",
