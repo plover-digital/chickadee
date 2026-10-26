@@ -85,9 +85,11 @@ def validate_plan_output(output, plan):
         for action, actual in actions.items():
             if not line.startswith(action + ' '):
                 continue
-            match = re.fullmatch(action + r' ([^ ]+)(?: \[[^]]+\])? \(([^ ]+) .+\)', line)
+            # APT Describe emits version + space + RelStr, whose descriptive
+            # field may be empty. ShortBreaks appends bracketed diagnostics.
+            match = re.fullmatch(action + r' ([^ ]+)(?: \[[^]]+\])? \(([^ ]+) [^()\r\n]*\)(?: \[[a-z0-9+.: -]*\])*', line)
             if not match:
-                raise ValueError('unrecognized native APT transaction row')
+                raise ValueError('unrecognized native APT transaction row: ' + repr(line))
             name, version = match.groups()
             name = name.split(':')[0]
             if name in actual:
@@ -97,6 +99,29 @@ def validate_plan_output(output, plan):
     if any(actual != expected for actual in actions.values()):
         raise ValueError('native APT install/configure transaction differs from finite prepared lock')
     return actions['Inst']
+
+
+def simulate_and_validate(argv, plan, report, env):
+    result = subprocess.run(argv, capture_output=True, text=True, env=env)
+    evidence = {'argv': argv, 'exit': result.returncode, 'stdout': result.stdout,
+                'stderr': result.stderr, 'accepted': False}
+    try:
+        # Persist execution output before either return-code or syntax checks.
+        # On failure also journal it: recovering a partial guest needs a new GO.
+        report.with_suffix('.apt-plan.txt').write_text(result.stdout)
+        report.with_suffix('.apt-simulation.json').write_text(json.dumps(evidence, indent=2) + '\n')
+        if result.returncode:
+            raise subprocess.CalledProcessError(result.returncode, argv,
+                                                output=result.stdout, stderr=result.stderr)
+        validate_plan_output(result.stdout, plan)
+        evidence['accepted'] = True
+        return result.stdout
+    except Exception as error:
+        evidence['error'] = str(error)
+        print(json.dumps(evidence), file=sys.stderr)
+        raise
+    finally:
+        report.with_suffix('.apt-simulation.json').write_text(json.dumps(evidence, indent=2) + '\n')
 
 
 def verify_after(before, after, plan):
@@ -159,9 +184,7 @@ def install(plan, cache, report, expected_bootstrap):
     lists.mkdir()
     common = ['apt-get', '-o', 'Dir::Etc::sourcelist=/dev/null', '-o', 'Dir::Etc::sourceparts=-', '-o', 'Dir::State::Lists=' + str(lists), '-o', 'Dpkg::Use-Pty=0', '--no-remove', '--no-install-recommends', '--no-download']
     env = dict(os.environ, LC_ALL='C', DEBIAN_FRONTEND='noninteractive', NEEDRESTART_MODE='l')
-    simulation = subprocess.check_output(common + ['--simulate', 'install', *debs], text=True, env=env)
-    validate_plan_output(simulation, plan)
-    report.with_suffix('.apt-plan.txt').write_text(simulation)
+    simulate_and_validate(common + ['--simulate', 'install', *debs], plan, report, env)
     # Preserve any existing image-owned service-start policy byte-for-byte.
     policy = pathlib.Path('/usr/sbin/policy-rc.d')
     backup = policy.with_name('policy-rc.d.chickadee-os-parent')

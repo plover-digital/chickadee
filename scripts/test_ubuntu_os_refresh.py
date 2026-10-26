@@ -73,6 +73,46 @@ class NativeRefresh(unittest.TestCase):
             with self.assertRaises(ValueError):
                 install.validate_plan_output(bad, plan)
 
+    def test_documented_simulation_descriptions_and_annotations_synthetic(self):
+        # Synthetic cases from APT Describe/ShortBreaks syntax, not a recovered
+        # row from a failed appliance. Package/version action sets stay exact.
+        plan={'packages':[{'name':'openssl','version':'2'},{'name':'kernel','version':'3'}]}
+        output='Inst openssl [1] (2 ) []\nConf openssl (2 )\nInst kernel (3  [amd64]) [openssl:amd64 ]\nConf kernel (3 local-deb [amd64]) []\n'
+        self.assertEqual(install.validate_plan_output(output,plan),{'openssl':'2','kernel':'3'})
+        for bad in [output+'Conf extra (1 )\n',output.replace('Conf openssl (2 )\n',''),output.replace('Inst openssl [1] (2 )','Inst openssl [1] (1 )'),output+'Inst extra (1 ) []\n',output.replace('[]','[Conf extra (1 )]',1),output+'Conf openssl (2 )\n',output+'Remv old [1]\n']:
+            with self.assertRaises(ValueError):install.validate_plan_output(bad,plan)
+
+    def test_simulation_output_persisted_before_parser_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report=pathlib.Path(directory)/'report.json';stdout='Inst malformed-native-row\n';stderr='diagnostic'
+            result=subprocess.CompletedProcess(['apt-get'],0,stdout,stderr)
+            original=install.validate_plan_output
+            def validate(output,plan):
+                self.assertEqual(report.with_suffix('.apt-plan.txt').read_text(),stdout)
+                saved=json.loads(report.with_suffix('.apt-simulation.json').read_text())
+                self.assertEqual(saved['stdout'],stdout);self.assertEqual(saved['stderr'],stderr);self.assertFalse(saved['accepted'])
+                return original(output,plan)
+            with mock.patch.object(install.subprocess,'run',return_value=result) as run, mock.patch.object(install,'validate_plan_output',side_effect=validate), mock.patch.object(install.sys,'stderr',io.StringIO()) as journal:
+                with self.assertRaisesRegex(ValueError,'malformed-native-row'):
+                    install.simulate_and_validate(['apt-get','--simulate'],{'packages':[]},report,{})
+                self.assertIn('malformed-native-row',journal.getvalue())
+                run.assert_called_once()
+            saved=json.loads(report.with_suffix('.apt-simulation.json').read_text());self.assertFalse(saved['accepted']);self.assertIn('error',saved)
+
+    def test_failed_simulation_exit_retains_both_streams_without_parsing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report=pathlib.Path(directory)/'report.json';result=subprocess.CompletedProcess(['apt-get'],100,'partial plan','native error')
+            with mock.patch.object(install.subprocess,'run',return_value=result), mock.patch.object(install,'validate_plan_output') as validate, mock.patch.object(install.sys,'stderr',io.StringIO()):
+                with self.assertRaises(subprocess.CalledProcessError):install.simulate_and_validate(['apt-get','--simulate'],{},report,{})
+                validate.assert_not_called()
+            saved=json.loads(report.with_suffix('.apt-simulation.json').read_text());self.assertEqual(saved['exit'],100);self.assertEqual(saved['stdout'],'partial plan');self.assertEqual(saved['stderr'],'native error');self.assertFalse(saved['accepted'])
+
+    def test_successful_simulation_keeps_exact_action_acceptance_proof(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report=pathlib.Path(directory)/'report.json';output='Inst pkg [1] (2 )\nConf pkg (2 )\n';result=subprocess.CompletedProcess(['apt-get'],0,output,'')
+            with mock.patch.object(install.subprocess,'run',return_value=result):install.simulate_and_validate(['apt-get','--simulate'],{'packages':[{'name':'pkg','version':'2'}]},report,{})
+            saved=json.loads(report.with_suffix('.apt-simulation.json').read_text());self.assertTrue(saved['accepted']);self.assertEqual(saved['stdout'],output)
+
     def test_native_post_transaction_preserves_all_other_packages(self):
         before = {'openssl': ('1', 'amd64'), 'php': ('fixed', 'amd64')}
         plan = {'packages': [{'name': 'openssl', 'version': '2', 'architecture': 'amd64'}]}
