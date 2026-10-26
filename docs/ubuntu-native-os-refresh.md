@@ -57,6 +57,19 @@ query/audit stdout, stderr and exit status, including on failure. APT's `Inst` a
 of an unpacked package outside the plan cannot be hidden by installed inventory.
 Actual APT/dpkg execution is pending the coordinator's separate resource GO.
 
+Persist simulation stdout and its stderr/exit-status JSON before parsing or
+checking success. Parser failures retain the literal offending row and journal
+raw execution evidence, so diagnosis does not require another appliance merely
+to recover captured output. The supported descriptive-field syntax follows
+APT's [Describe implementation](https://sources.debian.org/src/apt/3.0.3/apt-pkg/algorithms.cc/#L94)
+and [RelStr implementation](https://sources.debian.org/src/apt/3.0.3/apt-pkg/pkgcache.cc/).
+The version remains mandatory; the descriptive field may be empty. The
+[Ubuntu apt-get manual](https://manpages.ubuntu.com/manpages/resolute/man8/apt-get.8.html)
+also documents bracketed simulation diagnostics. These annotations never add or
+replace actions: exact `Inst` and `Conf` sets are still required, with malformed,
+extra, missing or duplicate actions rejected. Format regressions use synthetic
+source-derived examples, not a claimed recovery of an earlier failed native row.
+
 ## Kernel and protected image state
 
 ```sh
