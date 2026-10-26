@@ -229,8 +229,9 @@ changed disposable copy; never reuse or release it.
 
 Installation now retains complete stdout, stderr, argv and exit in
 `os-security.apt-install.json` before raising an error. On failure it journals
-numbered JSON chunks of at most 16 KiB, up to 256 KiB total, with an explicit
-truncation marker. The complete report stays inside the disposable guest if the
+numbered JSON chunks of at most 16 KiB per final UTF-8 record, up to
+256 KiB total including the header, JSON escaping, metadata and every newline,
+with an explicit truncation marker. The complete report stays inside the disposable guest if the
 appliance fails before export; inspecting it requires a separately authorized
 bounded run. Successful copies export it into the sealed bundle. Simulation
 reports remain distinct, and transport success is not transaction acceptance.

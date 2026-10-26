@@ -125,6 +125,47 @@ def simulate_and_validate(argv, plan, report, env):
         report.with_suffix('.apt-simulation.json').write_text(json.dumps(evidence, indent=2) + '\n')
 
 
+def journal_install_failure(evidence, record_limit=16384, total_limit=262144):
+    encoded = json.dumps(evidence)
+
+    def serialize(value):
+        return json.dumps(value, ensure_ascii=True) + '\n'
+
+    def header(truncated):
+        return serialize({'native_apt_install_failure_bytes': len(encoded.encode('utf-8')),
+                          'journal_limit': total_limit, 'truncated': truncated})
+
+    # Reserve the larger possible FINAL header before allocating any chunks.
+    # Each candidate includes its JSON escaping, metadata and terminating newline.
+    remaining = total_limit - max(len(header(t).encode('utf-8')) for t in [True, False])
+    chunks = []
+    offset = 0
+    while offset < len(encoded):
+        allowance = min(record_limit, remaining)
+        low, high = 0, min(len(encoded) - offset, allowance)
+        while low < high:
+            count = (low + high + 1) // 2
+            candidate = serialize({'native_apt_install_failure_chunk': len(chunks),
+                                   'data': encoded[offset:offset + count]})
+            if len(candidate.encode('utf-8')) <= allowance:
+                low = count
+            else:
+                high = count - 1
+        if low == 0:
+            break
+        record = serialize({'native_apt_install_failure_chunk': len(chunks),
+                            'data': encoded[offset:offset + low]})
+        chunks.append(record)
+        remaining -= len(record.encode('utf-8'))
+        offset += low
+    records = [header(offset < len(encoded)), *chunks]
+    sizes = [len(record.encode('utf-8')) for record in records]
+    if any(size > record_limit for size in sizes) or sum(sizes) > total_limit:
+        raise ValueError('APT journal limits too small for metadata')
+    for record in records:
+        sys.stderr.write(record)
+
+
 def install_and_record(argv, report, env):
     result = subprocess.run(argv, capture_output=True, text=True, env=env)
     evidence = {'argv': argv, 'exit': result.returncode, 'stdout': result.stdout,
@@ -133,12 +174,7 @@ def install_and_record(argv, report, env):
     if result.returncode:
         # Full streams remain in the guest report; bounded chunks survive in
         # the journal without relying on another appliance to inspect a failure.
-        encoded = json.dumps(evidence)
-        print(json.dumps({'native_apt_install_failure_bytes': len(encoded),
-                          'journal_limit': 262144, 'truncated': len(encoded) > 262144}), file=sys.stderr)
-        for offset in range(0, min(len(encoded), 262144), 16384):
-            print(json.dumps({'native_apt_install_failure_chunk': offset // 16384,
-                              'data': encoded[offset:offset + 16384]}), file=sys.stderr)
+        journal_install_failure(evidence)
         raise subprocess.CalledProcessError(result.returncode, argv,
                                             output=result.stdout, stderr=result.stderr)
 
