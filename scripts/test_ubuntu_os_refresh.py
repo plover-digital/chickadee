@@ -248,6 +248,125 @@ class NativeRefresh(unittest.TestCase):
             self.assertFalse(mark.exists())
             self.assertFalse((root/'output').exists())
 
+    def test_verified_canonical_archives_and_isolated_cache_arguments(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache=pathlib.Path(directory)/'inputs';cache.mkdir()
+            data=b'authenticated deb fixture';(cache/'vendor.deb').write_bytes(data)
+            row={'filename':'vendor.deb','name':'libx','version':'1:2.3-1','architecture':'amd64','size':len(data),'sha256':hashlib.sha256(data).hexdigest()}
+            args=install.offline_apt_arguments(cache,{'packages':[row]})
+            self.assertEqual((cache.parent/'verified-apt-archives/libx_1%3a2.3-1_amd64.deb').read_bytes(),data)
+            for option in ['Dir::Cache::pkgcache=','Dir::Cache::srcpkgcache=','Dir::Cache::archives='+str(cache.parent/'verified-apt-archives')]:self.assertIn(option,args)
+            for flag in ['--no-download','--no-remove','--no-install-recommends']:self.assertIn(flag,args)
+            self.assertEqual(list((cache.parent/'empty-apt-sources').iterdir()),[])
+            with self.assertRaises(FileExistsError):install.offline_apt_arguments(cache,{'packages':[row]})
+
+    def test_archive_mutation_or_symlink_rejected_before_apt(self):
+        for symlink in [False,True]:
+            with tempfile.TemporaryDirectory() as directory:
+                cache=pathlib.Path(directory)/'inputs';cache.mkdir();(cache/'target').write_bytes(b'x')
+                if symlink:(cache/'bad.deb').symlink_to('target')
+                else:(cache/'bad.deb').write_bytes(b'x')
+                row={'filename':'bad.deb','name':'x','version':'1','architecture':'amd64','size':1,'sha256':'0'*64}
+                with mock.patch.object(install.subprocess,'run',side_effect=AssertionError('APT forbidden')):
+                    with self.assertRaises(ValueError):install.offline_apt_arguments(cache,{'packages':[row]})
+
+    def test_install_streams_persist_before_raise_and_bounded_journal(self):
+        for code in [0,100]:
+            with tempfile.TemporaryDirectory() as directory:
+                report=pathlib.Path(directory)/'report.json';out='x'*300000;err='actual install failure'
+                result=subprocess.CompletedProcess(['apt-get'],code,out,err)
+                with mock.patch.object(install.subprocess,'run',return_value=result),mock.patch.object(install.sys,'stderr',io.StringIO()) as journal:
+                    if code:
+                        with self.assertRaises(subprocess.CalledProcessError):install.install_and_record(['apt-get'],report,{})
+                        self.assertIn('"truncated": true',journal.getvalue());self.assertLess(len(journal.getvalue()),270000)
+                    else:install.install_and_record(['apt-get'],report,{})
+                saved=json.loads(report.with_suffix('.apt-install.json').read_text());self.assertEqual(saved['stdout'],out);self.assertEqual(saved['stderr'],err);self.assertEqual(saved['exit'],code)
+
+    def test_wrapper_git_failure_and_dirty_real_repository_stop_before_prepare(self):
+        for mode in ['dirty','failed','clean']:
+            with tempfile.TemporaryDirectory() as directory:
+                root=pathlib.Path(directory);(root/'scripts').mkdir();(root/'bin').mkdir();(root/'parent').mkdir();(root/'cache').mkdir();(root/'plan').write_text('{}')
+                wrapper=root/'scripts/refresh-ubuntu-os-bundle.sh';wrapper.write_bytes((ROOT/'scripts/refresh-ubuntu-os-bundle.sh').read_bytes())
+                subprocess.run(['/usr/bin/git','init','-q',str(root)],check=True)
+                subprocess.run(['/usr/bin/git','-C',str(root),'add','.'],check=True)
+                subprocess.run(['/usr/bin/git','-C',str(root),'-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','-qm','fixture'],check=True)
+                (root/'.git/info/exclude').write_text('bin/\n')
+                if mode=='dirty':(root/'dirty').write_text('untracked')
+                elif mode=='failed':
+                    git=root/'bin/git';git.write_text('#!/bin/sh\nexit 128\n');git.chmod(0o755)
+                marker=root/'forbidden'
+                for name in ['python3','sha256sum','qemu-img','virt-customize','guestfish','virt-sparsify']:
+                    stub=root/'bin'/name;stub.write_text('#!/bin/sh\necho reached > '+str(marker)+'\nexit 99\n');stub.chmod(0o755)
+                result=subprocess.run(['/bin/bash',wrapper,root/'parent',root/'output','0'*64,root/'plan',root/'cache'],env={'PATH':str(root/'bin')+':/usr/bin:/bin'},capture_output=True)
+                self.assertNotEqual(result.returncode,0);self.assertEqual(marker.exists(),mode=='clean');self.assertFalse((root/'output').exists())
+
+    def capture_failure_journal(self, evidence, **limits):
+        with mock.patch.object(install.sys, 'stderr', io.StringIO()) as stream:
+            install.journal_install_failure(evidence, **limits)
+            raw = stream.getvalue().encode('utf-8')
+        lines = raw.splitlines(keepends=True)
+        self.assertTrue(all(line.endswith(b'\n') for line in lines))
+        records = [json.loads(line) for line in lines]
+        header, chunks = records[0], records[1:]
+        self.assertLessEqual(max(map(len, lines)), limits.get('record_limit', 16384))
+        self.assertLessEqual(len(raw), limits.get('total_limit', 262144))
+        self.assertEqual([c['native_apt_install_failure_chunk'] for c in chunks], list(range(len(chunks))))
+        recovered = ''.join(c['data'] for c in chunks)
+        encoded = json.dumps(evidence)
+        self.assertTrue(encoded.startswith(recovered))
+        self.assertEqual(header['truncated'], recovered != encoded)
+        self.assertEqual(header['native_apt_install_failure_bytes'], len(encoded.encode('utf-8')))
+        return raw, header, recovered
+
+    def test_final_serialized_journal_escape_heavy_utf8_limits(self):
+        for text in ['"', '\\', '\n', '\x00\x01\t\r', 'é漢😀', '"\\\n\x00é漢😀']:
+            evidence={'argv':['apt-get'], 'exit':100, 'stdout':text*300000, 'stderr':text}
+            raw, header, recovered=self.capture_failure_journal(evidence)
+            self.assertTrue(header['truncated'])
+            self.assertGreater(len(recovered),0)
+
+    def test_old_double_encoding_is_negative_control(self):
+        evidence={'stdout':'"'*300000}
+        encoded=json.dumps(evidence)
+        old=[json.dumps({'native_apt_install_failure_bytes':len(encoded),'journal_limit':262144,'truncated':len(encoded)>262144})+'\n']
+        old += [json.dumps({'native_apt_install_failure_chunk':offset//16384,'data':encoded[offset:offset+16384]})+'\n' for offset in range(0,min(len(encoded),262144),16384)]
+        self.assertGreater(len(''.join(old).encode('utf-8')),262144)
+        self.assertGreater(max(len(line.encode('utf-8')) for line in old),16384)
+        self.capture_failure_journal(evidence)
+
+    def test_journal_exact_final_byte_boundaries_include_header_and_newline(self):
+        evidence={'stdout':'a'*400}
+        # First obtain the exact serialized bytes for a complete one-chunk record.
+        raw, header, recovered=self.capture_failure_journal(evidence,record_limit=1000,total_limit=1000)
+        self.assertFalse(header['truncated'])
+        # The total_limit metadata changes length, so find the exact fixed point.
+        total=len(raw)
+        for _ in range(3):
+            raw,header,_=self.capture_failure_journal(evidence,record_limit=1000,total_limit=total)
+            total=len(raw)
+        self.assertFalse(header['truncated']);self.assertEqual(len(raw),total)
+        less,header,_=self.capture_failure_journal(evidence,record_limit=1000,total_limit=total-1)
+        self.assertTrue(header['truncated']);self.assertLessEqual(len(less),total-1)
+        # Check per-record boundaries around the exact complete chunk length.
+        chunk_size=len(raw.splitlines(keepends=True)[1])
+        for limit in [chunk_size-1,chunk_size,chunk_size+1]:
+            actual,header,_=self.capture_failure_journal(evidence,record_limit=limit,total_limit=2000)
+            self.assertFalse(header['truncated'])
+            self.assertEqual(len(actual.splitlines()),3 if limit<chunk_size else 2)
+
+    def test_install_complete_escape_heavy_file_survives_bounded_journal(self):
+        evidence='"\\\n\x00é😀'*100000
+        with tempfile.TemporaryDirectory() as directory:
+            report=pathlib.Path(directory)/'report.json'
+            result=subprocess.CompletedProcess(['apt-get'],100,evidence,evidence)
+            with mock.patch.object(install.subprocess,'run',return_value=result),mock.patch.object(install.sys,'stderr',io.StringIO()) as stream:
+                with self.assertRaises(subprocess.CalledProcessError):install.install_and_record(['apt-get'],report,{})
+                raw=stream.getvalue().encode('utf-8')
+            self.assertLessEqual(len(raw),262144)
+            self.assertTrue(all(len(line)<=16384 for line in raw.splitlines(keepends=True)))
+            saved=json.loads(report.with_suffix('.apt-install.json').read_text())
+            self.assertEqual(saved['stdout'],evidence);self.assertEqual(saved['stderr'],evidence)
+
 
 if __name__ == '__main__':
     unittest.main()

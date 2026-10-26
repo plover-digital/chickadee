@@ -9,7 +9,9 @@ seal=${3:?exact parent seal required}
 plan=$(realpath "${4:?prepared signed transaction required}")
 cache=$(realpath "${5:?authenticated offline deb cache required}")
 [[ ! -e $out && ! -e $out.inputs.tar && $out != "$source_dir" && $out != "$source_dir"/* && $source_dir != "$out"/* ]]
-[[ -z $(git status --porcelain --untracked-files=normal) ]]
+repository=$(pwd -P)
+source_status=$(git -c safe.directory="$repository" status --porcelain --untracked-files=normal)
+[[ -z $source_status ]]
 printf '%s  %s\n' "$seal" "$source_dir/SHA256SUMS" | sha256sum --check
 python3 scripts/check-image-bundle.py "$source_dir"
 bootstrap=$(python3 scripts/check-runtime-parent.py "$source_dir")
@@ -51,6 +53,7 @@ virt-customize --no-network --memsize 1024 --smp 1 -a "$out/working.qcow2" \
  --run-command 'python3 /tmp/chickadee-os/package-provenance.py > /image-package-provenance.json; dpkg-query -W > /image-packages.txt' \
  --delete /tmp/chickadee-os --no-selinux-relabel
 for report in os-security os-java-trust; do guestfish --ro -a "$out/working.qcow2" -i download "/etc/chickadee/$report.json" "$out/$report.json"; done
+guestfish --ro -a "$out/working.qcow2" -i download /etc/chickadee/os-security.apt-install.json "$out/os-security.apt-install.json"
 guestfish --ro -a "$out/working.qcow2" -i download /etc/chickadee/os-security.apt-plan.txt "$out/os-security.apt-plan.txt"
 guestfish --ro -a "$out/working.qcow2" -i download /etc/chickadee/os-security.apt-simulation.json "$out/os-security.apt-simulation.json"
 guestfish --ro -a "$out/working.qcow2" -i download /etc/chickadee/os-security.dpkg-preflight.json "$out/os-security.dpkg-preflight.json"

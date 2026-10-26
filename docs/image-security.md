@@ -200,3 +200,41 @@ Run the existing image compatibility workflow for Ubuntu24 and Ubuntu26 runtime
 workflow for broader tool exercises. Never map the minimal image to these
 48 GiB developer profiles. Dispatch only after coordinated artifact acceptance
 and routing; the workflow creates no new listener, queue mapping or access grant.
+
+
+### Offline native APT archive paths and failure evidence
+
+The native Ubuntu refresh stages a fresh `verified-apt-archives` directory beside
+its authenticated inputs. Every archive is copied under APT's canonical
+package/version/architecture name (including lowercase percent-encoded epochs),
+then its size and SHA256 are rechecked. Both simulation and installation use this
+absolute `Dir::Cache::archives`, fresh empty source/list paths and disabled
+`pkgcache`/`srcpkgcache` files. `--no-download`, `--no-remove`, exact Inst/Conf
+sets, clean dpkg preflight, no downgrade and complete post-inventory checks remain
+mandatory. Staging requires one additional copy of the finite input download
+bytes; account for this before requesting a resource window.
+
+APT 3.2.0's [archive acquisition source](https://archive.ubuntu.com/ubuntu/pool/main/a/apt/apt_3.2.0.tar.xz)
+(`apt-pkg/acquire-item.cc`, `pkgAcqArchive`) starts with a canonical basename and
+sets an absolute archive path when the cache hit or acquisition completes;
+`apt-pkg/deb/dpkgpm.cc` rejects relative install paths. The same source's
+`apt-private/private-install.cc` treats `--no-download` separately from acquisition.
+The official [source descriptor](https://archive.ubuntu.com/ubuntu/pool/main/a/apt/apt_3.2.0.dsc)
+records source archive SHA256
+`dcd186912a7b8553cc885412127925858ee340c655e2f26e77eacdab23f48089`.
+This motivates explicit cache staging; mocked checks do not establish a native
+APT fix. A bounded native regression with the exact installed APT version and
+locked transaction remains required. An install failure can leave a partially
+changed disposable copy; never reuse or release it.
+
+Installation now retains complete stdout, stderr, argv and exit in
+`os-security.apt-install.json` before raising an error. On failure it journals
+numbered JSON chunks of at most 16 KiB per final UTF-8 record, up to
+256 KiB total including the header, JSON escaping, metadata and every newline,
+with an explicit truncation marker. The complete report stays inside the disposable guest if the
+appliance fails before export; inspecting it requires a separately authorized
+bounded run. Successful copies export it into the sealed bundle. Simulation
+reports remain distinct, and transport success is not transaction acceptance.
+The shell wrapper checks Git exit status separately from clean output, with a
+safe-directory exception limited to its exact owning repository path before any
+input preparation or image copy.
