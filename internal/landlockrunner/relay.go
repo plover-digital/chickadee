@@ -180,7 +180,11 @@ func newRelayWithInterfaces(conn net.Conn, denied []netip.Prefix, dial func(cont
 	})
 	protocols := new(http.Protocols)
 	protocols.SetUnencryptedHTTP2(true)
-	r.server = &http.Server{Handler: handler, Protocols: protocols, ReadHeaderTimeout: 5 * time.Second, MaxHeaderBytes: 8192, ErrorLog: log.New(io.Discard, "", 0)}
+	// The only peer is this sandbox's own inherited socket, which stays idle
+	// until a JIT arrives, possibly minutes after READY. A header-read deadline
+	// would close that single connection before first use, so every later
+	// CONNECT fails with 502. Slow headers can only stall this sandbox.
+	r.server = &http.Server{Handler: handler, Protocols: protocols, MaxHeaderBytes: 8192, ErrorLog: log.New(io.Discard, "", 0)}
 	go r.server.Serve(r.listener)
 	return r
 }
