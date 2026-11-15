@@ -47,7 +47,7 @@ func TestHealthReportsLowDiskAsRefusing(t *testing.T) {
 	}
 }
 
-func TestHealthReportsUnmeasuredDiskAsUnknown(t *testing.T) {
+func TestHealthReportsUnmeasuredDiskAsRefusing(t *testing.T) {
 	c := engineConfig(t)
 	e, _ := testEngine(t, c)
 	defer e.journal.Close()

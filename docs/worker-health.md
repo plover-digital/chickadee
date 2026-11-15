@@ -66,7 +66,8 @@ request fields. It returns:
   After a journal persistence failure, health still answers `stopped` with
   `fatal`, while inventory and other routes return `unavailable`.
 - `disk` reports the same figures the admission check uses, so an operator
-  can see the margin before boots are refused.
+  can see the margin before boots are refused. During a per-profile boot
+  backoff, `refusing` can briefly show `available_bytes >= required_bytes`.
 
 **Compatibility.** The client decoder rejects unknown fields, so adding fields
 to inventory would break older brokers. A new route avoids that in both
