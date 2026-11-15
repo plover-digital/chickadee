@@ -310,6 +310,16 @@ func diskReservation(c Config) int64 {
 // Existing overlay blocks count toward already allocated reservation, whereas
 // apparent sparse-file length does not. Keep another 2GiB for logs/host headroom.
 func checkDiskSpace(c Config, allocated int64) error {
+	available, err := availableDisk(c)
+	if err != nil {
+		return err
+	}
+	return checkDiskCapacity(c, allocated, available)
+}
+
+// availableDisk returns unprivileged free bytes on the state filesystem, or the
+// nearest existing parent while the state directory is not yet created.
+func availableDisk(c Config) (int64, error) {
 	path := c.StateDir
 	for {
 		_, err := os.Stat(path)
@@ -317,29 +327,37 @@ func checkDiskSpace(c Config, allocated int64) error {
 			break
 		}
 		if !os.IsNotExist(err) {
-			return fmt.Errorf("disk capacity unavailable")
+			return 0, fmt.Errorf("disk capacity unavailable")
 		}
 		parent := filepath.Dir(path)
 		if parent == path {
-			return fmt.Errorf("disk capacity unavailable")
+			return 0, fmt.Errorf("disk capacity unavailable")
 		}
 		path = parent
 	}
 	var stat syscall.Statfs_t
 	if err := syscall.Statfs(path, &stat); err != nil {
-		return fmt.Errorf("disk capacity unavailable")
+		return 0, fmt.Errorf("disk capacity unavailable")
 	}
 	if stat.Bsize <= 0 || stat.Bavail > uint64(^uint64(0)>>1)/uint64(stat.Bsize) {
-		return fmt.Errorf("invalid disk capacity")
+		return 0, fmt.Errorf("invalid disk capacity")
 	}
-	available := int64(stat.Bavail) * stat.Bsize
-	return checkDiskCapacity(c, allocated, available)
+	return int64(stat.Bavail) * stat.Bsize, nil
 }
 
 func checkDiskCapacity(c Config, allocated, available int64) error {
 	if allocated < 0 || available < 0 {
 		return fmt.Errorf("invalid disk capacity")
 	}
+	if available < requiredDisk(c, allocated) {
+		return fmt.Errorf("insufficient disk space for reserved VM capacity and diagnostics")
+	}
+	return nil
+}
+
+// requiredDisk is the free space a new boot needs once existing overlay blocks
+// are credited against the full growth reservation.
+func requiredDisk(c Config, allocated int64) int64 {
 	required := diskReservation(c) - allocated
 	if required < 2<<30 {
 		required = 2 << 30
@@ -347,10 +365,7 @@ func checkDiskCapacity(c Config, allocated, available int64) error {
 	if floor := int64(c.MinFreeDiskGiB) << 30; floor > required {
 		required = floor
 	}
-	if available < required {
-		return fmt.Errorf("insufficient disk space for reserved VM capacity and diagnostics")
-	}
-	return nil
+	return required
 }
 
 func (c Config) ProfileCgroup(p Profile) *host.CgroupConfig {

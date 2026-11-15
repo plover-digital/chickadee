@@ -32,8 +32,10 @@ var (
 	ErrConsumed   = errors.New("credential delivery intent already committed")
 	ErrTransition = errors.New("invalid reservation transition")
 	ErrUncertain  = errors.New("journal outcome uncertain; close and reopen before further admission")
-	idPattern     = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$`)
-	digestPattern = regexp.MustCompile(`^[0-9a-f]{64}$`)
+	// ErrRecordBudget is a retryable admission refusal; the journal is unchanged.
+	ErrRecordBudget = errors.New("worker journal record budget exhausted")
+	idPattern       = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$`)
+	digestPattern   = regexp.MustCompile(`^[0-9a-f]{64}$`)
 )
 
 type Identity struct {
@@ -283,6 +285,13 @@ func (j *Journal) check(r Request) error {
 	}
 	return nil
 }
+
+// Full reports whether a new reservation would exceed the record budget.
+func (j *Journal) Full() bool {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	return len(j.data.Records) >= MaxRecords
+}
 func (j *Journal) Reserve(request Request) (Record, error) {
 	j.mu.Lock()
 	defer j.mu.Unlock()
@@ -296,8 +305,9 @@ func (j *Journal) Reserve(request Request) (Record, error) {
 		// A lost Reserve ACK may reveal a more advanced state, never a fresh VM.
 		return old, nil
 	}
+	// Terminal records are the replay fence (#29); never prune them here.
 	if len(j.data.Records) >= MaxRecords {
-		return Record{}, fmt.Errorf("worker journal record budget exhausted")
+		return Record{}, ErrRecordBudget
 	}
 	for _, old := range j.data.Records {
 		if old.Request.VMID == request.VMID {

@@ -89,9 +89,12 @@ expand its qcow2 overlay to the largest configured virtual disk, plus 1 GiB per
 VM and 2 GiB for diagnostics/headroom. Existing physical overlay blocks reduce
 remaining growth reservation. Startup and each cold allocation check this;
 warm replenishment uses the same path. Optional `min_free_disk_gib` adds a free
-space floor (zero retains the existing 2 GiB minimum). Low space stops new boots
-and marks the worker unhealthy while existing jobs retain their lifecycle and
-cleanup deadlines; restoring space requires a controlled worker restart.
+space floor (zero retains the existing 2 GiB minimum). Low space refuses new boots
+with a retryable capacity error and retries every 30 seconds, while existing jobs
+retain their lifecycle and cleanup deadlines. Boots resume on their own once space
+is restored; no restart is needed. A worker whose journal is full reports
+`draining` so brokers place work elsewhere, and releases its idle warm VMs, until
+it is rotated (#29).
 This admission check is neither a hard filesystem quota nor protection against
 another host process consuming storage after admission. Virtual disk size alone
 does not impose a host filesystem quota; QEMU's existing file-size limit and
