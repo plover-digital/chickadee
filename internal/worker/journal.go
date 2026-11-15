@@ -286,7 +286,6 @@ func (j *Journal) check(r Request) error {
 	return nil
 }
 
-// Full reports whether a new reservation would exceed the record budget.
 // Len counts in-memory records. Unlike Records it still answers after a
 // persistence failure poisons the journal, so health can report the latch.
 func (j *Journal) Len() int {
@@ -294,6 +293,8 @@ func (j *Journal) Len() int {
 	defer j.mu.Unlock()
 	return len(j.data.Records)
 }
+
+// Full reports whether a new reservation would exceed the record budget.
 func (j *Journal) Full() bool {
 	j.mu.Lock()
 	defer j.mu.Unlock()

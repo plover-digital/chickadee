@@ -936,15 +936,13 @@ func (e *Engine) Health() (workerapi.Health, error) {
 	case e.draining:
 		h.Reasons = append(h.Reasons, workerapi.ReasonDrainRequested)
 	}
-	// Decide from the live measurement so the reason clears as soon as space
-	// returns, even for profiles nothing retries. Fall back to an active boot
-	// deferral only when the filesystem cannot be measured.
-	lowDisk := h.Disk != nil && h.Disk.AvailableBytes < h.Disk.RequiredBytes
-	if h.Disk == nil {
-		for id := range e.deferred {
-			if time.Now().Before(e.nextBoot[id]) {
-				lowDisk = true
-			}
+	// Match boot admission: a measured shortage or an unmeasurable filesystem
+	// refuses boots, and so does an active deferral until its backoff ends.
+	// Expired deferrals are ignored, so the reason clears without a boot.
+	lowDisk := h.Disk == nil || h.Disk.AvailableBytes < h.Disk.RequiredBytes
+	for id := range e.deferred {
+		if time.Now().Before(e.nextBoot[id]) {
+			lowDisk = true
 		}
 	}
 	if lowDisk {

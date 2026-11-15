@@ -5,6 +5,7 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/plover-digital/chickadee/workerapi"
 )
@@ -53,7 +54,7 @@ func TestHealthReportsUnmeasuredDiskAsUnknown(t *testing.T) {
 	e.mu.Lock()
 	e.diskAvailable = func(Config) (int64, error) { return 0, errors.New("statfs") }
 	e.mu.Unlock()
-	if h := healthOf(t, e); h.Disk != nil || h.Admission != workerapi.AdmissionOpen {
+	if h := healthOf(t, e); h.Disk != nil || h.Admission != workerapi.AdmissionRefusing || !reflect.DeepEqual(h.Reasons, []string{workerapi.ReasonDiskReserve}) {
 		t.Fatalf("%+v", h)
 	}
 }
@@ -104,9 +105,17 @@ func TestHealthClearsDiskReserveWhenSpaceReturns(t *testing.T) {
 		t.Fatalf("low: %+v", h)
 	}
 	setDisk(e, 1<<50)
+	// Reserve keeps refusing until the backoff ends; health must agree.
+	if h := healthOf(t, e); h.Admission != workerapi.AdmissionRefusing {
+		t.Fatalf("health open while Reserve still refuses: %+v", h)
+	}
+	e.mu.Lock()
+	e.nextBoot["medium"] = time.Time{}
+	e.mu.Unlock()
 	if h := healthOf(t, e); h.Admission != workerapi.AdmissionOpen || len(h.Reasons) != 0 {
 		t.Fatalf("recovered disk still refusing: %+v", h)
 	}
+	reserveEngine(t, e, c.Identity, "after", "medium")
 }
 
 func TestHealthReportsPersistenceLatch(t *testing.T) {

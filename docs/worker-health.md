@@ -54,8 +54,9 @@ request fields. It returns:
 
 - `admission` is `open`, `refusing` or `stopped`:
   - `refusing`: free disk is below the reservation, so new boots are refused.
-    Ready warm VMs can still be reserved. Measured live, so it clears as soon
-    as space returns.
+    Ready warm VMs can still be reserved. It clears once space returns and
+    any boot backoff (up to 30 seconds) ends. A state filesystem that cannot
+    be measured also reports `refusing`, with `disk` omitted.
   - `stopped`: drained, latched, or journal full; needs operator action. A
     `stopped` worker also reports `draining` in inventory, so older brokers
     skip it too.
