@@ -94,7 +94,7 @@ func (c *Client) call(ctx context.Context, op string, req command) (response, er
 		}
 		return response{}, &Error{Code: code, HTTPStatus: resp.StatusCode}
 	}
-	if result.Error != "" || ((op == "deliver" || op == "drain") && (result.Inventory != nil || result.Record != nil)) {
+	if result.Error != "" || ((op == "deliver" || op == "drain") && (result.Inventory != nil || result.Record != nil || result.Health != nil)) {
 		return response{}, fmt.Errorf("invalid worker response")
 	}
 	return result, nil
@@ -104,7 +104,7 @@ func (c *Client) Inventory(ctx context.Context) (Inventory, error) {
 	if e != nil {
 		return Inventory{}, e
 	}
-	if r.Inventory == nil || r.Record != nil || r.Inventory.Identity != c.identity || !r.Inventory.valid() {
+	if r.Inventory == nil || r.Record != nil || r.Health != nil || r.Inventory.Identity != c.identity || !r.Inventory.valid() {
 		return Inventory{}, fmt.Errorf("invalid worker inventory")
 	}
 	return *r.Inventory, nil
@@ -114,7 +114,7 @@ func (c *Client) record(ctx context.Context, op string, req command) (Record, er
 	if e != nil {
 		return Record{}, e
 	}
-	if r.Record == nil || r.Inventory != nil || r.Record.Request.Identity != c.identity || r.Record.Request.AssignmentID != req.AssignmentID || !r.Record.valid() || (op == "seal" && r.Record.State != "sealed") {
+	if r.Record == nil || r.Inventory != nil || r.Health != nil || r.Record.Request.Identity != c.identity || r.Record.Request.AssignmentID != req.AssignmentID || !r.Record.valid() || (op == "seal" && r.Record.State != "sealed") {
 		return Record{}, fmt.Errorf("invalid worker reservation")
 	}
 	return *r.Record, nil
@@ -138,6 +138,19 @@ func (c *Client) Status(ctx context.Context, id string) (Record, error) {
 }
 func (c *Client) Drain(ctx context.Context) error { _, e := c.call(ctx, "drain", command{}); return e }
 
+// Health returns ErrUnsupported from workers that predate the route; callers
+// should then treat admission as unknown and rely on inventory draining.
+func (c *Client) Health(ctx context.Context) (Health, error) {
+	r, e := c.call(ctx, "health", command{})
+	if e != nil {
+		return Health{}, e
+	}
+	if r.Health == nil || r.Inventory != nil || r.Record != nil || !r.Health.valid() {
+		return Health{}, fmt.Errorf("invalid worker health")
+	}
+	return *r.Health, nil
+}
+
 func (e *Error) Is(target error) bool {
 	switch target {
 	case ErrNotFound:
@@ -150,6 +163,8 @@ func (e *Error) Is(target error) bool {
 		return e.Code == "consumed" && e.HTTPStatus == http.StatusConflict
 	case ErrUnavailable:
 		return e.Code == "unavailable"
+	case ErrUnsupported:
+		return e.Code == "invalid" && e.HTTPStatus == http.StatusNotFound
 	}
 	return false
 }

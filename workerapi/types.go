@@ -27,6 +27,8 @@ var (
 	ErrConsumed    = errors.New("delivery consumed")
 	ErrUnavailable = errors.New("worker unavailable")
 	ErrNotFound    = errors.New("assignment not found")
+	// ErrUnsupported means the worker predates an optional v1 route.
+	ErrUnsupported = errors.New("worker route unsupported")
 )
 
 type Identity struct {
@@ -103,6 +105,7 @@ type response struct {
 	Version   int        `json:"version"`
 	Inventory *Inventory `json:"inventory,omitempty"`
 	Record    *Record    `json:"record,omitempty"`
+	Health    *Health    `json:"health,omitempty"`
 	Error     string     `json:"error,omitempty"`
 }
 
@@ -122,7 +125,7 @@ func (c command) valid(op string, identity Identity) bool {
 		return false
 	}
 	switch op {
-	case "inventory", "drain":
+	case "inventory", "drain", "health":
 		return c.AssignmentID == "" && c.ProfileID == "" && c.ProfileDigest == "" && c.JIT == ""
 	case "reserve":
 		return idPattern.MatchString(c.AssignmentID) && idPattern.MatchString(c.ProfileID) && digestPattern.MatchString(c.ProfileDigest) && c.JIT == ""
@@ -175,4 +178,73 @@ func (v Inventory) valid() bool {
 // ValidWorkFolder checks worker-selected response metadata, never a remote path request.
 func ValidWorkFolder(p string) bool {
 	return p == "" || (len(p) <= 4096 && path.IsAbs(p) && path.Clean(p) == p && p != "/" && !strings.ContainsAny(p, "\x00\r\n"))
+}
+
+// Admission states reported by the optional health route.
+const (
+	AdmissionOpen     = "open"     // accepting new work
+	AdmissionRefusing = "refusing" // declining new work; recovers without operator action
+	AdmissionStopped  = "stopped"  // drained or latched; needs operator action
+)
+
+// Health reasons are fixed codes. Workers never report free text, paths or
+// guest output through this route.
+const (
+	ReasonDrainRequested = "drain_requested"
+	ReasonFatal          = "fatal"
+	ReasonDiskReserve    = "disk_reserve"
+	ReasonJournalFull    = "journal_full"
+)
+
+// Health is the admission view returned by the optional /v1/health route.
+// Older workers answer 404, which the client reports as ErrUnsupported.
+type Health struct {
+	Admission string        `json:"admission"`
+	Reasons   []string      `json:"reasons"`
+	Journal   JournalHealth `json:"journal"`
+	// Disk is omitted when the worker cannot measure its state filesystem.
+	Disk *DiskHealth `json:"disk,omitempty"`
+}
+type JournalHealth struct {
+	Records    int `json:"records"`
+	MaxRecords int `json:"max_records"`
+}
+
+// DiskHealth reports the figures the boot admission check compares.
+type DiskHealth struct {
+	AvailableBytes int64 `json:"available_bytes"`
+	RequiredBytes  int64 `json:"required_bytes"`
+}
+
+// HealthBackend is optional. A Backend that also implements it serves
+// /v1/health; otherwise the route answers like any unknown route.
+type HealthBackend interface {
+	Health() (Health, error)
+}
+
+func (h Health) valid() bool {
+	switch h.Admission {
+	case AdmissionOpen, AdmissionRefusing, AdmissionStopped:
+	default:
+		return false
+	}
+	if h.Reasons == nil || len(h.Reasons) > 4 || (h.Admission == AdmissionOpen) != (len(h.Reasons) == 0) {
+		return false
+	}
+	seen := map[string]bool{}
+	for _, reason := range h.Reasons {
+		switch reason {
+		case ReasonDrainRequested, ReasonFatal, ReasonDiskReserve, ReasonJournalFull:
+		default:
+			return false
+		}
+		if seen[reason] {
+			return false
+		}
+		seen[reason] = true
+	}
+	if h.Journal.MaxRecords < 1 || h.Journal.Records < 0 || h.Journal.Records > h.Journal.MaxRecords {
+		return false
+	}
+	return h.Disk == nil || h.Disk.AvailableBytes >= 0 && h.Disk.RequiredBytes >= 0
 }

@@ -918,6 +918,48 @@ func (e *Engine) Status(identity Identity, assignmentID string) (Record, error) 
 	record, _, err := e.findLocked(assignmentID)
 	return record, err
 }
+
+// Health reports admission state with fixed reason codes. It never exposes
+// error text, paths or guest output. "refusing" means new boots are refused;
+// ready warm VMs can still be reserved.
+func (e *Engine) Health() (workerapi.Health, error) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	records := e.journal.Len()
+	h := workerapi.Health{Admission: workerapi.AdmissionOpen, Reasons: []string{}, Journal: workerapi.JournalHealth{Records: records, MaxRecords: MaxRecords}}
+	if available, err := e.diskAvailable(e.config); err == nil {
+		h.Disk = &workerapi.DiskHealth{AvailableBytes: available, RequiredBytes: requiredDisk(e.config, e.allocatedDiskLocked())}
+	}
+	switch {
+	case e.fatal != nil:
+		h.Reasons = append(h.Reasons, workerapi.ReasonFatal)
+	case e.draining:
+		h.Reasons = append(h.Reasons, workerapi.ReasonDrainRequested)
+	}
+	// Match boot admission: a measured shortage or an unmeasurable filesystem
+	// refuses boots, and so does an active deferral until its backoff ends.
+	// Expired deferrals are ignored, so the reason clears without a boot.
+	lowDisk := h.Disk == nil || h.Disk.AvailableBytes < h.Disk.RequiredBytes
+	for id := range e.deferred {
+		if time.Now().Before(e.nextBoot[id]) {
+			lowDisk = true
+		}
+	}
+	if lowDisk {
+		h.Reasons = append(h.Reasons, workerapi.ReasonDiskReserve)
+	}
+	if records >= MaxRecords {
+		h.Reasons = append(h.Reasons, workerapi.ReasonJournalFull)
+	}
+	// A full journal never recovers without rotation (#29), so it is stopped,
+	// matching inventory, which reports it as draining.
+	if e.draining || records >= MaxRecords {
+		h.Admission = workerapi.AdmissionStopped
+	} else if len(h.Reasons) > 0 {
+		h.Admission = workerapi.AdmissionRefusing
+	}
+	return h, nil
+}
 func (e *Engine) Inventory() (Inventory, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()

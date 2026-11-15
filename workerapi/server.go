@@ -51,6 +51,13 @@ func NewHandler(identity Identity, b Backend) http.Handler {
 			op = "status"
 		case "/v1/drain":
 			op = "drain"
+		case "/v1/health":
+			if _, ok := b.(HealthBackend); ok {
+				op = "health"
+				break
+			}
+			write(w, http.StatusNotFound, response{Error: "invalid"})
+			return
 		default:
 			write(w, http.StatusNotFound, response{Error: "invalid"})
 			return
@@ -104,6 +111,10 @@ func NewHandler(identity Identity, b Backend) http.Handler {
 			result.Record = &v
 		case "drain":
 			err = b.Drain(identity)
+		case "health":
+			var v Health
+			v, err = b.(HealthBackend).Health()
+			result.Health = &v
 		}
 		if err != nil {
 			code, status := "unavailable", http.StatusServiceUnavailable
