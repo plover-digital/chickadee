@@ -285,6 +285,13 @@ func (j *Journal) check(r Request) error {
 	}
 	return nil
 }
+
+// Full reports whether a new reservation would exceed the record budget.
+func (j *Journal) Full() bool {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	return len(j.data.Records) >= MaxRecords
+}
 func (j *Journal) Reserve(request Request) (Record, error) {
 	j.mu.Lock()
 	defer j.mu.Unlock()

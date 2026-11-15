@@ -80,14 +80,18 @@ type Engine struct {
 	nextBoot   map[string]time.Time
 	// deferred holds the capacity refusal for a profile in boot backoff.
 	deferred map[string]error
+	// journalFullLogged limits the full-journal warning to once per episode.
+	journalFullLogged bool
+	// capacityRetry spaces boot attempts while host capacity is unavailable.
+	capacityRetry time.Duration
 }
 
 // ErrCapacity is a retryable refusal: host capacity such as free disk is
 // currently insufficient. It never drains the worker or touches running jobs.
 var ErrCapacity = errors.New("worker capacity unavailable")
 
-// capacityRetry spaces boot attempts while host capacity is unavailable.
-var capacityRetry = 30 * time.Second
+// defaultCapacityRetry spaces boot attempts while host capacity is unavailable.
+const defaultCapacityRetry = 30 * time.Second
 
 func startHost(ctx context.Context, conf hostconfig.Config, slot int, id string) (machine, error) {
 	vm, err := host.Start(ctx, conf, slot, id)
@@ -230,7 +234,7 @@ func openEngine(c Config, start startMachine, reap func(string) error, check fun
 	if err = spaceCheck(c, 0); err != nil {
 		return fail(err)
 	}
-	e := &Engine{config: c, journal: j, start: start, spaceCheck: spaceCheck, profiles: map[string]Profile{}, entries: map[string]*instance{}, changed: make(chan struct{}), nextBoot: map[string]time.Time{}, deferred: map[string]error{}}
+	e := &Engine{config: c, journal: j, start: start, spaceCheck: spaceCheck, profiles: map[string]Profile{}, entries: map[string]*instance{}, changed: make(chan struct{}), nextBoot: map[string]time.Time{}, deferred: map[string]error{}, capacityRetry: defaultCapacityRetry}
 	for _, profile := range c.Profiles {
 		e.profiles[profile.ID] = profile
 	}
@@ -268,6 +272,9 @@ func (e *Engine) maintainLocked() {
 		}
 		for free < p.Warm && e.fitsLocked(p) && !time.Now().Before(e.nextBoot[p.ID]) {
 			if e.bootLocked(p) != nil {
+				if e.fatal != nil || e.draining {
+					return
+				}
 				break
 			}
 			free++
@@ -288,16 +295,7 @@ func (e *Engine) bootLocked(p Profile) error {
 	if e.draining {
 		return fmt.Errorf("worker draining")
 	}
-	allocated := int64(0)
-	for _, v := range e.entries {
-		info, err := os.Stat(filepath.Join(e.config.StateDir, "vms", v.id, "disk.qcow2"))
-		if err == nil {
-			if stat, ok := info.Sys().(*syscall.Stat_t); ok {
-				allocated += stat.Blocks * 512
-			}
-		}
-	}
-	if err := e.spaceCheck(e.config, allocated); err != nil {
+	if err := e.spaceCheck(e.config, e.allocatedDiskLocked()); err != nil {
 		// Low disk refuses new boots without draining: capacity returns once space
 		// is freed, and existing jobs are unaffected.
 		err = fmt.Errorf("%w: %v", ErrCapacity, err)
@@ -346,15 +344,39 @@ func (e *Engine) bootLocked(p Profile) error {
 	return nil
 }
 
+// allocatedDiskLocked sums allocated overlay blocks, which already count
+// against the growth reservation.
+func (e *Engine) allocatedDiskLocked() int64 {
+	allocated := int64(0)
+	for _, v := range e.entries {
+		info, err := os.Stat(filepath.Join(e.config.StateDir, "vms", v.id, "disk.qcow2"))
+		if err == nil {
+			if stat, ok := info.Sys().(*syscall.Stat_t); ok {
+				allocated += stat.Blocks * 512
+			}
+		}
+	}
+	return allocated
+}
+
+// refuseFullJournalLocked logs once per full-journal episode; callers retry often.
+func (e *Engine) refuseFullJournalLocked() {
+	if !e.journalFullLogged {
+		e.journalFullLogged = true
+		slog.Warn("Reservation refused; worker journal full", "records", MaxRecords)
+	}
+}
+
 // deferBootLocked backs off one profile and re-runs maintenance afterwards.
 func (e *Engine) deferBootLocked(p Profile, err error) {
 	if e.deferred[p.ID] == nil {
-		slog.Warn("VM boot deferred; capacity unavailable", "profile", p.ID, "error", err, "retry_seconds", int(capacityRetry/time.Second))
+		slog.Warn("VM boot deferred; capacity unavailable", "profile", p.ID, "error", err, "retry_seconds", int(e.capacityRetry/time.Second))
 	}
 	e.deferred[p.ID] = err
-	e.nextBoot[p.ID] = time.Now().Add(capacityRetry)
+	delay := e.capacityRetry
+	e.nextBoot[p.ID] = time.Now().Add(delay)
 	go func() {
-		time.Sleep(capacityRetry)
+		time.Sleep(delay)
 		e.mu.Lock()
 		defer e.mu.Unlock()
 		e.notifyLocked()
@@ -540,6 +562,14 @@ func (e *Engine) Reserve(ctx context.Context, identity Identity, assignmentID, p
 			e.mu.Unlock()
 			return Record{}, fmt.Errorf("worker draining")
 		}
+		// Refuse before reserving, evicting or booting anything (#29: terminal
+		// records are never pruned, so this persists until rotation).
+		if e.journal.Full() {
+			e.refuseFullJournalLocked()
+			e.mu.Unlock()
+			return Record{}, ErrRecordBudget
+		}
+		e.journalFullLogged = false
 		booting := false
 		for _, v := range e.entries {
 			if compatible(v.profile, p) && v.state == "booting" {
@@ -568,7 +598,7 @@ func (e *Engine) Reserve(ctx context.Context, identity Identity, assignmentID, p
 				record, err := e.journal.Reserve(request)
 				if errors.Is(err, ErrRecordBudget) {
 					// Nothing was committed; refuse this reservation and keep serving.
-					slog.Warn("Reservation refused; worker journal full", "records", MaxRecords)
+					e.refuseFullJournalLocked()
 					e.mu.Unlock()
 					return Record{}, err
 				}
@@ -586,18 +616,28 @@ func (e *Engine) Reserve(ctx context.Context, identity Identity, assignmentID, p
 				return record, nil
 			}
 		}
-		if !booting && e.fitsLocked(p) {
-			if !time.Now().Before(e.nextBoot[p.ID]) {
-				if err := e.bootLocked(p); errors.Is(err, ErrCapacity) {
-					e.mu.Unlock()
-					return Record{}, err
-				}
-			} else if err := e.deferred[p.ID]; err != nil {
+		if !booting {
+			// A capacity refusal in backoff must not evict other profiles' VMs.
+			if err := e.deferred[p.ID]; err != nil && time.Now().Before(e.nextBoot[p.ID]) {
+				e.mu.Unlock()
+				return Record{}, err
+			}
+		}
+		if !booting && e.fitsLocked(p) && !time.Now().Before(e.nextBoot[p.ID]) {
+			if err := e.bootLocked(p); errors.Is(err, ErrCapacity) {
 				e.mu.Unlock()
 				return Record{}, err
 			}
 		}
 		if !booting && !e.fitsLocked(p) {
+			// Evicting frees overlay blocks that the reservation already credits,
+			// so the space check gives the same answer before eviction as after.
+			if err := e.spaceCheck(e.config, e.allocatedDiskLocked()); err != nil {
+				err = fmt.Errorf("%w: %v", ErrCapacity, err)
+				e.deferBootLocked(p, err)
+				e.mu.Unlock()
+				return Record{}, err
+			}
 			for _, idle := range e.entries {
 				if compatible(idle.profile, p) {
 					continue
@@ -779,7 +819,10 @@ func (e *Engine) Inventory() (Inventory, error) {
 	if err != nil {
 		return Inventory{}, err
 	}
-	inventory := Inventory{Identity: e.config.Identity, Draining: e.draining, Budget: e.config.Budget, Records: records}
+	// A full journal refuses all new work until rotation (#29). Report it as
+	// draining so brokers and the standalone adapter place work elsewhere; the
+	// engine itself is not latched and keeps serving existing assignments.
+	inventory := Inventory{Identity: e.config.Identity, Draining: e.draining || len(records) >= MaxRecords, Budget: e.config.Budget, Records: records}
 	for _, v := range e.entries {
 		inventory.Used.VMs++
 		inventory.Used.CPUs += v.profile.CPUs

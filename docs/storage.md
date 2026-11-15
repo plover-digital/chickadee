@@ -3,7 +3,10 @@
 Experimental keyless workers retain the full configured maximum overlay-growth
 reservation at startup and before cold boots. `min_free_disk_gib` optionally adds
 an operator-selected available-space floor; zero preserves the existing minimum.
-These checks stop new admission on pressure and preserve running-job cleanup.
+These checks refuse new boots on pressure, retry every 30 seconds, and preserve
+running-job cleanup. A keyless worker under pressure still advertises itself, so a
+broker can place an assignment that waits until space returns; it does not evict
+other profiles' warm VMs to make room.
 They are admission checks, not atomic filesystem reservations or hard quotas.
 
 `log_retention_mib` optionally bounds retained local diagnostics (0 disables

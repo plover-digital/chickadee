@@ -601,8 +601,8 @@ func TestLowDiskStopsNewBootButPreservesRunningJobAndTerminalStatus(t *testing.T
 	e.mu.Lock()
 	e.spaceCheck = func(Config, int64) error { return errors.New("capacity unavailable") }
 	e.mu.Unlock()
-	if _, err := e.Reserve(context.Background(), c.Identity, "new", "medium"); err == nil {
-		t.Fatal("low disk boot accepted")
+	if _, err := e.Reserve(context.Background(), c.Identity, "new", "medium"); !errors.Is(err, ErrCapacity) {
+		t.Fatalf("low disk boot accepted: %v", err)
 	}
 	f.mu.Lock()
 	good := f.vms[first.Request.VMID]
@@ -641,25 +641,114 @@ func TestLowDiskStopsNewBootButPreservesRunningJobAndTerminalStatus(t *testing.T
 	e.journal.Close()
 }
 
-func TestFullJournalRefusesReservationWithoutDraining(t *testing.T) {
+// threeShapeConfig fills the budget with warm small+medium; "large" has no
+// warm VM and needs eviction to fit.
+func threeShapeConfig(t *testing.T) Config {
 	c := engineConfig(t)
-	e, _ := testEngine(t, c)
-	eventually(t, func() bool { i, _ := e.Inventory(); return i.Profiles[0].Ready == 1 })
-	e.mu.Lock()
+	c.Budget = Budget{MaxVMs: 3, MaxCPUs: 6, MaxMemoryMiB: 12288}
+	medium := c.Profiles[0]
+	medium.CPUs, medium.MemoryMiB = 4, 8192
+	small := medium
+	small.ID, small.CPUs, small.MemoryMiB = "small", 2, 4096
+	large := medium
+	large.ID, large.MemoryMiB, large.Warm = "large", 4096, 0
+	c.Profiles = []Profile{small, medium, large}
+	return c
+}
+func fillJournal(e *Engine, c Config) {
+	e.journal.mu.Lock()
+	defer e.journal.mu.Unlock()
 	now := time.Now().UTC()
 	for i := 0; i < MaxRecords; i++ {
 		r := Request{Identity: c.Identity, AssignmentID: stringID(i), VMID: stringID(i), ProfileDigest: c.Profiles[0].Digest, CPUs: c.Profiles[0].CPUs, MemoryMiB: c.Profiles[0].MemoryMiB, DiskGiB: c.Profiles[0].DiskGiB}
 		e.journal.data.Records[r.AssignmentID] = Record{Request: r, State: Terminal, CompletedAt: now}
 	}
-	e.mu.Unlock()
-	if _, err := e.Reserve(context.Background(), c.Identity, "full", "medium"); !errors.Is(err, ErrRecordBudget) {
-		t.Fatalf("full journal: %v", err)
-	}
+}
+func readyCounts(e *Engine) []int {
 	i, _ := e.Inventory()
-	if i.Draining || i.Profiles[0].Ready != 1 {
-		t.Fatal("full journal drained the worker or discarded warm capacity")
+	var out []int
+	for _, p := range i.Profiles {
+		out = append(out, p.Ready)
 	}
-	e.journal.Close()
+	return out
+}
+
+func TestFullJournalRefusesWithoutLatchingOrEvicting(t *testing.T) {
+	c := threeShapeConfig(t)
+	e, f := testEngine(t, c)
+	defer e.journal.Close()
+	eventually(t, func() bool { r := readyCounts(e); return r[0] == 1 && r[1] == 1 })
+	fillJournal(e, c)
+	for _, profile := range []string{"medium", "large"} {
+		if _, err := e.Reserve(context.Background(), c.Identity, "full-"+profile, profile); !errors.Is(err, ErrRecordBudget) {
+			t.Fatalf("%s: %v", profile, err)
+		}
+	}
+	f.mu.Lock()
+	booted := len(f.vms)
+	f.mu.Unlock()
+	if r := readyCounts(e); r[0] != 1 || r[1] != 1 || booted != 2 {
+		t.Fatal("full journal evicted or booted VMs", r, booted)
+	}
+	e.mu.Lock()
+	latched := e.fatal != nil || e.draining
+	e.mu.Unlock()
+	if latched {
+		t.Fatal("full journal latched the engine")
+	}
+	// Placement must skip this worker until rotation, so inventory reports it.
+	if i, _ := e.Inventory(); !i.Draining {
+		t.Fatal("full journal still advertised for placement")
+	}
+}
+
+func TestLowDiskDoesNotEvictOtherProfiles(t *testing.T) {
+	c := threeShapeConfig(t)
+	e, f := testEngine(t, c)
+	defer e.journal.Close()
+	eventually(t, func() bool { r := readyCounts(e); return r[0] == 1 && r[1] == 1 })
+	e.mu.Lock()
+	e.spaceCheck = func(Config, int64) error { return errors.New("low") }
+	e.mu.Unlock()
+	for attempt := 0; attempt < 2; attempt++ {
+		if _, err := e.Reserve(context.Background(), c.Identity, "large", "large"); !errors.Is(err, ErrCapacity) {
+			t.Fatalf("attempt %d: %v", attempt, err)
+		}
+	}
+	f.mu.Lock()
+	booted := len(f.vms)
+	f.mu.Unlock()
+	if r := readyCounts(e); r[0] != 1 || r[1] != 1 || booted != 2 {
+		t.Fatal("low disk evicted warm capacity it could not replace", r, booted)
+	}
+}
+
+func TestLowDiskWarmPoolRecoversWithoutRestart(t *testing.T) {
+	c := engineConfig(t)
+	e, _ := testEngine(t, c)
+	defer e.journal.Close()
+	eventually(t, func() bool { return readyCounts(e)[0] == 1 })
+	e.mu.Lock()
+	e.capacityRetry = 50 * time.Millisecond
+	e.spaceCheck = func(Config, int64) error { return errors.New("low") }
+	e.mu.Unlock()
+	// Consuming the warm VM makes maintenance try, and defer, a replacement.
+	r := reserveEngine(t, e, c.Identity, "job", "medium")
+	if _, err := e.Seal(c.Identity, r.Request.AssignmentID); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.Deliver(c.Identity, r.Request.AssignmentID, "e30="); err != nil {
+		t.Fatal(err)
+	}
+	eventually(t, func() bool { e.mu.Lock(); defer e.mu.Unlock(); return e.deferred["medium"] != nil })
+	if i, _ := e.Inventory(); i.Draining || i.Profiles[0].Ready != 0 {
+		t.Fatal("low disk drained or booted", i.Draining, i.Profiles[0].Ready)
+	}
+	e.mu.Lock()
+	e.spaceCheck = func(Config, int64) error { return nil }
+	e.mu.Unlock()
+	// The retry timer alone must restock the pool; nextBoot is not touched.
+	eventually(t, func() bool { return readyCounts(e)[0] == 1 })
 }
 
 func TestEngineWarmSmallAndMediumWithinPhysicalBudget(t *testing.T) {
