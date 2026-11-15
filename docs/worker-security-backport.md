@@ -151,7 +151,7 @@ change does not alter runtime binaries, protocols, configuration, or state.
 
 ## October 2026 certificate-authority distrust update
 
-Build this maintenance lineage with Go 1.26.10 for
+Build this maintenance lineage with Go 1.26.10 (superseded by 1.26.11, below) for
 [GO-2026-6809](https://pkg.go.dev/vuln/GO-2026-6809). The standard-library
 certificate verifier blocks the affected public keys even with an older trust
 pool. Rebuild and scan the exact accepted source; this compiler update does not
@@ -162,7 +162,7 @@ verify the running executable hash after the operator-controlled restart.
 Make build/test entrypoints override GOTOOLCHAIN with exact Go 1.26.11 even when
 `auto` is inherited or passed on the make command line. The direct vulnerability
 script pins the same compiler. A go.mod toolchain suggestion alone can retain a
-vulnerable installed Go 1.27.2; bare Go callers must explicitly select a patched
+vulnerable installed Go 1.27.3 or earlier; bare Go callers must explicitly select a patched
 compiler. Guest builder pins remain independent.
 
 `make test-offline` is a local unit-only exception: it selects the installed
