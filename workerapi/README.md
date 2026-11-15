@@ -33,7 +33,7 @@ commands, exit proofs or customer policy are accepted remotely.
 | `/v1/deliver` | `assignment_id`, `jit` | Acknowledgement of asynchronous, single delivery intent |
 | `/v1/status` | `assignment_id` | Durable reservation state; definitive absence is `not_found`/404 |
 | `/v1/drain` | None | Stops new admission; running jobs finish under their deadlines |
-| `/v1/health` | None | Optional. Admission `open`/`refusing`/`stopped`, fixed reason codes, journal and disk headroom ([design](../docs/worker-health.md)). Older workers answer 404, reported as `ErrUnsupported` |
+| `/v1/health` | None | Optional. Admission `open`/`refusing`/`stopped`, fixed reason codes, journal and disk headroom ([design](../docs/worker-health.md)). Workers without the route (older releases, the native macOS worker) answer 404, reported as `ErrUnsupported`. Admission and reason values are closed sets; adding one needs a new route or version |
 
 Successful envelopes contain `version: 1` and either `inventory`, `record`,
 `health` or neither for acknowledgements. Records contain identities, assignment/VM IDs,

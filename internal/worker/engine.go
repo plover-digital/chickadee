@@ -920,15 +920,13 @@ func (e *Engine) Status(identity Identity, assignmentID string) (Record, error) 
 }
 
 // Health reports admission state with fixed reason codes. It never exposes
-// error text, paths or guest output.
+// error text, paths or guest output. "refusing" means new boots are refused;
+// ready warm VMs can still be reserved.
 func (e *Engine) Health() (workerapi.Health, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	records, err := e.journal.Records()
-	if err != nil {
-		return workerapi.Health{}, err
-	}
-	h := workerapi.Health{Admission: workerapi.AdmissionOpen, Reasons: []string{}, Journal: workerapi.JournalHealth{Records: len(records), MaxRecords: MaxRecords}}
+	records := e.journal.Len()
+	h := workerapi.Health{Admission: workerapi.AdmissionOpen, Reasons: []string{}, Journal: workerapi.JournalHealth{Records: records, MaxRecords: MaxRecords}}
 	if available, err := e.diskAvailable(e.config); err == nil {
 		h.Disk = &workerapi.DiskHealth{AvailableBytes: available, RequiredBytes: requiredDisk(e.config, e.allocatedDiskLocked())}
 	}
@@ -938,15 +936,26 @@ func (e *Engine) Health() (workerapi.Health, error) {
 	case e.draining:
 		h.Reasons = append(h.Reasons, workerapi.ReasonDrainRequested)
 	}
-	if len(e.deferred) > 0 || h.Disk != nil && h.Disk.AvailableBytes < h.Disk.RequiredBytes {
+	// Decide from the live measurement so the reason clears as soon as space
+	// returns, even for profiles nothing retries. Fall back to an active boot
+	// deferral only when the filesystem cannot be measured.
+	lowDisk := h.Disk != nil && h.Disk.AvailableBytes < h.Disk.RequiredBytes
+	if h.Disk == nil {
+		for id := range e.deferred {
+			if time.Now().Before(e.nextBoot[id]) {
+				lowDisk = true
+			}
+		}
+	}
+	if lowDisk {
 		h.Reasons = append(h.Reasons, workerapi.ReasonDiskReserve)
 	}
-	if len(records) >= MaxRecords {
+	if records >= MaxRecords {
 		h.Reasons = append(h.Reasons, workerapi.ReasonJournalFull)
 	}
 	// A full journal never recovers without rotation (#29), so it is stopped,
 	// matching inventory, which reports it as draining.
-	if e.draining || len(records) >= MaxRecords {
+	if e.draining || records >= MaxRecords {
 		h.Admission = workerapi.AdmissionStopped
 	} else if len(h.Reasons) > 0 {
 		h.Admission = workerapi.AdmissionRefusing

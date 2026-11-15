@@ -16,7 +16,7 @@ GitHub response bodies from these logs. A VM ID is the suffix of its runner name
 | Job status stream fails | Job timeout reached, guest crash, full overlay or invalid message; inspect GitHub job result and saved diagnostics |
 | Guest has no internet | Forwarding enabled, NAT table, correct egress interface, public DNS, existing UFW/firewalld policy; do not flush host firewall |
 | Registration cleanup pending | Restore GitHub connectivity and App permissions; keep registration intents; a ten-minute cleanup grace period is intentional |
-| Keyless worker runners vanished or jobs stay queued | Call `/v1/health` for the admission state and reason. `stopped`/`fatal`: read the `Worker stopped admission` log line, resolve, then restart. `refusing`/`disk_reserve`: free space on the state filesystem; boots resume on their own. `journal_full`: plan a new worker generation ([worker health](worker-health.md)); never edit the journal |
+| Keyless worker runners vanished or jobs stay queued | Call `/v1/health` for the admission state and reason. `stopped`/`fatal`: read the `Worker stopped admission` log line, resolve, then restart. `refusing`/`disk_reserve`: free space on the state filesystem; ready VMs still serve jobs and boots resume on their own. `journal_full`: plan a new worker generation ([worker health](worker-health.md)); never edit the journal |
 | Disk retained / exit unconfirmed | Stop service, identify owned QEMU, confirm process exit before removing anything; preserve journal for subsequent runner cleanup |
 
 Inspect networking read-only:

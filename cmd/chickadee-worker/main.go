@@ -283,6 +283,9 @@ type localEngine interface {
 }
 type engineAdapter struct{ engine localEngine }
 
+// The server only serves /v1/health when the backend implements it.
+var _ workerapi.HealthBackend = (*engineAdapter)(nil)
+
 func translate(err error) error {
 	switch {
 	case err == nil:

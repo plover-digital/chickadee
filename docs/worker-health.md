@@ -52,21 +52,29 @@ request fields. It returns:
 }
 ```
 
-- `admission` is `open`, `refusing` (declining new boots because disk is below
-  the reservation; recovers on its own once space returns) or `stopped`
-  (drained, latched, or journal full; needs operator action). A `stopped`
-  worker also reports `draining` in inventory, so older brokers skip it too.
+- `admission` is `open`, `refusing` or `stopped`:
+  - `refusing`: free disk is below the reservation, so new boots are refused.
+    Ready warm VMs can still be reserved. Measured live, so it clears as soon
+    as space returns.
+  - `stopped`: drained, latched, or journal full; needs operator action. A
+    `stopped` worker also reports `draining` in inventory, so older brokers
+    skip it too.
 - `reasons` lists fixed codes only, never free text, paths or guest output:
   `drain_requested`, `fatal`, `disk_reserve` and `journal_full`.
 - `journal.records` counts every durable record, terminal ones included.
+  After a journal persistence failure, health still answers `stopped` with
+  `fatal`, while inventory and other routes return `unavailable`.
 - `disk` reports the same figures the admission check uses, so an operator
   can see the margin before boots are refused.
 
 **Compatibility.** The client decoder rejects unknown fields, so adding fields
 to inventory would break older brokers. A new route avoids that in both
 directions. Older brokers never call it, and an older worker answers a new
-broker with 404 `invalid`, which the client reports as `ErrUnsupported`. The
-broker then treats health as unknown and keeps using `draining`. Worker and
+broker with 404 `invalid`, which the client reports as `ErrUnsupported`. So
+does any backend that does not implement the route, including the native
+macOS worker today. The broker then treats health as unknown and keeps using
+`draining`. Admission values and reason codes are closed sets that clients
+validate strictly, so adding one needs a new route or protocol version. Worker and
 broker can be upgraded in either order. Inventory, journal format and the
 existing routes are unchanged.
 
@@ -76,14 +84,16 @@ These items belong in the Roost repository. They are listed here so the
 contract is reviewed with its consumer.
 
 - Poll `/v1/health` alongside inventory and keep the last result per worker.
-- Report `workers_admitting` next to `workers_online`, and count capacity from
-  refusing or stopped workers separately from usable capacity.
+- Report `workers_admitting` next to `workers_online`. Count capacity on
+  `stopped` workers separately from usable capacity, and count only ready
+  VMs (no new boots) on `refusing` workers.
 - Flag a worker whose admission is not `open`, whose journal is at 80% or more
   of `max_records`, or whose disk margin falls below one largest VM disk.
 - Flag queues with demand and no ready or booting VM for longer than a
   configured interval, such as 15 minutes.
-- Drop placements to `refusing` or `stopped` workers before reserving, instead
-  of discovering the refusal through a failed `Reserve`.
+- Skip `stopped` workers when placing work. Place on a `refusing` worker only
+  where it has a compatible ready VM, since it cannot boot a new one. Either
+  way the broker learns this before reserving, not through a failed `Reserve`.
 
 ## Phase 3: planned journal rotation (#29)
 

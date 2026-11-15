@@ -36,10 +36,7 @@ func TestHealthReportsLowDiskAsRefusing(t *testing.T) {
 	c.Profiles[0].Warm = 0
 	e, _ := testEngine(t, c)
 	defer e.journal.Close()
-	e.mu.Lock()
-	e.spaceCheck = func(Config, int64) error { return errors.New("low") }
-	e.diskAvailable = func(Config) (int64, error) { return 1 << 30, nil }
-	e.mu.Unlock()
+	setDisk(e, 1<<30)
 	if _, err := e.Reserve(context.Background(), c.Identity, "new", "medium"); !errors.Is(err, ErrCapacity) {
 		t.Fatal(err)
 	}
@@ -90,6 +87,38 @@ func TestHealthDistinguishesDrainFromFatal(t *testing.T) {
 	e.fail(errors.New("persistence"))
 	if h := healthOf(t, e); h.Admission != workerapi.AdmissionStopped || !reflect.DeepEqual(h.Reasons, []string{workerapi.ReasonFatal}) {
 		t.Fatalf("fatal: %+v", h)
+	}
+	e.journal.Close()
+}
+
+func TestHealthClearsDiskReserveWhenSpaceReturns(t *testing.T) {
+	c := engineConfig(t)
+	c.Profiles[0].Warm = 0 // nothing retries this profile on its own
+	e, _ := testEngine(t, c)
+	defer e.journal.Close()
+	setDisk(e, 0)
+	if _, err := e.Reserve(context.Background(), c.Identity, "new", "medium"); !errors.Is(err, ErrCapacity) {
+		t.Fatal(err)
+	}
+	if h := healthOf(t, e); h.Admission != workerapi.AdmissionRefusing {
+		t.Fatalf("low: %+v", h)
+	}
+	setDisk(e, 1<<50)
+	if h := healthOf(t, e); h.Admission != workerapi.AdmissionOpen || len(h.Reasons) != 0 {
+		t.Fatalf("recovered disk still refusing: %+v", h)
+	}
+}
+
+func TestHealthReportsPersistenceLatch(t *testing.T) {
+	c := engineConfig(t)
+	e, _ := testEngine(t, c)
+	e.journal.mu.Lock()
+	e.journal.poisoned = true
+	e.journal.mu.Unlock()
+	e.fail(ErrUncertain)
+	h := healthOf(t, e)
+	if h.Admission != workerapi.AdmissionStopped || !reflect.DeepEqual(h.Reasons, []string{workerapi.ReasonFatal}) {
+		t.Fatalf("%+v", h)
 	}
 	e.journal.Close()
 }
