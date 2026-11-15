@@ -1,5 +1,5 @@
 # A go.mod toolchain suggestion does not exclude vulnerable newer releases.
-override export GOTOOLCHAIN := go1.26.10
+override export GOTOOLCHAIN := go1.26.11
 
 BIN_DIR ?= bin
 
@@ -23,9 +23,9 @@ test-offline: override export GOWORK := off
 test-offline:
 	@version=$$(go env GOVERSION); \
 	case "$$version" in \
-	  go1.26.*) patch=$${version#go1.26.}; floor=10 ;; \
-	  go1.27.*) patch=$${version#go1.27.}; floor=3 ;; \
-	  *) echo "test-offline requires patched local Go 1.26.10+ or 1.27.3+; found $$version" >&2; exit 1 ;; \
+	  go1.26.*) patch=$${version#go1.26.}; floor=11 ;; \
+	  go1.27.*) patch=$${version#go1.27.}; floor=4 ;; \
+	  *) echo "test-offline requires patched local Go 1.26.11+ or 1.27.4+; found $$version" >&2; exit 1 ;; \
 	esac; \
 	case "$$patch" in ''|*[!0-9]*) echo "test-offline requires a stable patched local compiler; found $$version" >&2; exit 1 ;; esac; \
 	test "$$patch" -ge "$$floor" || { echo "test-offline refuses unpatched local $$version" >&2; exit 1; }
