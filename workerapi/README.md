@@ -33,9 +33,10 @@ commands, exit proofs or customer policy are accepted remotely.
 | `/v1/deliver` | `assignment_id`, `jit` | Acknowledgement of asynchronous, single delivery intent |
 | `/v1/status` | `assignment_id` | Durable reservation state; definitive absence is `not_found`/404 |
 | `/v1/drain` | None | Stops new admission; running jobs finish under their deadlines |
+| `/v1/health` | None | Optional. Admission `open`/`refusing`/`stopped`, fixed reason codes, journal and disk headroom ([design](../docs/worker-health.md)). Older workers answer 404, reported as `ErrUnsupported` |
 
-Successful envelopes contain `version: 1` and either `inventory`, `record` or
-neither for acknowledgements. Records contain identities, assignment/VM IDs,
+Successful envelopes contain `version: 1` and either `inventory`, `record`,
+`health` or neither for acknowledgements. Records contain identities, assignment/VM IDs,
 image-content digest, resources and state. `completed_at` records the worker's
 actual confirmed cleanup time; it is not the broker's later observation time.
 No JIT is returned or journaled. Profile image paths are never returned.

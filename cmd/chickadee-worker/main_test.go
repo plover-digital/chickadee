@@ -57,6 +57,9 @@ func (f *adapterFixture) Status(worker.Identity, string) (worker.Record, error) 
 	return worker.Record{}, nil
 }
 func (f *adapterFixture) Drain(worker.Identity) error { return nil }
+func (f *adapterFixture) Health() (workerapi.Health, error) {
+	return workerapi.Health{Admission: workerapi.AdmissionOpen, Reasons: []string{}, Journal: workerapi.JournalHealth{MaxRecords: 1}}, nil
+}
 func TestAdapterRejectsWrongImageDigestBeforeReservation(t *testing.T) {
 	f := &adapterFixture{}
 	a := engineAdapter{engine: f}

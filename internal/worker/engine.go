@@ -918,6 +918,41 @@ func (e *Engine) Status(identity Identity, assignmentID string) (Record, error) 
 	record, _, err := e.findLocked(assignmentID)
 	return record, err
 }
+
+// Health reports admission state with fixed reason codes. It never exposes
+// error text, paths or guest output.
+func (e *Engine) Health() (workerapi.Health, error) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	records, err := e.journal.Records()
+	if err != nil {
+		return workerapi.Health{}, err
+	}
+	h := workerapi.Health{Admission: workerapi.AdmissionOpen, Reasons: []string{}, Journal: workerapi.JournalHealth{Records: len(records), MaxRecords: MaxRecords}}
+	if available, err := e.diskAvailable(e.config); err == nil {
+		h.Disk = &workerapi.DiskHealth{AvailableBytes: available, RequiredBytes: requiredDisk(e.config, e.allocatedDiskLocked())}
+	}
+	switch {
+	case e.fatal != nil:
+		h.Reasons = append(h.Reasons, workerapi.ReasonFatal)
+	case e.draining:
+		h.Reasons = append(h.Reasons, workerapi.ReasonDrainRequested)
+	}
+	if len(e.deferred) > 0 || h.Disk != nil && h.Disk.AvailableBytes < h.Disk.RequiredBytes {
+		h.Reasons = append(h.Reasons, workerapi.ReasonDiskReserve)
+	}
+	if len(records) >= MaxRecords {
+		h.Reasons = append(h.Reasons, workerapi.ReasonJournalFull)
+	}
+	// A full journal never recovers without rotation (#29), so it is stopped,
+	// matching inventory, which reports it as draining.
+	if e.draining || len(records) >= MaxRecords {
+		h.Admission = workerapi.AdmissionStopped
+	} else if len(h.Reasons) > 0 {
+		h.Admission = workerapi.AdmissionRefusing
+	}
+	return h, nil
+}
 func (e *Engine) Inventory() (Inventory, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()

@@ -279,6 +279,7 @@ type localEngine interface {
 	Deliver(worker.Identity, string, string) error
 	Status(worker.Identity, string) (worker.Record, error)
 	Drain(worker.Identity) error
+	Health() (workerapi.Health, error)
 }
 type engineAdapter struct{ engine localEngine }
 
@@ -312,6 +313,10 @@ func (a *engineAdapter) Inventory() (workerapi.Inventory, error) {
 		out.Records = append(out.Records, wireRecord(r))
 	}
 	return out, translate(e)
+}
+func (a *engineAdapter) Health() (workerapi.Health, error) {
+	h, err := a.engine.Health()
+	return h, translate(err)
 }
 func (a *engineAdapter) Reserve(ctx context.Context, i workerapi.Identity, id, profile, digest string) (workerapi.Record, error) {
 	v, e := a.engine.Inventory()
