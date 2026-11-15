@@ -21,7 +21,8 @@ handler that reads the body while writing headers can crash the server. The work
 API and Roost broker use `MaxBytesReader` on HTTP/1 servers; the worker reads each
 body completely before responding, which avoids that race, but source scans report
 the package as reachable. Rebuild and redeploy the host executables (standalone
-controller, keyless worker, broker) and the optional macOS netproxy module. The
+controller, keyless worker, native macOS worker) and the optional macOS netproxy
+module. The Roost broker and website have their own toolchain pin. The
 guest bootstrap does not link `net/http`, so guest images keep Go 1.27.3 for the
 bootstrap and their 1.26.10/1.27.3 tool caches until the next image refresh.
 
