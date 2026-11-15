@@ -2,7 +2,7 @@ module github.com/plover-digital/chickadee/scripts/macos/netproxy
 
 go 1.26.0
 
-toolchain go1.26.10
+toolchain go1.26.11
 
 require (
 	github.com/containers/gvisor-tap-vsock v0.9.0
