@@ -121,6 +121,7 @@ func TestHealthClearsDiskReserveWhenSpaceReturns(t *testing.T) {
 func TestHealthReportsPersistenceLatch(t *testing.T) {
 	c := engineConfig(t)
 	e, _ := testEngine(t, c)
+	setDisk(e, 1<<50) // independent of the host running the test
 	e.journal.mu.Lock()
 	e.journal.poisoned = true
 	e.journal.mu.Unlock()
