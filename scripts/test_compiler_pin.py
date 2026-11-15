@@ -9,15 +9,15 @@ class CompilerPin(unittest.TestCase):
     def test_auto_cannot_keep_vulnerable_newer_bundled_compiler(self):
         source = Path(__file__).resolve().parents[1] / 'Makefile'
         original = source.read_text()
-        policy = 'override export GOTOOLCHAIN := go1.26.10\n'
+        policy = 'override export GOTOOLCHAIN := go1.26.11\n'
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             launcher = root / 'go'
             launcher.write_text('#!/bin/sh\n'
-                'if [ "$GOTOOLCHAIN" != go1.26.10 ]; then\n'
+                'if [ "$GOTOOLCHAIN" != go1.26.11 ]; then\n'
                 '  echo "unsafe bundled go1.27.2 selected" >&2; exit 42\n'
                 'fi\n'
-                'echo "selected go1.26.10"\n')
+                'echo "selected go1.26.11"\n')
             launcher.chmod(0o755)
             env = dict(os.environ, PATH=str(root) + ':' + os.environ['PATH'],
                        GOTOOLCHAIN='auto')
@@ -30,7 +30,7 @@ class CompilerPin(unittest.TestCase):
                                                 env=env, capture_output=True, text=True)
                         self.assertEqual(result.returncode == 0, enforced, result.stderr)
                         if enforced:
-                            self.assertIn('selected go1.26.10', result.stdout)
+                            self.assertIn('selected go1.26.11', result.stdout)
                         else:
                             self.assertIn('unsafe bundled go1.27.2 selected', result.stderr)
 
@@ -40,7 +40,7 @@ class CompilerPin(unittest.TestCase):
             root = Path(directory)
             launcher = root / 'go'
             launcher.write_text('#!/bin/sh\n'
-                'test "$GOTOOLCHAIN" = go1.26.10 || exit 42\n')
+                'test "$GOTOOLCHAIN" = go1.26.11 || exit 42\n')
             launcher.chmod(0o755)
             env = dict(os.environ, PATH=str(root) + ':' + os.environ['PATH'],
                        GOTOOLCHAIN='auto')
@@ -53,7 +53,7 @@ class CompilerPin(unittest.TestCase):
                     with self.subTest(builder=name, enforced=enforced):
                         command = commands[0]
                         if not enforced:
-                            command = command.replace('GOTOOLCHAIN=go1.26.10 ', '')
+                            command = command.replace('GOTOOLCHAIN=go1.26.11 ', '')
                         result = subprocess.run(['bash', '-c', command], cwd=root,
                                                 env=env, capture_output=True, text=True)
                         self.assertEqual(result.returncode == 0, enforced, result.stderr)
@@ -72,10 +72,10 @@ class CompilerPin(unittest.TestCase):
             launcher.chmod(0o755)
             env = dict(os.environ, PATH=str(root) + ':' + os.environ['PATH'],
                        GOTOOLCHAIN='auto', GOPROXY='https://example.invalid')
-            for version, accepted in [('go1.26.9', False), ('go1.26.10', True),
-                                      ('go1.26.11', True), ('go1.27.2', False),
-                                      ('go1.27.3', True), ('go1.27.4', True),
-                                      ('go1.27.3rc1', False), ('go1.27.3-custom', False)]:
+            for version, accepted in [('go1.26.10', False), ('go1.26.11', True),
+                                      ('go1.26.12', True), ('go1.27.3', False),
+                                      ('go1.27.4', True), ('go1.27.5', True),
+                                      ('go1.27.4rc1', False), ('go1.27.4-custom', False)]:
                 for arguments in ([], ['GOTOOLCHAIN=auto', 'GOPROXY=https://example.invalid']):
                     with self.subTest(version=version, arguments=arguments):
                         (root / 'Makefile').write_text(original)
@@ -87,7 +87,7 @@ class CompilerPin(unittest.TestCase):
             (root / 'Makefile').write_text(original.replace(
                 'test-offline: override export GOTOOLCHAIN := local\n', ''))
             result = subprocess.run(['make', 'test-offline'], cwd=root,
-                env=dict(env, TEST_LOCAL_GO='go1.27.3'), capture_output=True, text=True)
+                env=dict(env, TEST_LOCAL_GO='go1.27.4'), capture_output=True, text=True)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn('would download pinned compiler', result.stderr)
 
@@ -95,11 +95,11 @@ class CompilerPin(unittest.TestCase):
             (root / 'Makefile').write_text(original)
             launcher.write_text('#!/bin/sh\n'
                 'if [ "$1 $2" = "env GOVERSION" ]; then\n'
-                '  test "$GOTOOLCHAIN" = local || exit 42; echo go1.27.3;\n'
+                '  test "$GOTOOLCHAIN" = local || exit 42; echo go1.27.4;\n'
                 'elif [ "$1" = test ]; then\n'
                 '  test "$GOTOOLCHAIN" = local || exit 43; echo "offline unit tests ran";\n'
                 'elif [ "$1" = build ]; then\n'
-                '  test "$GOTOOLCHAIN" = go1.26.10 || exit 44; echo "pinned release build";\n'
+                '  test "$GOTOOLCHAIN" = go1.26.11 || exit 44; echo "pinned release build";\n'
                 'else exit 45; fi\n')
             for goals in (['test-offline', 'build'], ['build', 'test-offline']):
                 result = subprocess.run(['make', *goals, 'GOTOOLCHAIN=auto'],

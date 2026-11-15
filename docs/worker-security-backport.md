@@ -30,13 +30,17 @@ The original Git source archive SHA-256 is
 Build the reviewed maintenance commit, with Go's module checksum database enabled:
 
 ```sh
-export GOTOOLCHAIN=go1.26.10
+export GOTOOLCHAIN=go1.26.11
 export GOMAXPROCS=2 GOFLAGS=-p=1
 make build test
 make vulncheck
 ```
 
-The toolchain directive and hosted CI use Go1.26.10. Language minimum1.25.3 is
+The toolchain directive and hosted CI use Go1.26.11, which fixes
+[GO-2026-6859](https://pkg.go.dev/vuln/GO-2026-6859) (net/http HTTP/1 server
+crash when a `MaxBytesReader` limit is exceeded while a handler writes headers;
+the worker API uses `MaxBytesReader`). Rebuilding this unchanged source with
+Go1.26.11 is a compiler-only security release; Go1.26.10 builds are superseded. Language minimum1.25.3 is
 retained. The legacy worker links the standard library and this module; it has
 no linked x/sys dependency. `make vulncheck` installs pinned govulncheck v1.9.0,
 requires a clean committed checkout, builds/scans a temporary Git source
@@ -147,7 +151,7 @@ change does not alter runtime binaries, protocols, configuration, or state.
 
 ## October 2026 certificate-authority distrust update
 
-Build this maintenance lineage with Go 1.26.10 for
+Build this maintenance lineage with Go 1.26.10 (superseded by 1.26.11, below) for
 [GO-2026-6809](https://pkg.go.dev/vuln/GO-2026-6809). The standard-library
 certificate verifier blocks the affected public keys even with an older trust
 pool. Rebuild and scan the exact accepted source; this compiler update does not
@@ -155,13 +159,20 @@ permit switching an unclaimed legacy deployment to the main branch. Keep the
 existing journals, certificates and identities, drain before replacement, and
 verify the running executable hash after the operator-controlled restart.
 
-Make build/test entrypoints override GOTOOLCHAIN with exact Go 1.26.10 even when
+Make build/test entrypoints override GOTOOLCHAIN with exact Go 1.26.11 even when
 `auto` is inherited or passed on the make command line. The direct vulnerability
 script pins the same compiler. A go.mod toolchain suggestion alone can retain a
-vulnerable installed Go 1.27.2; bare Go callers must explicitly select a patched
+vulnerable installed Go 1.27.3 or earlier; bare Go callers must explicitly select a patched
 compiler. Guest builder pins remain independent.
 
 `make test-offline` is a local unit-only exception: it selects the installed
-compiler without downloads and requires stable patched Go 1.26.10+ or 1.27.3+
+compiler without downloads and requires stable patched Go 1.26.11+ or 1.27.4+
 in those supported series. Module downloads are disabled. It does not produce
-release evidence; build, full test and scan entrypoints keep exact Go 1.26.10.
+release evidence; build, full test and scan entrypoints keep exact Go 1.26.11.
+
+## November 2026 net/http update
+
+Go 1.26.11 fixes [GO-2026-6859](https://pkg.go.dev/vuln/GO-2026-6859). Rebuild
+the same accepted source with Go 1.26.11 and roll it out the same way: drain,
+replace, verify the running hash, one worker at a time. No source, protocol,
+configuration or state change is introduced.
