@@ -84,6 +84,8 @@ type Engine struct {
 	journalFullLogged bool
 	// capacityRetry spaces boot attempts while host capacity is unavailable.
 	capacityRetry time.Duration
+	// diskAvailable measures free bytes on the state filesystem.
+	diskAvailable func(Config) (int64, error)
 }
 
 // ErrCapacity is a retryable refusal: host capacity such as free disk is
@@ -234,7 +236,7 @@ func openEngine(c Config, start startMachine, reap func(string) error, check fun
 	if err = spaceCheck(c, 0); err != nil {
 		return fail(err)
 	}
-	e := &Engine{config: c, journal: j, start: start, spaceCheck: spaceCheck, profiles: map[string]Profile{}, entries: map[string]*instance{}, changed: make(chan struct{}), nextBoot: map[string]time.Time{}, deferred: map[string]error{}, capacityRetry: defaultCapacityRetry}
+	e := &Engine{config: c, journal: j, start: start, spaceCheck: spaceCheck, profiles: map[string]Profile{}, entries: map[string]*instance{}, changed: make(chan struct{}), nextBoot: map[string]time.Time{}, deferred: map[string]error{}, capacityRetry: defaultCapacityRetry, diskAvailable: availableDisk}
 	for _, profile := range c.Profiles {
 		e.profiles[profile.ID] = profile
 	}
@@ -261,6 +263,21 @@ func (e *Engine) fitsLocked(p Profile) bool {
 }
 func (e *Engine) maintainLocked() {
 	if e.draining || e.fatal != nil || e.closed || e.waiters > 0 {
+		return
+	}
+	if e.journal.Full() {
+		// No warm VM can be reserved until rotation (#29). Release idle,
+		// credential-free capacity instead of booting more.
+		for _, v := range e.entries {
+			if v.state == "ready" {
+				v.state = "retiring"
+				go e.cleanup(v)
+			} else if v.state == "booting" {
+				v.state = "retiring"
+				v.cancel()
+			}
+		}
+		e.notifyLocked()
 		return
 	}
 	for _, p := range e.config.Profiles {
@@ -357,6 +374,39 @@ func (e *Engine) allocatedDiskLocked() int64 {
 		}
 	}
 	return allocated
+}
+
+// evictionCannotFitLocked returns ErrCapacity only when evicting every idle VM
+// of other profiles still could not satisfy the boot space check, so a refusal
+// never destroys warm capacity it cannot replace. Eviction raises available
+// space and lowers allocated blocks by the same amount; that cancels against
+// the growth reservation but not against the fixed free-space floors.
+func (e *Engine) evictionCannotFitLocked(p Profile) error {
+	allocated := e.allocatedDiskLocked()
+	evictable := int64(0)
+	any := false
+	for _, v := range e.entries {
+		if compatible(v.profile, p) || v.state != "ready" && v.state != "booting" {
+			continue
+		}
+		any = true
+		if info, err := os.Stat(filepath.Join(e.config.StateDir, "vms", v.id, "disk.qcow2")); err == nil {
+			if stat, ok := info.Sys().(*syscall.Stat_t); ok {
+				evictable += stat.Blocks * 512
+			}
+		}
+	}
+	if !any {
+		return nil // Nothing to evict; wait for running work instead.
+	}
+	checkErr := e.spaceCheck(e.config, allocated)
+	if checkErr == nil {
+		return nil
+	}
+	if available, err := e.diskAvailable(e.config); err == nil && evictable <= allocated && available+evictable >= requiredDisk(e.config, allocated-evictable) {
+		return nil
+	}
+	return fmt.Errorf("%w: %v", ErrCapacity, checkErr)
 }
 
 // refuseFullJournalLocked logs once per full-journal episode; callers retry often.
@@ -630,10 +680,7 @@ func (e *Engine) Reserve(ctx context.Context, identity Identity, assignmentID, p
 			}
 		}
 		if !booting && !e.fitsLocked(p) {
-			// Evicting frees overlay blocks that the reservation already credits,
-			// so the space check gives the same answer before eviction as after.
-			if err := e.spaceCheck(e.config, e.allocatedDiskLocked()); err != nil {
-				err = fmt.Errorf("%w: %v", ErrCapacity, err)
+			if err := e.evictionCannotFitLocked(p); err != nil {
 				e.deferBootLocked(p, err)
 				e.mu.Unlock()
 				return Record{}, err

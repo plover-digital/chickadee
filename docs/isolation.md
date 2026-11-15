@@ -93,7 +93,8 @@ space floor (zero retains the existing 2 GiB minimum). Low space refuses new boo
 with a retryable capacity error and retries every 30 seconds, while existing jobs
 retain their lifecycle and cleanup deadlines. Boots resume on their own once space
 is restored; no restart is needed. A worker whose journal is full reports
-`draining` so brokers place work elsewhere until it is rotated (#29).
+`draining` so brokers place work elsewhere, and releases its idle warm VMs, until
+it is rotated (#29).
 This admission check is neither a hard filesystem quota nor protection against
 another host process consuming storage after admission. Virtual disk size alone
 does not impose a host filesystem quota; QEMU's existing file-size limit and

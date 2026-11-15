@@ -673,7 +673,7 @@ func readyCounts(e *Engine) []int {
 	return out
 }
 
-func TestFullJournalRefusesWithoutLatchingOrEvicting(t *testing.T) {
+func TestFullJournalRefusesWithoutLatchingAndReleasesIdleVMs(t *testing.T) {
 	c := threeShapeConfig(t)
 	e, f := testEngine(t, c)
 	defer e.journal.Close()
@@ -684,15 +684,18 @@ func TestFullJournalRefusesWithoutLatchingOrEvicting(t *testing.T) {
 			t.Fatalf("%s: %v", profile, err)
 		}
 	}
+	// Unreservable warm VMs are released, and none are booted to replace them.
+	eventually(t, func() bool { r := readyCounts(e); return r[0] == 0 && r[1] == 0 })
+	e.mu.Lock()
+	e.maintainLocked()
+	latched := e.fatal != nil || e.draining
+	e.mu.Unlock()
 	f.mu.Lock()
 	booted := len(f.vms)
 	f.mu.Unlock()
-	if r := readyCounts(e); r[0] != 1 || r[1] != 1 || booted != 2 {
-		t.Fatal("full journal evicted or booted VMs", r, booted)
+	if booted != 2 {
+		t.Fatal("full journal booted VMs it cannot reserve", booted)
 	}
-	e.mu.Lock()
-	latched := e.fatal != nil || e.draining
-	e.mu.Unlock()
 	if latched {
 		t.Fatal("full journal latched the engine")
 	}
@@ -709,6 +712,7 @@ func TestLowDiskDoesNotEvictOtherProfiles(t *testing.T) {
 	eventually(t, func() bool { r := readyCounts(e); return r[0] == 1 && r[1] == 1 })
 	e.mu.Lock()
 	e.spaceCheck = func(Config, int64) error { return errors.New("low") }
+	e.diskAvailable = func(Config) (int64, error) { return 0, nil }
 	e.mu.Unlock()
 	for attempt := 0; attempt < 2; attempt++ {
 		if _, err := e.Reserve(context.Background(), c.Identity, "large", "large"); !errors.Is(err, ErrCapacity) {
@@ -720,6 +724,24 @@ func TestLowDiskDoesNotEvictOtherProfiles(t *testing.T) {
 	f.mu.Unlock()
 	if r := readyCounts(e); r[0] != 1 || r[1] != 1 || booted != 2 {
 		t.Fatal("low disk evicted warm capacity it could not replace", r, booted)
+	}
+}
+
+// When a fixed floor binds, eviction itself frees the space the boot needs.
+func TestLowDiskStillEvictsWhenEvictionWouldFit(t *testing.T) {
+	c := threeShapeConfig(t)
+	e, _ := testEngine(t, c)
+	defer e.journal.Close()
+	eventually(t, func() bool { r := readyCounts(e); return r[0] == 1 && r[1] == 1 })
+	e.mu.Lock()
+	e.spaceCheck = func(Config, int64) error { return errors.New("below floor") }
+	e.diskAvailable = func(Config) (int64, error) { return 1 << 50, nil }
+	e.mu.Unlock()
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+	_, _ = e.Reserve(ctx, c.Identity, "large", "large")
+	if r := readyCounts(e); r[0] == 1 && r[1] == 1 {
+		t.Fatal("eviction skipped although it would free enough space", r)
 	}
 }
 
