@@ -745,6 +745,54 @@ func TestEvictionMakesRoomAndBootSucceeds(t *testing.T) {
 	}
 }
 
+// A wake-up while victims are still being cleaned up must not pick more.
+func TestEvictionWaitsForPendingCleanupInsteadOfCascading(t *testing.T) {
+	c := threeShapeConfig(t)
+	c.Budget = Budget{MaxVMs: 2, MaxCPUs: 100, MaxMemoryMiB: 1 << 20}
+	e, f := testEngine(t, c)
+	defer e.journal.Close()
+	eventually(t, func() bool { r := readyCounts(e); return r[0] == 1 && r[1] == 1 })
+	setDisk(e, 1<<50)
+	gate := make(chan struct{})
+	f.mu.Lock()
+	for _, vm := range f.vms {
+		vm.mu.Lock()
+		vm.cleanupGate = gate
+		vm.mu.Unlock()
+	}
+	f.mu.Unlock()
+	retiring := func() int {
+		e.mu.Lock()
+		defer e.mu.Unlock()
+		n := 0
+		for _, v := range e.entries {
+			if v.state == "retiring" {
+				n++
+			}
+		}
+		return n
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	done := make(chan error, 1)
+	go func() { _, err := e.Reserve(ctx, c.Identity, "large", "large"); done <- err }()
+	eventually(t, func() bool { return retiring() >= 1 })
+	for i := 0; i < 3; i++ { // unrelated engine events
+		e.mu.Lock()
+		e.notifyLocked()
+		e.mu.Unlock()
+		time.Sleep(20 * time.Millisecond)
+	}
+	n := retiring()
+	close(gate)
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+	if n != 1 {
+		t.Fatalf("evicted %d warm VMs; one was enough", n)
+	}
+}
+
 func TestEvictionWouldFit(t *testing.T) {
 	const gib = int64(1) << 30
 	c := Config{Budget: Budget{MaxVMs: 1}, Profiles: []Profile{{DiskGiB: 8}}} // reservation 11 GiB

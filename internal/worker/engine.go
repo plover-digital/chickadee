@@ -378,8 +378,9 @@ func (e *Engine) allocatedDiskLocked() int64 {
 
 // evictionPlanLocked picks the idle, credential-free VMs of other profiles
 // that Reserve evicts for p: booting before ready, then by ID, stopping once
-// p would fit. If even all of them cannot make p fit, it returns all of them,
-// as before, so capacity frees up as running jobs finish.
+// p would fit. It returns none while VMs already retiring will make room. If
+// even all of them cannot make p fit, it returns all of them, as before, so
+// capacity frees up as running jobs finish.
 func (e *Engine) evictionPlanLocked(p Profile) []*instance {
 	var idle []*instance
 	for _, v := range e.entries {
@@ -393,14 +394,27 @@ func (e *Engine) evictionPlanLocked(p Profile) []*instance {
 		}
 		return idle[i].id < idle[j].id
 	})
-	count, cpus, memory := len(e.entries)+1, p.CPUs, p.MemoryMiB
+	// Entries already retiring are about to free their share; count them as
+	// gone so a wake-up during their cleanup does not pick further victims.
+	// Admission itself still counts them through fitsLocked.
+	count, cpus, memory := 1, p.CPUs, p.MemoryMiB
 	for _, v := range e.entries {
+		if v.state == "retiring" && !v.failedCleanup {
+			continue
+		}
+		count++
 		cpus += v.profile.CPUs
 		memory += v.profile.MemoryMiB
 	}
+	fits := func() bool {
+		return count <= e.config.Budget.MaxVMs && cpus <= e.config.Budget.MaxCPUs && memory <= e.config.Budget.MaxMemoryMiB
+	}
+	if fits() {
+		return nil // Pending cleanup makes room; wait for it.
+	}
 	for i, v := range idle {
 		count, cpus, memory = count-1, cpus-v.profile.CPUs, memory-v.profile.MemoryMiB
-		if count <= e.config.Budget.MaxVMs && cpus <= e.config.Budget.MaxCPUs && memory <= e.config.Budget.MaxMemoryMiB {
+		if fits() {
 			return idle[:i+1]
 		}
 	}
