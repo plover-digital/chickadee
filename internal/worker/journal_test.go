@@ -259,8 +259,8 @@ func TestJournalBoundsAndMalformedInput(t *testing.T) {
 		r.VMID = stringID(i)
 		j.data.Records[r.AssignmentID] = Record{Request: r, State: Terminal}
 	}
-	if _, err := j.Reserve(fixture()); err == nil {
-		t.Fatal("record budget exceeded")
+	if _, err := j.Reserve(fixture()); !errors.Is(err, ErrRecordBudget) {
+		t.Fatalf("record budget exceeded: %v", err)
 	}
 }
 func stringID(i int) string { return fmt.Sprintf("record-%d", i) }

@@ -78,7 +78,16 @@ type Engine struct {
 	runResults map[string]bool
 	waiters    int
 	nextBoot   map[string]time.Time
+	// deferred holds the capacity refusal for a profile in boot backoff.
+	deferred map[string]error
 }
+
+// ErrCapacity is a retryable refusal: host capacity such as free disk is
+// currently insufficient. It never drains the worker or touches running jobs.
+var ErrCapacity = errors.New("worker capacity unavailable")
+
+// capacityRetry spaces boot attempts while host capacity is unavailable.
+var capacityRetry = 30 * time.Second
 
 func startHost(ctx context.Context, conf hostconfig.Config, slot int, id string) (machine, error) {
 	vm, err := host.Start(ctx, conf, slot, id)
@@ -221,7 +230,7 @@ func openEngine(c Config, start startMachine, reap func(string) error, check fun
 	if err = spaceCheck(c, 0); err != nil {
 		return fail(err)
 	}
-	e := &Engine{config: c, journal: j, start: start, spaceCheck: spaceCheck, profiles: map[string]Profile{}, entries: map[string]*instance{}, changed: make(chan struct{}), nextBoot: map[string]time.Time{}}
+	e := &Engine{config: c, journal: j, start: start, spaceCheck: spaceCheck, profiles: map[string]Profile{}, entries: map[string]*instance{}, changed: make(chan struct{}), nextBoot: map[string]time.Time{}, deferred: map[string]error{}}
 	for _, profile := range c.Profiles {
 		e.profiles[profile.ID] = profile
 	}
@@ -258,18 +267,26 @@ func (e *Engine) maintainLocked() {
 			}
 		}
 		for free < p.Warm && e.fitsLocked(p) && !time.Now().Before(e.nextBoot[p.ID]) {
-			e.bootLocked(p)
+			if e.bootLocked(p) != nil {
+				break
+			}
 			free++
 		}
 	}
 }
-func (e *Engine) bootLocked(p Profile) {
+
+// bootLocked starts one VM. ErrCapacity is a retryable refusal with backoff;
+// any other error has already latched the engine.
+func (e *Engine) bootLocked(p Profile) error {
 	if err := e.pruneLogsLocked(); err != nil {
 		e.failLocked(err)
-		return
+		return err
 	}
-	if e.fatal != nil || e.draining {
-		return
+	if e.fatal != nil {
+		return e.fatal
+	}
+	if e.draining {
+		return fmt.Errorf("worker draining")
 	}
 	allocated := int64(0)
 	for _, v := range e.entries {
@@ -281,8 +298,15 @@ func (e *Engine) bootLocked(p Profile) {
 		}
 	}
 	if err := e.spaceCheck(e.config, allocated); err != nil {
-		e.failLocked(err)
-		return
+		// Low disk refuses new boots without draining: capacity returns once space
+		// is freed, and existing jobs are unaffected.
+		err = fmt.Errorf("%w: %v", ErrCapacity, err)
+		e.deferBootLocked(p, err)
+		return err
+	}
+	if e.deferred[p.ID] != nil {
+		delete(e.deferred, p.ID)
+		slog.Info("VM boot capacity restored", "profile", p.ID)
 	}
 	var cpuIDs []int
 	if len(e.config.CPUIDs) > 0 {
@@ -301,8 +325,9 @@ func (e *Engine) bootLocked(p Profile) {
 			}
 		}
 		if len(cpuIDs) != p.CPUs {
-			e.failLocked(fmt.Errorf("configured CPU pool capacity unavailable"))
-			return
+			err := fmt.Errorf("configured CPU pool capacity unavailable")
+			e.failLocked(err)
+			return err
 		}
 	}
 	used := map[int]bool{}
@@ -318,6 +343,23 @@ func (e *Engine) bootLocked(p Profile) {
 	e.entries[v.id] = v
 	e.notifyLocked()
 	go e.boot(ctx, v)
+	return nil
+}
+
+// deferBootLocked backs off one profile and re-runs maintenance afterwards.
+func (e *Engine) deferBootLocked(p Profile, err error) {
+	if e.deferred[p.ID] == nil {
+		slog.Warn("VM boot deferred; capacity unavailable", "profile", p.ID, "error", err, "retry_seconds", int(capacityRetry/time.Second))
+	}
+	e.deferred[p.ID] = err
+	e.nextBoot[p.ID] = time.Now().Add(capacityRetry)
+	go func() {
+		time.Sleep(capacityRetry)
+		e.mu.Lock()
+		defer e.mu.Unlock()
+		e.notifyLocked()
+		e.maintainLocked()
+	}()
 }
 func (e *Engine) boot(ctx context.Context, v *instance) {
 	started := time.Now()
@@ -406,6 +448,7 @@ func (e *Engine) cleanup(v *instance) {
 func (e *Engine) failLocked(err error) {
 	if e.fatal == nil {
 		e.fatal = err
+		slog.Error("Worker stopped admission; restart after resolving", "error", err)
 	}
 	e.draining = true
 	for _, idle := range e.entries {
@@ -523,6 +566,12 @@ func (e *Engine) Reserve(ctx context.Context, identity Identity, assignmentID, p
 				}
 				request := Request{WorkFolder: workFolder, Identity: identity, AssignmentID: assignmentID, VMID: v.id, ProfileDigest: p.Digest, CPUs: p.CPUs, MemoryMiB: p.MemoryMiB, DiskGiB: p.DiskGiB}
 				record, err := e.journal.Reserve(request)
+				if errors.Is(err, ErrRecordBudget) {
+					// Nothing was committed; refuse this reservation and keep serving.
+					slog.Warn("Reservation refused; worker journal full", "records", MaxRecords)
+					e.mu.Unlock()
+					return Record{}, err
+				}
 				if err != nil {
 					e.failLocked(err)
 					e.mu.Unlock()
@@ -537,8 +586,16 @@ func (e *Engine) Reserve(ctx context.Context, identity Identity, assignmentID, p
 				return record, nil
 			}
 		}
-		if !booting && e.fitsLocked(p) && !time.Now().Before(e.nextBoot[p.ID]) {
-			e.bootLocked(p)
+		if !booting && e.fitsLocked(p) {
+			if !time.Now().Before(e.nextBoot[p.ID]) {
+				if err := e.bootLocked(p); errors.Is(err, ErrCapacity) {
+					e.mu.Unlock()
+					return Record{}, err
+				}
+			} else if err := e.deferred[p.ID]; err != nil {
+				e.mu.Unlock()
+				return Record{}, err
+			}
 		}
 		if !booting && !e.fitsLocked(p) {
 			for _, idle := range e.entries {

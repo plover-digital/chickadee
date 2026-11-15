@@ -626,8 +626,38 @@ func TestLowDiskStopsNewBootButPreservesRunningJobAndTerminalStatus(t *testing.T
 		record, err := e.Status(c.Identity, "running")
 		return err == nil && record.State == Terminal
 	})
-	if err := e.Wait(context.Background()); err == nil {
-		t.Fatal("low disk failure hidden")
+	if _, err := e.Reserve(context.Background(), c.Identity, "again", "medium"); !errors.Is(err, ErrCapacity) {
+		t.Fatalf("low disk refusal not retryable: %v", err)
+	}
+	if i, _ := e.Inventory(); i.Draining {
+		t.Fatal("low disk latched the worker into draining")
+	}
+	// Capacity returns once space is freed, without a restart.
+	e.mu.Lock()
+	e.spaceCheck = func(Config, int64) error { return nil }
+	e.nextBoot = map[string]time.Time{}
+	e.mu.Unlock()
+	reserveEngine(t, e, c.Identity, "recovered", "medium")
+	e.journal.Close()
+}
+
+func TestFullJournalRefusesReservationWithoutDraining(t *testing.T) {
+	c := engineConfig(t)
+	e, _ := testEngine(t, c)
+	eventually(t, func() bool { i, _ := e.Inventory(); return i.Profiles[0].Ready == 1 })
+	e.mu.Lock()
+	now := time.Now().UTC()
+	for i := 0; i < MaxRecords; i++ {
+		r := Request{Identity: c.Identity, AssignmentID: stringID(i), VMID: stringID(i), ProfileDigest: c.Profiles[0].Digest, CPUs: c.Profiles[0].CPUs, MemoryMiB: c.Profiles[0].MemoryMiB, DiskGiB: c.Profiles[0].DiskGiB}
+		e.journal.data.Records[r.AssignmentID] = Record{Request: r, State: Terminal, CompletedAt: now}
+	}
+	e.mu.Unlock()
+	if _, err := e.Reserve(context.Background(), c.Identity, "full", "medium"); !errors.Is(err, ErrRecordBudget) {
+		t.Fatalf("full journal: %v", err)
+	}
+	i, _ := e.Inventory()
+	if i.Draining || i.Profiles[0].Ready != 1 {
+		t.Fatal("full journal drained the worker or discarded warm capacity")
 	}
 	e.journal.Close()
 }
