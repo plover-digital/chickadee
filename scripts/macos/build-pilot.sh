@@ -2,7 +2,7 @@
 set -eu
 umask 077
 # Apply the reviewed security baseline to both the host and nested netproxy module.
-export GOTOOLCHAIN=go1.26.10
+export GOTOOLCHAIN=go1.26.11
 test "$(uname -s)" = Darwin && test "$(uname -m)" = arm64
 test "$#" = 1 || { echo 'Usage: build-pilot.sh PRIVATE_OUTPUT_DIRECTORY' >&2; exit 1; }
 repo=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
