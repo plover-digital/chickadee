@@ -268,16 +268,21 @@ func (e *Engine) maintainLocked() {
 	if e.journal.Full() {
 		// No warm VM can be reserved until rotation (#29). Release idle,
 		// credential-free capacity instead of booting more.
+		retired := false
 		for _, v := range e.entries {
 			if v.state == "ready" {
 				v.state = "retiring"
 				go e.cleanup(v)
+				retired = true
 			} else if v.state == "booting" {
 				v.state = "retiring"
 				v.cancel()
+				retired = true
 			}
 		}
-		e.notifyLocked()
+		if retired {
+			e.notifyLocked()
+		}
 		return
 	}
 	for _, p := range e.config.Profiles {
@@ -366,47 +371,89 @@ func (e *Engine) bootLocked(p Profile) error {
 func (e *Engine) allocatedDiskLocked() int64 {
 	allocated := int64(0)
 	for _, v := range e.entries {
-		info, err := os.Stat(filepath.Join(e.config.StateDir, "vms", v.id, "disk.qcow2"))
-		if err == nil {
-			if stat, ok := info.Sys().(*syscall.Stat_t); ok {
-				allocated += stat.Blocks * 512
-			}
-		}
+		allocated += overlayBlocks(e.config, v.id)
 	}
 	return allocated
 }
 
-// evictionCannotFitLocked returns ErrCapacity only when evicting every idle VM
-// of other profiles still could not satisfy the boot space check, so a refusal
-// never destroys warm capacity it cannot replace. Eviction raises available
-// space and lowers allocated blocks by the same amount; that cancels against
-// the growth reservation but not against the fixed free-space floors.
-func (e *Engine) evictionCannotFitLocked(p Profile) error {
-	allocated := e.allocatedDiskLocked()
-	evictable := int64(0)
-	any := false
+// evictionPlanLocked picks the idle, credential-free VMs of other profiles
+// that Reserve evicts for p: booting before ready, then by ID, stopping once
+// p would fit. If even all of them cannot make p fit, it returns all of them,
+// as before, so capacity frees up as running jobs finish.
+func (e *Engine) evictionPlanLocked(p Profile) []*instance {
+	var idle []*instance
 	for _, v := range e.entries {
-		if compatible(v.profile, p) || v.state != "ready" && v.state != "booting" {
-			continue
-		}
-		any = true
-		if info, err := os.Stat(filepath.Join(e.config.StateDir, "vms", v.id, "disk.qcow2")); err == nil {
-			if stat, ok := info.Sys().(*syscall.Stat_t); ok {
-				evictable += stat.Blocks * 512
-			}
+		if !compatible(v.profile, p) && (v.state == "ready" || v.state == "booting") {
+			idle = append(idle, v)
 		}
 	}
-	if !any {
-		return nil // Nothing to evict; wait for running work instead.
+	sort.Slice(idle, func(i, j int) bool {
+		if idle[i].state != idle[j].state {
+			return idle[i].state == "booting"
+		}
+		return idle[i].id < idle[j].id
+	})
+	count, cpus, memory := len(e.entries)+1, p.CPUs, p.MemoryMiB
+	for _, v := range e.entries {
+		cpus += v.profile.CPUs
+		memory += v.profile.MemoryMiB
 	}
-	checkErr := e.spaceCheck(e.config, allocated)
-	if checkErr == nil {
-		return nil
+	for i, v := range idle {
+		count, cpus, memory = count-1, cpus-v.profile.CPUs, memory-v.profile.MemoryMiB
+		if count <= e.config.Budget.MaxVMs && cpus <= e.config.Budget.MaxCPUs && memory <= e.config.Budget.MaxMemoryMiB {
+			return idle[:i+1]
+		}
 	}
-	if available, err := e.diskAvailable(e.config); err == nil && evictable <= allocated && available+evictable >= requiredDisk(e.config, allocated-evictable) {
-		return nil
+	return idle
+}
+
+// evictionSpaceLocked refuses an eviction that could not make the boot pass
+// its space check, so a refusal never destroys warm capacity it cannot
+// replace. Victims and VMs already retiring (their disks are about to be
+// freed) are credited from one measurement.
+func (e *Engine) evictionSpaceLocked(victims []*instance) error {
+	planned := map[*instance]bool{}
+	for _, v := range victims {
+		planned[v] = true
 	}
-	return fmt.Errorf("%w: %v", ErrCapacity, checkErr)
+	allocated, credit := int64(0), int64(0)
+	for _, v := range e.entries {
+		blocks := overlayBlocks(e.config, v.id)
+		allocated += blocks
+		if planned[v] || v.state == "retiring" && !v.failedCleanup {
+			credit += blocks
+		}
+	}
+	available, err := e.diskAvailable(e.config)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrCapacity, err)
+	}
+	if !evictionWouldFit(e.config, allocated, credit, available) {
+		return fmt.Errorf("%w: insufficient disk space even after eviction", ErrCapacity)
+	}
+	return nil
+}
+
+// evictionWouldFit reports whether the boot space check passes once credit
+// bytes of overlays are freed. Freeing moves bytes from allocated to
+// available: that cancels against the growth reservation but can satisfy
+// the fixed 2 GiB and min_free_disk_gib floors.
+func evictionWouldFit(c Config, allocated, credit, available int64) bool {
+	if credit < 0 || credit > allocated || available < 0 {
+		return false
+	}
+	return checkDiskCapacity(c, allocated-credit, available+credit) == nil
+}
+
+func overlayBlocks(c Config, id string) int64 {
+	info, err := os.Stat(filepath.Join(c.StateDir, "vms", id, "disk.qcow2"))
+	if err != nil {
+		return 0
+	}
+	if stat, ok := info.Sys().(*syscall.Stat_t); ok {
+		return stat.Blocks * 512
+	}
+	return 0
 }
 
 // refuseFullJournalLocked logs once per full-journal episode; callers retry often.
@@ -680,25 +727,23 @@ func (e *Engine) Reserve(ctx context.Context, identity Identity, assignmentID, p
 			}
 		}
 		if !booting && !e.fitsLocked(p) {
-			if err := e.evictionCannotFitLocked(p); err != nil {
-				e.deferBootLocked(p, err)
-				e.mu.Unlock()
-				return Record{}, err
-			}
-			for _, idle := range e.entries {
-				if compatible(idle.profile, p) {
-					continue
+			// Nothing idle to evict: wait for running work to finish.
+			if victims := e.evictionPlanLocked(p); len(victims) > 0 {
+				if err := e.evictionSpaceLocked(victims); err != nil {
+					e.deferBootLocked(p, err)
+					e.mu.Unlock()
+					return Record{}, err
 				}
-				if idle.state == "ready" {
-					idle.state = "retiring"
-					go e.cleanup(idle)
-					break
+				for _, idle := range victims {
+					if idle.state == "ready" {
+						idle.state = "retiring"
+						go e.cleanup(idle)
+					} else {
+						idle.state = "retiring"
+						idle.cancel()
+					}
 				}
-				if idle.state == "booting" {
-					idle.state = "retiring"
-					idle.cancel()
-					break
-				}
+				e.notifyLocked()
 			}
 		}
 		if e.fatal != nil {

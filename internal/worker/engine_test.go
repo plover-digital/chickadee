@@ -705,15 +705,21 @@ func TestFullJournalRefusesWithoutLatchingAndReleasesIdleVMs(t *testing.T) {
 	}
 }
 
+// setDisk makes the boot check and the eviction measurement agree, as they do
+// in production where both read the same filesystem.
+func setDisk(e *Engine, available int64) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.spaceCheck = func(c Config, allocated int64) error { return checkDiskCapacity(c, allocated, available) }
+	e.diskAvailable = func(Config) (int64, error) { return available, nil }
+}
+
 func TestLowDiskDoesNotEvictOtherProfiles(t *testing.T) {
 	c := threeShapeConfig(t)
 	e, f := testEngine(t, c)
 	defer e.journal.Close()
 	eventually(t, func() bool { r := readyCounts(e); return r[0] == 1 && r[1] == 1 })
-	e.mu.Lock()
-	e.spaceCheck = func(Config, int64) error { return errors.New("low") }
-	e.diskAvailable = func(Config) (int64, error) { return 0, nil }
-	e.mu.Unlock()
+	setDisk(e, 0)
 	for attempt := 0; attempt < 2; attempt++ {
 		if _, err := e.Reserve(context.Background(), c.Identity, "large", "large"); !errors.Is(err, ErrCapacity) {
 			t.Fatalf("attempt %d: %v", attempt, err)
@@ -727,21 +733,39 @@ func TestLowDiskDoesNotEvictOtherProfiles(t *testing.T) {
 	}
 }
 
-// When a fixed floor binds, eviction itself frees the space the boot needs.
-func TestLowDiskStillEvictsWhenEvictionWouldFit(t *testing.T) {
+func TestEvictionMakesRoomAndBootSucceeds(t *testing.T) {
 	c := threeShapeConfig(t)
 	e, _ := testEngine(t, c)
 	defer e.journal.Close()
 	eventually(t, func() bool { r := readyCounts(e); return r[0] == 1 && r[1] == 1 })
-	e.mu.Lock()
-	e.spaceCheck = func(Config, int64) error { return errors.New("below floor") }
-	e.diskAvailable = func(Config) (int64, error) { return 1 << 50, nil }
-	e.mu.Unlock()
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
-	defer cancel()
-	_, _ = e.Reserve(ctx, c.Identity, "large", "large")
-	if r := readyCounts(e); r[0] == 1 && r[1] == 1 {
-		t.Fatal("eviction skipped although it would free enough space", r)
+	setDisk(e, 1<<50)
+	record := reserveEngine(t, e, c.Identity, "large", "large")
+	if record.Request.CPUs != 4 || record.Request.MemoryMiB != 4096 {
+		t.Fatal("wrong shape reserved", record.Request)
+	}
+}
+
+func TestEvictionWouldFit(t *testing.T) {
+	const gib = int64(1) << 30
+	c := Config{Budget: Budget{MaxVMs: 1}, Profiles: []Profile{{DiskGiB: 8}}} // reservation 11 GiB
+	floor := c
+	floor.MinFreeDiskGiB = 20
+	for name, tc := range map[string]struct {
+		c                            Config
+		allocated, credit, available int64
+		want                         bool
+	}{
+		"growth term binds, eviction cannot help": {c, 5 * gib, 5 * gib, 5 * gib, false},
+		"growth term already satisfied":           {c, 5 * gib, 0, 6 * gib, true},
+		"floor binds, eviction frees enough":      {floor, 5 * gib, 5 * gib, 18 * gib, true},
+		"floor binds, credit too small":           {floor, 5 * gib, 1 * gib, 18 * gib, false},
+		"floor binds, exact boundary":             {floor, 5 * gib, 2 * gib, 18 * gib, true},
+		"credit exceeds allocated":                {floor, 1 * gib, 2 * gib, 30 * gib, false},
+		"negative credit":                         {floor, 1 * gib, -1, 30 * gib, false},
+	} {
+		if got := evictionWouldFit(tc.c, tc.allocated, tc.credit, tc.available); got != tc.want {
+			t.Errorf("%s: got %v", name, got)
+		}
 	}
 }
 
