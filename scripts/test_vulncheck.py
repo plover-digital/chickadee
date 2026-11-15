@@ -24,7 +24,7 @@ class VulnerabilityCheckTests(unittest.TestCase):
                     contents = contents.replace('export GOPACKAGESDRIVER=off',
                                                 ': # negative control: driver policy removed')
                 if name == 'vulncheck.sh' and disable_toolchain_policy:
-                    contents = contents.replace('export GOTOOLCHAIN=go1.26.10',
+                    contents = contents.replace('export GOTOOLCHAIN=go1.26.11',
                                                 ': # negative control: compiler policy removed')
                 target.write_text(contents)
                 target.chmod(0o755)
@@ -71,7 +71,7 @@ if [[ -n "$FAIL_SCAN" && "$*" == *"$FAIL_SCAN"* ]]; then exit 3; fi
             scanner.chmod(0o755)
             go = tools / 'go'
             go.write_text('''#!/usr/bin/env bash
-if [[ ${GOTOOLCHAIN:-auto} != go1.26.10 ]]; then echo 'unsafe bundled go1.27.2 selected' >&2; exit 42; fi
+if [[ ${GOTOOLCHAIN:-auto} != go1.26.11 ]]; then echo 'unsafe bundled go1.27.2 selected' >&2; exit 42; fi
 if [[ "${EARLY_FAILURE:-}" == install && "$1" == install ]]; then exit 23; fi
 if [[ "${EARLY_FAILURE:-}" == metadata && "$1" == version ]]; then exit 24; fi
 if [[ "$1" == install ]]; then
